@@ -10,7 +10,7 @@ execution:
 runner:
   type: claude-code
   plugin_dirs:
-    - ./plugins/code-review
+    - ./plugins/patternfly/code-review
 
 models:
   skill: claude-sonnet-4-6

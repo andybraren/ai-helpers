@@ -4,9 +4,18 @@ set -euo pipefail
 # Detect which skills changed in a PR and have corresponding evals.
 # Outputs JSON array for GitHub Actions matrix and sets has_evals flag.
 #
+# Evals are colocated with their skills:
+#   plugins/<domain>/<plugin>/skills/<skill>/eval/eval.yaml
+#   plugins/<domain>/<plugin>/agents/<agent>-eval/eval.yaml
+#
 # Usage:
 #   In GitHub Actions:  scripts/detect-changed-skills.sh [--skill <name>]
 #   Locally:            scripts/detect-changed-skills.sh --base main
+
+if ((BASH_VERSINFO[0] < 4)); then
+  echo "Error: bash 4+ required (declare -A). macOS ships bash 3 — use 'brew install bash'." >&2
+  exit 1
+fi
 
 SKILL_NAME=""
 BASE_BRANCH=""
@@ -19,8 +28,20 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Build a map of skill-name → eval.yaml path by scanning the tree
+declare -A EVAL_PATHS
+while IFS= read -r eval_file; do
+  dir=$(dirname "$eval_file")
+  name=$(basename "$dir")
+  # For agent evals, strip the -eval suffix to get the agent name
+  if [[ "$eval_file" == *"/agents/"* ]]; then
+    name="${name%-eval}"
+  fi
+  EVAL_PATHS["$name"]="$eval_file"
+done < <(find plugins -path '*/eval/eval.yaml' 2>/dev/null)
+
 if [[ -n "$SKILL_NAME" ]]; then
-  if [[ -f "eval/${SKILL_NAME}/eval.yaml" ]]; then
+  if [[ -n "${EVAL_PATHS[$SKILL_NAME]:-}" ]]; then
     echo "skills=[\"${SKILL_NAME}\"]"
     echo "has_evals=true"
   else
@@ -39,17 +60,12 @@ else
   CHANGED_FILES=$(git diff --name-only "origin/main...HEAD")
 fi
 
-if ((BASH_VERSINFO[0] < 4)); then
-  echo "Error: bash 4+ required (declare -A). macOS ships bash 3 — use 'brew install bash'." >&2
-  exit 1
-fi
-
 declare -A SKILLS_SEEN
 
 while IFS= read -r file; do
   [[ -z "$file" ]] && continue
 
-  # Match both flat (plugins/<plugin>/skills/<skill>/) and nested (plugins/patternfly/<plugin>/skills/<skill>/) paths
+  # Match skills: plugins/patternfly/<plugin>/skills/<skill>/ or plugins/<plugin>/skills/<skill>/
   if [[ "$file" =~ ^plugins/patternfly/([^/]+)/skills/([^/]+)/ ]]; then
     plugin="${BASH_REMATCH[1]}"
     skill="${BASH_REMATCH[2]}"
@@ -60,16 +76,16 @@ while IFS= read -r file; do
     [[ "$plugin" != *-workshop ]] && SKILLS_SEEN["$skill"]=1
   fi
 
-  if [[ "$file" =~ ^eval/([^/]+)/ ]]; then
-    eval_skill="${BASH_REMATCH[1]}"
-    # Exclude eval run artifacts
-    [[ ! "$file" =~ ^eval/runs/ ]] && SKILLS_SEEN["$eval_skill"]=1
+  # Match agent evals: plugins/patternfly/<plugin>/agents/<agent>-eval/
+  if [[ "$file" =~ ^plugins/patternfly/([^/]+)/agents/([^/]+)-eval/ ]]; then
+    agent="${BASH_REMATCH[2]}"
+    SKILLS_SEEN["$agent"]=1
   fi
 done <<< "$CHANGED_FILES"
 
 EVAL_SKILLS=()
 for skill in "${!SKILLS_SEEN[@]}"; do
-  if [[ -f "eval/${skill}/eval.yaml" ]]; then
+  if [[ -n "${EVAL_PATHS[$skill]:-}" ]]; then
     EVAL_SKILLS+=("\"${skill}\"")
   fi
 done

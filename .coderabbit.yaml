@@ -41,10 +41,10 @@ reviews:
         flag pf- or uxd- prefix naming or markdown formatting.
     - path: "plugins/**/skills/**"
       instructions: >
-        Consumer-facing skills are expected to have an eval.yaml in
-        eval/<skill-name>/. If this PR adds or significantly modifies a
-        consumer skill and no corresponding eval exists, flag it as a
-        nitpick reminder.
+        Consumer-facing skills are expected to have an eval colocated at
+        skills/<skill-name>/eval/eval.yaml. If this PR adds or significantly
+        modifies a consumer skill and no corresponding eval exists, flag it
+        as a nitpick reminder.
     - path: "plugins/**/agents/*.md"
       instructions: >
         Review against CONTRIBUTING-SKILLS.md. Agents provide domain knowledge
@@ -95,11 +95,10 @@ reviews:
         evaluate all contributions. Changes here affect every future review.
         Verify accuracy, check for contradictions, and ensure the plugin
         taxonomy table stays consistent with the actual plugins/ directory.
-    - path: "eval/**"
+    - path: "plugins/**/eval/**"
       instructions: >
-        Eval configs and test cases for skill evaluation. Each eval lives in
-        eval/<skill-name>/eval.yaml. Verify that the skill-name directory
-        matches a real skill in plugins/. Test cases should be discriminating
+        Eval configs and test cases colocated with their skills. Each eval lives
+        at skills/<skill-name>/eval/eval.yaml. Test cases should be discriminating
         (test what the skill uniquely contributes, not base model knowledge).
 
 knowledge_base:

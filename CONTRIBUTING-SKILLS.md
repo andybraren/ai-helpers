@@ -232,9 +232,10 @@ ai-helpers/
 │           ├── .claude-plugin/
 │           ├── .cursor-plugin/
 │           ├── skills/
+│           │   └── <skill-name>/
+│           │       ├── SKILL.md
+│           │       └── eval/   # Eval colocated with skill
 │           └── agents/
-├── eval/                 # Eval configs + test cases
-└── docs/                 # AI-friendly documentation
 ```
 
 Each AI tool looks for its own directory (`.claude-plugin/`, `.cursor-plugin/`) to find `marketplace.json`, which lists plugins with relative paths. UXD plugins live at `plugins/<name>/`. PatternFly plugins live under `plugins/patternfly/<name>/`. Each plugin has identical manifests in both `.claude-plugin/` and `.cursor-plugin/` directories. Adding support for a new tool means copying the manifest into a new `.<tool>-plugin/` directory.
@@ -273,15 +274,13 @@ In addition to the skill-creator guidance, skills in this repo must follow these
 
 Evals are **expected** for consumer-facing skills. A skill graduating from a workshop to a consumer plugin should have an eval that proves its value.
 
-Write test cases that target what the skill **uniquely contributes** — don't test things the base model already knows without the skill loaded. See [docs/writing-eval-test-cases.md](docs/writing-eval-test-cases.md) for guidance on writing discriminating vs non-discriminating test cases.
+Write test cases that target what the skill **uniquely contributes** — don't test things the base model already knows without the skill loaded. Good eval cases are *discriminating*: they should fail (or produce noticeably worse output) without the skill loaded.
 
-Evals use [agent-eval-harness](https://github.com/opendatahub-io/agent-eval-harness) and live in `eval/<skill-name>/eval.yaml` (not in the skill directory). See `eval/pf-test-gen/eval.yaml` for a working example. To run evals locally, install the harness plugin:
+Evals use [agent-eval-harness](https://github.com/opendatahub-io/agent-eval-harness) and are colocated with their skill at `skills/<skill-name>/eval/eval.yaml`. See `plugins/patternfly/react/skills/pf-test-gen/eval/eval.yaml` for a working example. To run evals locally, install the harness plugin:
 
 ```bash
 claude plugin install agent-eval-harness@agent-eval-harness-dev
 ```
-
-See [docs/writing-eval-test-cases.md](docs/writing-eval-test-cases.md) for the full eval writing guide.
 
 ### Security rules
 

@@ -31,8 +31,9 @@ for DIR in "$@"; do
   EVAL_CONFIG=""
   IFS='/' read -ra PARTS <<< "$DIR"
   for part in "${PARTS[@]}"; do
-    if [[ "$part" == eval-* && -f "eval/${part#eval-}/eval.yaml" ]]; then
-      EVAL_CONFIG="eval/${part#eval-}/eval.yaml"
+    if [[ "$part" == eval-* ]]; then
+      skill_name="${part#eval-}"
+      EVAL_CONFIG=$(find plugins -path "*/${skill_name}/eval/eval.yaml" -o -path "*/${skill_name}-eval/eval.yaml" 2>/dev/null | head -1)
       break
     fi
   done

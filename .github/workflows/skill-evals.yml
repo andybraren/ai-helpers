@@ -5,8 +5,7 @@ on:
     types: [opened, reopened, labeled]
     paths:
       - "plugins/**/skills/**"
-      - "eval/**"
-      - "!eval/runs/**"
+      - "plugins/**/agents/**-eval/**"
   workflow_dispatch:
     inputs:
       skill_name:
@@ -85,7 +84,12 @@ jobs:
           SKILL_NAME: ${{ matrix.skill }}
         # dontAsk is safe — ephemeral CI runner, no persistent state
         run: |
-          claude -p "/agent-eval-harness:eval-run --config eval/${SKILL_NAME}/eval.yaml --no-llm-judges" \
+          EVAL_CONFIG=$(find plugins -path "*/${SKILL_NAME}/eval/eval.yaml" -o -path "*/${SKILL_NAME}-eval/eval.yaml" | head -1)
+          if [[ -z "$EVAL_CONFIG" ]]; then
+            echo "Error: No eval.yaml found for ${SKILL_NAME}" >&2
+            exit 1
+          fi
+          claude -p "/agent-eval-harness:eval-run --config ${EVAL_CONFIG} --no-llm-judges" \
             --allowedTools "Bash,Read,Write,Edit,Skill" \
             --permission-mode dontAsk \
             --max-turns 200
@@ -96,8 +100,8 @@ jobs:
         with:
           name: eval-${{ matrix.skill }}
           path: |
-            eval/runs/*/*/summary.yaml
-            eval/runs/*/*/run_result.json
+            **/eval/runs/*/*/summary.yaml
+            **/eval/runs/*/*/run_result.json
           if-no-files-found: warn
 
   post-results:

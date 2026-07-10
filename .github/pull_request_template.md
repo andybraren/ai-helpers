@@ -18,4 +18,4 @@
 - [ ] Under 500 lines
 - [ ] Tested locally on a real scenario
 - [ ] If new plugin: `.claude-plugin/` and `.cursor-plugin/` manifests are identical
-- [ ] Consumer-facing skills have an eval in `eval/<skill-name>/`
+- [ ] Consumer-facing skills have an eval colocated at `skills/<skill-name>/eval/`

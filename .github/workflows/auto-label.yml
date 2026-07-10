@@ -37,7 +37,7 @@ jobs:
             // Content-type labels
             if (paths.some(p => p.includes('/skills/'))) labels.add('skill');
             if (paths.some(p => p.includes('/agents/'))) labels.add('agent');
-            if (paths.some(p => p.startsWith('eval/'))) labels.add('eval');
+            if (paths.some(p => p.includes('/eval/'))) labels.add('eval');
             if (paths.some(p => p.includes('plugin.json') || p.includes('marketplace.json'))) labels.add('manifest');
             if (paths.some(p => p.startsWith('scripts/'))) labels.add('automation');
             if (paths.some(p => /^(CONTRIBUTING|GOVERNANCE|MIGRATION|SETUP|CLAUDE)/.test(p.split('/').pop()))) labels.add('docs');
