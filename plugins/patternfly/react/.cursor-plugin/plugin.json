@@ -16,5 +16,9 @@
   },
   "repository": "https://github.com/rh-uxd/ai-helpers",
   "license": "MIT",
-  "agents": ["./agents/"]
+  "agents": [
+    "./agents/pf-coding-standards.md",
+    "./agents/pf-component-structure-audit.md",
+    "./agents/pf-unit-test-standards.md"
+  ]
 }

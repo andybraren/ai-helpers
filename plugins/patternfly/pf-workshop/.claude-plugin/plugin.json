@@ -16,5 +16,5 @@
   },
   "repository": "https://github.com/rh-uxd/ai-helpers",
   "license": "MIT",
-  "agents": ["./agents/"]
+  "agents": ["./agents/pf-voice-and-tone.md"]
 }
