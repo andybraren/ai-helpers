@@ -2,7 +2,7 @@
 
 # PF Design Guide Plugin
 
-Design guide \u2014 component selection, interaction patterns, AI experience patterns, Figma design creation.
+Design guide — component selection, interaction patterns, AI experience patterns, Figma design creation.
 
 Use this plugin when you're **building** something and need help choosing the right PatternFly components, patterns, or design language. For **validating** existing code or designs against PF standards, see [design-audit](../design-audit/).
 

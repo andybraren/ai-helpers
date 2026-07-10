@@ -1,6 +1,6 @@
 {
   "name": "pf-migration",
-  "description": "PF version migration \u2014 breaking change detection, class scanning, upgrade planning",
+  "description": "PF version migration — breaking change detection, class scanning, upgrade planning",
   "intent": "Upgrade PatternFly versions",
   "decisionTest": "Does this help me upgrade PF versions?",
   "sources": [

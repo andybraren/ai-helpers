@@ -87,12 +87,12 @@ Plugin names must tell a user exactly what the plugin helps them do. A user brow
 **Good names** describe the capability:
 - `uxd-workshop` — UXD team tools and skill incubator — prototyping, research, design review, team workflows
 - `pf-a11y` — Accessibility auditing, reporting, and documentation
-- `pf-code-review` — Code review and quality \u2014 adversarial review, security patterns
-- `pf-design-audit` — Design audit \u2014 validate existing code and designs against PatternFly standards
-- `pf-design-guide` — Design guide \u2014 component selection, interaction patterns, AI experience patterns, Figma design creation
-- `pf-mcp` — PatternFly MCP server \u2014 provides component documentation, design token lookup, and accessibility guidance via the Model Context Protocol
-- `pf-migration` — PF version migration \u2014 breaking change detection, class scanning, upgrade planning
-- `pf-react` — React component development \u2014 coding standards, testing, and structure
+- `pf-code-review` — Code review and quality — adversarial review, security patterns
+- `pf-design-audit` — Design audit — validate existing code and designs against PatternFly standards
+- `pf-design-guide` — Design guide — component selection, interaction patterns, AI experience patterns, Figma design creation
+- `pf-mcp` — PatternFly MCP server — provides component documentation, design token lookup, and accessibility guidance via the Model Context Protocol
+- `pf-migration` — PF version migration — breaking change detection, class scanning, upgrade planning
+- `pf-react` — React component development — coding standards, testing, and structure
 <!-- END GOOD NAMES -->
 
 **Bad names** are vague categories:

@@ -2,7 +2,7 @@
 
 # PF Migration Plugin
 
-PF version migration \u2014 breaking change detection, class scanning, upgrade planning.
+PF version migration — breaking change detection, class scanning, upgrade planning.
 
 ## What's Included
 

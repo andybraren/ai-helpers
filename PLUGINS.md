@@ -6,12 +6,12 @@ Quick reference of all plugins and what they contain. This file is auto-generate
 
 - [uxd-workshop](#uxd-workshop) — UXD team tools and skill incubator — prototyping, research, design review, team workflows
 - [pf-a11y](#pf-a11y) — Accessibility auditing, reporting, and documentation
-- [pf-code-review](#pf-code-review) — Code review and quality \u2014 adversarial review, security patterns
-- [pf-design-audit](#pf-design-audit) — Design audit \u2014 validate existing code and designs against PatternFly standards
-- [pf-design-guide](#pf-design-guide) — Design guide \u2014 component selection, interaction patterns, AI experience patterns, Figma design creation
-- [pf-mcp](#pf-mcp) — PatternFly MCP server \u2014 provides component documentation, design token lookup, and accessibility guidance via the Model Context Protocol
-- [pf-migration](#pf-migration) — PF version migration \u2014 breaking change detection, class scanning, upgrade planning
-- [pf-react](#pf-react) — React component development \u2014 coding standards, testing, and structure
+- [pf-code-review](#pf-code-review) — Code review and quality — adversarial review, security patterns
+- [pf-design-audit](#pf-design-audit) — Design audit — validate existing code and designs against PatternFly standards
+- [pf-design-guide](#pf-design-guide) — Design guide — component selection, interaction patterns, AI experience patterns, Figma design creation
+- [pf-mcp](#pf-mcp) — PatternFly MCP server — provides component documentation, design token lookup, and accessibility guidance via the Model Context Protocol
+- [pf-migration](#pf-migration) — PF version migration — breaking change detection, class scanning, upgrade planning
+- [pf-react](#pf-react) — React component development — coding standards, testing, and structure
 - [pf-workshop](#pf-workshop) — PatternFly team tools and skill incubation — issue triage, release management, codebase auditing, new skill development
 
 ---
@@ -36,7 +36,7 @@ No skills or agents yet.
 
 ### pf-code-review
 
-Code review and quality \u2014 adversarial review, security patterns
+Code review and quality — adversarial review, security patterns
 
 | Agent | Description |
 |-------|-------------|
@@ -47,7 +47,7 @@ Code review and quality \u2014 adversarial review, security patterns
 
 ### pf-design-audit
 
-Design audit \u2014 validate existing code and designs against PatternFly standards
+Design audit — validate existing code and designs against PatternFly standards
 
 | Skill | Description |
 |-------|-------------|
@@ -62,7 +62,7 @@ Design audit \u2014 validate existing code and designs against PatternFly standa
 
 ### pf-design-guide
 
-Design guide \u2014 component selection, interaction patterns, AI experience patterns, Figma design creation
+Design guide — component selection, interaction patterns, AI experience patterns, Figma design creation
 
 | Skill | Description |
 |-------|-------------|
@@ -78,7 +78,7 @@ Design guide \u2014 component selection, interaction patterns, AI experience pat
 
 ### pf-mcp
 
-PatternFly MCP server \u2014 provides component documentation, design token lookup, and accessibility guidance via the Model Context Protocol
+PatternFly MCP server — provides component documentation, design token lookup, and accessibility guidance via the Model Context Protocol
 
 This plugin provides an MCP server only — no skills or agents. Other plugins declare it as a dependency so the MCP server is installed automatically.
 
@@ -87,7 +87,7 @@ This plugin provides an MCP server only — no skills or agents. Other plugins d
 
 ### pf-migration
 
-PF version migration \u2014 breaking change detection, class scanning, upgrade planning
+PF version migration — breaking change detection, class scanning, upgrade planning
 
 | Skill | Description |
 |-------|-------------|
@@ -99,7 +99,7 @@ PF version migration \u2014 breaking change detection, class scanning, upgrade p
 
 ### pf-react
 
-React component development \u2014 coding standards, testing, and structure
+React component development — coding standards, testing, and structure
 
 | Skill | Description |
 |-------|-------------|

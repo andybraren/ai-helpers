@@ -40,15 +40,15 @@ Add this repo as a third-party plugin source in Cursor's settings.
 <!-- BEGIN PLUGIN TABLE -->
 | Plugin | Description |
 |--------|-------------|
-| **uxd-workshop** | UXD team tools and skill incubator — prototyping, research, design review, team workflows |
-| **pf-a11y** | Accessibility auditing, reporting, and documentation |
-| **pf-code-review** | Code review and quality \u2014 adversarial review, security patterns |
-| **pf-design-audit** | Design audit \u2014 validate existing code and designs against PatternFly standards |
-| **pf-design-guide** | Design guide \u2014 component selection, interaction patterns, AI experience patterns, Figma design creation |
-| **pf-mcp** | PatternFly MCP server \u2014 provides component documentation, design token lookup, and accessibility guidance via the Model Context Protocol |
-| **pf-migration** | PF version migration \u2014 breaking change detection, class scanning, upgrade planning |
-| **pf-react** | React component development \u2014 coding standards, testing, and structure |
-| **pf-workshop** | PatternFly team tools and skill incubation — issue triage, release management, codebase auditing, new skill development |
+| <nobr>**uxd-workshop**</nobr> | UXD team tools and skill incubator — prototyping, research, design review, team workflows |
+| <nobr>**pf-a11y**</nobr> | Accessibility auditing, reporting, and documentation |
+| <nobr>**pf-code-review**</nobr> | Code review and quality — adversarial review, security patterns |
+| <nobr>**pf-design-audit**</nobr> | Design audit — validate existing code and designs against PatternFly standards |
+| <nobr>**pf-design-guide**</nobr> | Design guide — component selection, interaction patterns, AI experience patterns, Figma design creation |
+| <nobr>**pf-mcp**</nobr> | PatternFly MCP server — provides component documentation, design token lookup, and accessibility guidance via the Model Context Protocol |
+| <nobr>**pf-migration**</nobr> | PF version migration — breaking change detection, class scanning, upgrade planning |
+| <nobr>**pf-react**</nobr> | React component development — coding standards, testing, and structure |
+| <nobr>**pf-workshop**</nobr> | PatternFly team tools and skill incubation — issue triage, release management, codebase auditing, new skill development |
 <!-- END PLUGIN TABLE -->
 
 See [PLUGINS.md](PLUGINS.md) for the full list of skills, agents, and usage details.

@@ -2,7 +2,7 @@
 
 # PF Code Review Plugin
 
-Code review and quality \u2014 adversarial review, security patterns.
+Code review and quality — adversarial review, security patterns.
 
 ## What's Included
 

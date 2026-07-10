@@ -2,7 +2,7 @@
 
 # PF React Plugin
 
-React component development \u2014 coding standards, testing, and structure.
+React component development — coding standards, testing, and structure.
 
 ## What's Included
 

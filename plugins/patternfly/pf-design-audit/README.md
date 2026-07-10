@@ -2,7 +2,7 @@
 
 # PF Design Audit Plugin
 
-Design audit \u2014 validate existing code and designs against PatternFly standards.
+Design audit — validate existing code and designs against PatternFly standards.
 
 Use this plugin when you're **checking** whether existing code or designs follow PF standards. For help **choosing** the right PF components and patterns when building, see [design-guide](../design-guide/).
 

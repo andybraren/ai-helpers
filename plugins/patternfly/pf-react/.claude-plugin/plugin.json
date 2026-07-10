@@ -1,6 +1,6 @@
 {
   "name": "pf-react",
-  "description": "React component development \u2014 coding standards, testing, and structure",
+  "description": "React component development — coding standards, testing, and structure",
   "intent": "Develop and test React components",
   "decisionTest": "Does this help me write or test a React component?",
   "sources": [
