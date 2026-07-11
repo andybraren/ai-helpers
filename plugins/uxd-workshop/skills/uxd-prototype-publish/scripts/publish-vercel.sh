@@ -99,6 +99,7 @@ echo "[3/6] Removing sensitive files and directories..."
 
 SENSITIVE_DIRS=(
   ".agents"
+  ".artifacts"
   ".cursor"
   ".design"
   ".claude"

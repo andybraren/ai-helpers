@@ -218,5 +218,5 @@ Generate a self-contained HTML file (all CSS/JS inline) with:
 - Print-friendly layout
 - Responsive for laptop screens
 - **Traceability footer** — a small footer line with: skill name,
-  version (from `.cursor-plugin/plugin.json`), generation date, and
+  version (from the plugin's `plugin.json` manifest), generation date, and
   repo source URL

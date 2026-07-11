@@ -272,7 +272,7 @@ full **Source URL** when one was provided. Researchers running multiple
 evaluations rely on this block to tell reports apart at a glance.
 
 All outputs include a traceability line at the bottom. Read the version
-from `.cursor-plugin/plugin.json` and populate `[version]`.
+from the plugin's `plugin.json` manifest and populate `[version]`.
 
 ## Guardrails
 

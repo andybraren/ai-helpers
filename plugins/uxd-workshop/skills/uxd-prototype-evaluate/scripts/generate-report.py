@@ -14,6 +14,7 @@ import os
 import json
 import datetime
 import glob
+import html
 
 sys.path.insert(0, os.path.dirname(__file__))
 from frontmatter import read_frontmatter
@@ -78,11 +79,11 @@ def generate_html(prototypes, output_path):
 
         rows.append(f'''
         <tr>
-            <td><code>{p['id']}</code></td>
-            <td>{p['title']}</td>
-            <td>{p.get('source_rfe', '-')}</td>
+            <td><code>{html.escape(str(p['id']))}</code></td>
+            <td>{html.escape(str(p['title']))}</td>
+            <td>{html.escape(str(p.get('source_rfe', '-')))}</td>
             <td style="text-align:center">{total}</td>
-            <td><span style="color:{color};font-weight:600">{verdict}</span></td>
+            <td><span style="color:{color};font-weight:600">{html.escape(str(verdict))}</span></td>
         </tr>''')
 
     html = f'''<!DOCTYPE html>

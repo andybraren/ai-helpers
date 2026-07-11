@@ -134,6 +134,7 @@ echo "[3/7] Removing sensitive files and directories..."
 
 SENSITIVE_DIRS=(
   ".agents"
+  ".artifacts"
   ".cursor"
   ".design"
   ".claude"
@@ -209,19 +210,21 @@ echo "  Done."
 # --- Step 6: Update package.json ---
 echo "[6/7] Updating package.json..."
 
-# Derive the owner from the repo path (owner/repo)
-OWNER=$(echo "$GITHUB_REPO" | sed 's|https://github.com/||' | sed 's|\.git$||' | cut -d'/' -f1)
+if [[ -f "$TEMP_DIR/package.json" ]]; then
+  # Derive the owner from the repo path (owner/repo)
+  OWNER=$(echo "$GITHUB_REPO" | sed 's|https://github.com/||' | sed 's|\.git$||' | cut -d'/' -f1)
 
-node -e "
-const fs = require('fs');
-const pkg = JSON.parse(fs.readFileSync('${TEMP_DIR}/package.json', 'utf8'));
-pkg.homepage = 'https://${OWNER}.github.io/${REPO_NAME}';
-pkg.repository = '${REMOTE_URL}';
-// Remove internal scripts that reference deleted files
-delete pkg.scripts['predeploy'];
-delete pkg.scripts['deploy'];
-fs.writeFileSync('${TEMP_DIR}/package.json', JSON.stringify(pkg, null, 2) + '\n');
-"
+  node -e "
+  const fs = require('fs');
+  const pkg = JSON.parse(fs.readFileSync('${TEMP_DIR}/package.json', 'utf8'));
+  pkg.homepage = 'https://${OWNER}.github.io/${REPO_NAME}';
+  pkg.repository = '${REMOTE_URL}';
+  // Remove internal scripts that reference deleted files
+  delete pkg.scripts['predeploy'];
+  delete pkg.scripts['deploy'];
+  fs.writeFileSync('${TEMP_DIR}/package.json', JSON.stringify(pkg, null, 2) + '\n');
+  "
+fi
 echo "  Done."
 
 # --- Step 7: Git init and force push ---
