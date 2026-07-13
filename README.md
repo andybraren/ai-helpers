@@ -40,38 +40,26 @@ Add this repo as a third-party plugin source in Cursor's settings.
 ## Plugins
 
 <!-- BEGIN PLUGIN TABLE -->
-| Plugin | Description |
-|--------|-------------|
-| <nobr>**patternfly**</nobr> | Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs |
-| <nobr>**uxd-workshop**</nobr> | UXD team tools and skill incubator — prototyping, research, design review, team workflows |
-| <nobr>**pf-design-audit**</nobr> | Design audit — validate existing code and designs against PatternFly standards |
-| <nobr>**pf-design-guide**</nobr> | Design guide — component selection, interaction patterns, AI experience patterns, Figma design creation |
-| <nobr>**pf-mcp**</nobr> | PatternFly MCP server — provides component documentation, design token lookup, and accessibility guidance via the Model Context Protocol |
-| <nobr>**pf-migration**</nobr> | PF version migration — breaking change detection, class scanning, upgrade planning |
-| <nobr>**pf-react**</nobr> | React component development — coding standards, testing, and structure |
-| <nobr>**pf-workshop**</nobr> | PatternFly team tools and skill incubation — issue triage, release management, codebase auditing, new skill development |
+<table>
+<tr><th>Plugin</th><th>Description</th></tr>
+<tr><td nowrap><b>patternfly</b></td><td>Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs</td></tr>
+<tr><td nowrap><b>uxd-workshop</b></td><td>UXD team tools and skill incubator — prototyping, research, design review, team workflows</td></tr>
+<tr><td nowrap><b>pf-design-audit</b></td><td>Design audit — validate existing code and designs against PatternFly standards</td></tr>
+<tr><td nowrap><b>pf-design-guide</b></td><td>Design guide — component selection, interaction patterns, AI experience patterns</td></tr>
+<tr><td nowrap><b>pf-mcp</b></td><td>PatternFly MCP server — component docs and design tokens via MCP</td></tr>
+<tr><td nowrap><b>pf-migration</b></td><td>PF version migration — breaking change detection, upgrade planning</td></tr>
+<tr><td nowrap><b>pf-react</b></td><td>React component development — coding standards, testing, and structure</td></tr>
+<tr><td nowrap><b>pf-workshop</b></td><td>PatternFly team tools — issue triage, release management, skill incubation</td></tr>
+</table>
 <!-- END PLUGIN TABLE -->
 
 See [PLUGINS.md](PLUGINS.md) for the full list of skills, agents, and usage details.
 
 ## How It Works
 
-```
-AI Tool (Claude Code / Cursor)
-    │
-    ▼
-.<tool>-plugin/marketplace.json    ← tool discovers this
-    │
-    ├── plugins/patternfly/pf-react/          ← PF plugins
-    ├── plugins/patternfly/pf-design-guide/
-    ├── plugins/patternfly/pf-design-audit/
-    └── ...
-```
-
-1. Each AI tool looks for its own directory (`.claude-plugin/`, `.cursor-plugin/`) containing a `marketplace.json`
-2. The marketplace lists plugins with relative paths to their `plugin.json` manifests
-3. Each plugin has identical manifests in both `.claude-plugin/` and `.cursor-plugin/` directories
-4. Skills become available as `/<plugin>:<skill>` slash commands
+1. You add this repo as a **marketplace** in Claude Code or Cursor
+2. You install a plugin (e.g., `patternfly`) — it auto-installs its sub-plugins via dependencies
+3. Skills become available as `/<plugin>:<skill>` slash commands in any project
 
 ## Repository Structure
 
