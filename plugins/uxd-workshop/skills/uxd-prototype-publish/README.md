@@ -1,6 +1,6 @@
 # uxd-prototype-publish
 
-Publish a completed prototype to a target destination — push as a merge request, or deploy via GitHub Pages, GitLab Pages, or Vercel.
+Publish a completed prototype to a target destination — push as a merge request with designer-friendly pre-flight checks, or deploy via GitHub Pages, GitLab Pages, or Vercel.
 
 ## When to Use
 
@@ -10,7 +10,7 @@ After creating and evaluating a prototype with `uxd-prototype-create` and `uxd-p
 
 | Target | What happens | Best for |
 |--------|-------------|----------|
-| `repo` | Push to git branch, create GitLab MR | Team review, design feedback |
+| `repo` | Branch + commits + lint/build/scope pre-flight + MR (draft or ready) | Team review, design feedback |
 | `public` | Sanitize + deploy to GitHub Pages | Stakeholder demos, external sharing |
 | `gitlab` | Sanitize + deploy to GitLab Pages | Self-hosted or gitlab.com sharing |
 | `vercel` | Sanitize + deploy to Vercel | Preview deployments, Vercel-based projects |

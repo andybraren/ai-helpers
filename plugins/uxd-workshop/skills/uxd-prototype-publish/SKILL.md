@@ -1,16 +1,16 @@
 ---
 name: uxd-prototype-publish
 description: >-
-  Publish a prototype to a target destination — push to a git repo as a merge
-  request, or deploy a sanitized copy to GitHub Pages, GitLab Pages, or Vercel.
-  Handles sensitive file removal, Jira status updates, and submission tracking.
+  Publish a prototype to a merge request or deploy a sanitized copy to GitHub
+  Pages, GitLab Pages, or Vercel. Use when sharing a prototype for review,
+  opening a designer-friendly MR with pre-flight checks, or deploying a demo URL.
 ---
 
 # Publish Prototype
 
 Publishes a completed prototype so others can see it. Supports four publishing targets:
 
-- **Repo** — Push prototype code to a git branch and create a GitLab merge request. Best for team review.
+- **Repo** — Push prototype code to a git branch and create a merge request, with designer-friendly pre-flight checks (lint, build, rebase, scope audit). Best for team review.
 - **Public** — Deploy a sanitized copy to a public GitHub repo with GitHub Pages. Strips all internal/sensitive files. Best for stakeholder or external sharing.
 - **GitLab** — Deploy a sanitized copy to a GitLab instance with GitLab Pages. Supports both self-hosted (behind VPN) and gitlab.com. Same sanitization as public.
 - **Vercel** — Deploy a sanitized copy to Vercel. Same sensitive-file stripping as public. Best for preview deployments and projects using Vercel.
@@ -28,6 +28,10 @@ If the user says "share", "publish", "deploy", "submit", or "I'm done" without s
 > - **Deploy to GitLab Pages** — I'll deploy a sanitized version to a GitLab instance (self-hosted or gitlab.com).
 > - **Deploy to Vercel** — I'll deploy a sanitized version to Vercel with a preview URL.
 
+For **repo** target, also ask:
+
+> Open as a **draft** MR (default) or **ready for review**?
+
 ## Inputs
 
 | Input | Source | Required |
@@ -37,6 +41,7 @@ If the user says "share", "publish", "deploy", "submit", or "I'm done" without s
 | Changeset manifest | `.artifacts/{ID}/changeset.md` | Yes (workspace mode) |
 | Workspace analysis | `.artifacts/{ID}/workspace-analysis.json` | Yes (repo target, workspace mode) |
 | Review summary | `.artifacts/{ID}/reviews/summary.md` | Recommended |
+| Design spec / ticket ref | User-provided or metadata | Recommended (repo target) |
 
 ## Flags
 
@@ -45,6 +50,7 @@ If the user says "share", "publish", "deploy", "submit", or "I'm done" without s
 | `--target` | `repo`, `public`, `gitlab`, `vercel` | `public` | Where to publish |
 | `--remote` | Git URL | workspace origin | Remote URL override for repo target |
 | `--repo` | `owner/repo` or GitHub URL | — | GitHub repo for public target |
+| `--scope` | `draft`, `ready` | `draft` | MR readiness (repo target only) |
 | `--dry-run` | flag | Off | Preview without external writes |
 | `--skip-jira` | flag | Off | Skip Jira comment and label update |
 | `--force` | flag | Off | Submit even if rubric score fails |
@@ -103,18 +109,57 @@ Before publishing to any target, scan existing CI/CD configuration files in the 
 
 ### Target: repo
 
-Push prototype changes to a git repo and create a GitLab merge request.
+Push prototype changes to a git repo and create a merge request. The designer should not need git expertise — handle branch naming, commits, pre-flight checks, and MR description for them.
 
-**Workspace mode:** Use `submit_to_repo.py` from `uxd-prototype-create`:
+Read [references/repo-submit-details.md](references/repo-submit-details.md) for branch naming, MR template, pre-flight checks, script usage, and workspace analysis requirements.
+
+#### 3a. Prepare the branch and commits (workspace mode)
+
+1. Confirm the working directory is clean (or only contains this prototype's intended changes). If unrelated uncommitted work exists: **stop** and ask the designer to stash or commit it first.
+2. Create a feature branch — never commit directly on `main` or the target branch:
+   - Ticket-linked: `design/{ticket}-{short-description}` or `prototype/{ID}`
+   - Exploratory: `design/{short-description}`
+   - QA fixes: `fix/design-{short-description}`
+3. Stage only changeset files (from `changeset.md`). Group into logical commits with user-perspective messages (what changed for the user, not implementation chatter).
+4. Rebase onto the latest target branch before push. If conflicts appear, resolve carefully (prefer keeping both changes when safe; regenerate lockfiles rather than hand-editing them). If conflicts are extensive, offer a fresh branch from target and re-apply changes.
+5. **Scope check:** Diff against the target branch. Flag files outside the prototype/design scope — especially routes, layout, CI config, `package.json`, tsconfig, webpack/eslint config. Present keep / revert / investigate options before continuing.
+
+Or use the shared script (creates `prototype/{ID}`, commits changeset files, opens the MR):
 
 ```bash
 python3 plugins/uxd-workshop/skills/uxd-prototype-create/scripts/submit_to_repo.py \
   --rfe-key {ID} --title "{title}" [--remote {remote}] [--no-ssl-verify] [--dry-run]
 ```
 
-Read [references/repo-submit-details.md](references/repo-submit-details.md) for the full MR generation procedure, script output format, and workspace analysis requirements.
+When using the script, still run the pre-flight checks in 3b before treating the MR as ready, and present the MR description for designer approval.
 
-**Standalone mode:** Initialize and push as a standalone git repo:
+#### 3b. Pre-flight checks (required for repo target)
+
+Run these before opening or marking the MR ready. Do not skip even if the designer says "just push it."
+
+| Check | On failure |
+|-------|------------|
+| Lint | Auto-fix when possible. Unfixable errors → **blocked**. Warnings only → proceed as draft, note them. |
+| Build | **Blocked** until fixed. |
+| Tests | **Blocked**, or flag for engineering if failures are clearly pre-existing/out of scope. |
+| Token audit | Scan committed files for raw color/spacing/typography values → **degraded**; list locations. Prefer PatternFly tokens (`pf-code-token-check` / `pf-color-scan` when available). |
+| Conflict check | **Blocked** until rebase/conflicts are resolved. |
+
+If any check is **blocked**, halt and show results. Do not open a ready-for-review MR.
+
+#### 3c. MR description and designer review
+
+Draft the MR description from the template in [references/repo-submit-details.md](references/repo-submit-details.md). Include: what the user sees differently, design spec/ticket link, PatternFly components used, how to preview, states to check, accessibility checklist, and a short review checklist.
+
+**Always show the description to the designer and get approval before opening the MR.** Use `--scope draft` (default) or `ready` based on their choice.
+
+Labels to apply when conventions allow: design, UX, accessibility (if a11y work is included).
+
+Do not auto-merge. A human reviewer merges.
+
+#### 3d. Standalone mode
+
+For prototypes without a product workspace, initialize and push as a standalone repo (no MR automation):
 
 ```bash
 cd .artifacts/{ID}/prototype
@@ -286,3 +331,14 @@ To update a previously published prototype, run the same workflow again. The pub
 | Prototype already submitted | Proceed (creates new submission record, doesn't overwrite). |
 | `--dry-run` with missing deps | Succeeds — only validates local state and previews. |
 | Large prototype (5+ MB) | Warn before push. Suggest trimming assets. |
+| Pre-flight blocked (repo) | Halt. Show failures. Do not open ready MR. |
+| Out-of-scope files in diff | Present keep / revert / investigate before push. |
+| Designer asks to skip checks | Run checks anyway; explain they protect the first MR experience. |
+
+## Repo target guardrails
+
+- Never commit or push directly to `main` / the merge target branch.
+- Never force-push a shared branch. After rebase, prefer `--force-with-lease` only when rewriting your own unpublished branch history is required — and confirm with the designer first.
+- Never open an MR without designer review of the description.
+- Never modify files outside the prototype/design scope without explicit designer approval.
+- Never auto-merge the MR.
