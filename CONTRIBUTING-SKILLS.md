@@ -74,7 +74,7 @@ Every skill or agent must live in a plugin. Pick the one that matches your skill
 <table>
 <tr><th>Plugin</th><th>What it does</th><th>Example skills</th></tr>
 <tr><td nowrap><b>patternfly</b></td><td>Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs</td><td></td></tr>
-<tr><td nowrap><b>uxd-workshop</b></td><td>UXD team tools and skill incubator — prototyping, research, design review, team workflows</td><td>`uxd-evaluate-design-heuristics`, `uxd-figma-read`, `uxd-prototype-create`</td></tr>
+<tr><td nowrap><b>uxd-workshop</b></td><td>UXD team tools and skill incubator — prototyping, research, design review, team workflows</td><td>`uxd-create-design-spec`, `uxd-evaluate-design-heuristics`, `uxd-figma-read`</td></tr>
 <tr><td nowrap><b>pf-design-audit</b></td><td>Design audit — validate existing code and designs against PatternFly standards</td><td>`pf-code-token-check`, `pf-color-scan`, `pf-figma-check`</td></tr>
 <tr><td nowrap><b>pf-design-guide</b></td><td>Design guide — component selection, interaction patterns, AI experience patterns, Figma design creation</td><td>`pf-ai-guide`, `pf-figma-design-mode`</td></tr>
 <tr><td nowrap><b>pf-mcp</b></td><td>PatternFly MCP server — provides component documentation, design token lookup, and accessibility guidance via the Model Context Protocol</td><td></td></tr>

@@ -8,6 +8,7 @@ UXD team tools and skill incubator — prototyping, research, design review, tea
 
 ### Skills
 
+- **UXD Create Design Spec** (`/uxd-workshop:uxd-create-design-spec`) — Create a structured design spec from a problem statement, research findings, or heuristic evaluation.
 - **UXD Evaluate Design Heuristics** (`/uxd-workshop:uxd-evaluate-design-heuristics`) — Score a design against accessibility, visual hierarchy, content, and state coverage heuristics.
 - **UXD Figma Read** (`/uxd-workshop:uxd-figma-read`) — Retrieve design context from a Figma file.
 - **UXD Prototype Create** (`/uxd-workshop:uxd-prototype-create`) — Create or refine a UX prototype from various input sources — a Jira ticket, Figma design, feature description, or just an idea.

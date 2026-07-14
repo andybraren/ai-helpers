@@ -23,6 +23,7 @@ Identify the current context from observable signals, then apply the relevant su
 |-----------|-------------|
 | `/uxd-figma-read` | Retrieve screenshots, structure, and design tokens from a Figma file |
 | `/uxd-evaluate-design-heuristics` | Score a design against accessibility, visual hierarchy, content, and state coverage heuristics |
+| `/uxd-create-design-spec` | Create a PatternFly-mapped design spec from a problem, research, or evaluation |
 
 ### Prototyping — building, refining, or publishing prototypes
 
@@ -37,7 +38,7 @@ Identify the current context from observable signals, then apply the relevant su
 Determine which contexts apply based on observable signals:
 
 - **Research**: user asks about heuristic evaluation, usability assessment, or structured design critique
-- **Design Review**: Figma URLs in conversation, requests for design critique or consistency checks, accessibility audits
+- **Design Review**: Figma URLs in conversation, requests for design critique or consistency checks, accessibility audits, design specs from research or problem statements
 - **Prototyping**: user asks to create, iterate on, evaluate, or publish a prototype
 
 When multiple contexts apply, run all relevant sub-skills and group findings by context. Only include context sections that were activated. Attribute findings to the specific sub-skill that produced them.
