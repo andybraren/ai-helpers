@@ -8,6 +8,7 @@ UXD team tools and skill incubator — prototyping, research, design review, tea
 
 ### Skills
 
+- **UXD Draft Acceptance Criteria** (`/uxd-workshop:uxd-draft-acceptance-criteria`) — Produce testable Given/When/Then acceptance criteria from a design spec.
 - **UXD Evaluate Design Heuristics** (`/uxd-workshop:uxd-evaluate-design-heuristics`) — Score a design against accessibility, visual hierarchy, content, and state coverage heuristics.
 - **UXD Figma Read** (`/uxd-workshop:uxd-figma-read`) — Retrieve design context from a Figma file.
 - **UXD Prototype Create** (`/uxd-workshop:uxd-prototype-create`) — Create or refine a UX prototype from various input sources — a Jira ticket, Figma design, feature description, or just an idea.
