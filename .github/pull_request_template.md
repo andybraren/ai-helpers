@@ -13,7 +13,7 @@
 - [ ] Ran `make check` (validates manifests + regenerates docs)
 - [ ] Skill name uses the correct prefix (`uxd-` for UXD skills, `pf-` for PF skills)
 - [ ] Frontmatter has `name` and `description` (`name` matches directory name)
-- [ ] Description follows the [formula](CONTRIBUTING-SKILLS.md#writing-descriptions)
+- [ ] Description follows the [formula](../CONTRIBUTING-SKILLS.md#writing-descriptions)
 - [ ] Tool-agnostic — works in both Claude Code and Cursor
 - [ ] Under 500 lines
 - [ ] Tested locally on a real scenario

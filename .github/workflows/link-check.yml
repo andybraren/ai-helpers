@@ -18,6 +18,9 @@ jobs:
           while IFS= read -r file; do
             dir=$(dirname "$file")
 
+            # Strip fenced code blocks before extracting links
+            content=$(awk '/^```/{skip=!skip; next} !skip{print}' "$file")
+
             while read -r link; do
               [[ -z "$link" ]] && continue
               # Skip external URLs, anchors, and template variables
@@ -25,6 +28,10 @@ jobs:
               [[ "$link" =~ ^mailto: ]] && continue
               [[ "$link" =~ ^\# ]] && continue
               [[ "$link" =~ ^\{\{ ]] && continue
+              # Skip placeholder/example links
+              [[ "$link" =~ ^(link|url|URL|\[url\])$ ]] && continue
+              [[ "$link" =~ ^/ ]] && [[ "$link" =~ \.\.\. ]] && continue
+              [[ "$link" =~ ^/(patterns|components)/ ]] && continue
 
               # Strip anchor fragment and query string
               target="${link%%#*}"
@@ -47,7 +54,7 @@ jobs:
                 echo "::error file=${file}::Broken link: ${link} -> ${normalized} (not found)"
                 BROKEN=$((BROKEN + 1))
               fi
-            done < <(grep -oP '\[[^\]]*\]\(\K[^)]+' "$file" 2>/dev/null)
+            done < <(echo "$content" | grep -oP '\[[^\]]*\]\(\K[^)]+' 2>/dev/null)
 
           done < <(find . -name '*.md' -not -path './.git/*')
 
