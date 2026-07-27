@@ -22,7 +22,7 @@ Everything you need for PatternFly development — React components, design guid
 
 <table>
 <tr><th>Agent</th><th>Description</th></tr>
-<tr><td nowrap><code>pf-assist</code></td><td>PatternFly development routing — maps code changes, test gaps, scaffolding needs, and design work to the right PF sub-skills.</td></tr>
+<tr><td nowrap><code>pf-assist</code></td><td>PatternFly compliance orchestrator — automatically invokes PF sub-skills to audit code, then synthesizes findings into a unified report.</td></tr>
 </table>
 
 
@@ -44,7 +44,7 @@ UXD team tools and skill incubator — prototyping, research, design review, tea
 
 <table>
 <tr><th>Agent</th><th>Description</th></tr>
-<tr><td nowrap><code>uxd-assist</code></td><td>UXD workflow routing — maps design review, research, prototyping, and evaluation needs to the right UXD sub-skills.</td></tr>
+<tr><td nowrap><code>uxd-assist</code></td><td>UXD workflow orchestrator — automatically invokes UXD sub-skills for design review, research, and prototyping tasks, then synthesizes findings into a unified report.</td></tr>
 </table>
 
 

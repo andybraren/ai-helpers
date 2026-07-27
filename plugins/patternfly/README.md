@@ -8,4 +8,4 @@ Everything you need for PatternFly development — React components, design guid
 
 ### Agents
 
-- **PF Assist** (`pf-assist`) — PatternFly development routing — maps code changes, test gaps, scaffolding needs, and design work to the right PF sub-skills.
+- **PF Assist** (`pf-assist`) — PatternFly compliance orchestrator — automatically invokes PF sub-skills to audit code, then synthesizes findings into a unified report.

@@ -17,4 +17,4 @@ UXD team tools and skill incubator — prototyping, research, design review, tea
 
 ### Agents
 
-- **UXD Assist** (`uxd-assist`) — UXD workflow routing — maps design review, research, prototyping, and evaluation needs to the right UXD sub-skills.
+- **UXD Assist** (`uxd-assist`) — UXD workflow orchestrator — automatically invokes UXD sub-skills for design review, research, and prototyping tasks, then synthesizes findings into a unified report.
