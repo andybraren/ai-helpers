@@ -232,6 +232,8 @@ Before opening your PR, verify:
 
 New to AI skills? Start with the [Choose Your Path](#choose-your-path) section above — it routes you to the right guide for your domain.
 
+**Designer or researcher?** The [Quickstart guide](QUICKSTART.md) covers everything you need — no developer tooling required.
+
 Not sure what to build? Look for issues labeled [`good first issue`](../../labels/good%20first%20issue), or see the [skill ideas table](CONTRIBUTING-SKILLS.md#skill-ideas-to-get-you-started) for inspiration.
 
 ## FAQ
