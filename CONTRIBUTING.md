@@ -130,6 +130,24 @@ The test: can someone look at the plugin name and know whether their skill belon
 
 Plugin names must tell a user exactly what the plugin helps them do. A user browsing the marketplace should understand what they're installing without clicking through. See [CONTRIBUTING-SKILLS.md](CONTRIBUTING-SKILLS.md#plugin-naming-standard) for naming examples and guidelines.
 
+### Skill lifecycle
+
+```mermaid
+flowchart TD
+    A[Idea] --> B[Create skill locally]
+    B --> C[Test on real scenarios]
+    C --> D[Submit PR to workshop]
+    D --> E[Workshop plugin]
+    E --> F{Graduation criteria met?}
+    F -->|Yes| G[Open graduation PR]
+    F -->|No| E
+    G --> H[Maintainer review + merge]
+    H --> I[Consumer plugin]
+    I -.->|Demotion| E
+```
+
+Skills start as local prototypes and graduate through a workshop to a consumer plugin. Each stage below covers a step in this lifecycle.
+
 ### Graduation from the workshop
 
 Skills start in a workshop plugin (`uxd-workshop` or `pf-workshop`). When a skill is validated and ready for a broader audience, it graduates to a consumer plugin.
