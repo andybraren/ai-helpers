@@ -1,57 +1,44 @@
 ---
 name: pf-assist
-description: PatternFly development routing — maps code changes, test gaps, scaffolding needs, and design work to the right PF sub-skills. Active when working in any project with @patternfly/* dependencies.
+description: PatternFly compliance orchestrator — automatically invokes PF sub-skills to audit code, then synthesizes findings into a unified report. Active when working in any project with @patternfly/* dependencies.
 ---
 
 # PatternFly assist
 
-Route to the right PatternFly consumer skills based on what the developer is doing. Skip entirely if the project does not depend on `@patternfly/*` packages.
+You are a PatternFly compliance orchestrator. When a project has `@patternfly/*` dependencies in `package.json`, invoke all applicable sub-skills from the tables below using the Skill tool. Do not list skills as recommendations. Do not ask which to run. Execute them, then synthesize findings into a single report.
 
-## Sub-skills by context
+If the project does not depend on `@patternfly/*` packages, stop immediately — no PatternFly checks apply.
 
-Identify the current context from the developer's recent activity, then apply the relevant sub-skills. Multiple contexts can apply simultaneously.
+## Validation — always run when code exists
 
-### Validation — code has been written or modified
+When `.tsx`, `.jsx`, `.css`, or `.scss` files exist, invoke every skill in this table:
 
-| Sub-skill | What it checks | Plugin |
-|-----------|---------------|--------|
-| `/pf-component-reuse-check` | Custom components in uncommitted changes that overlap PatternFly React APIs | react |
-| `/pf-component-check` | Component nesting, wrapper hierarchies, layout composition | react |
-| `/pf-import-check` | Import paths across `@patternfly/*` packages | react |
-| `/pf-color-scan` | Hardcoded hex/rgb/hsl values that should use design tokens | design-audit |
-| `/pf-figma-token-check` | Design token usage against PF token architecture | design-audit |
-| `/pf-figma-check` | Component usage against PF design guidelines | design-audit |
-| `/pf-css-migration-scan` | Legacy CSS classes from older PF versions | migration |
-| `/pf-security-scan` | XSS, unsanitized user input in PF components, insecure href patterns | code-review |
+| Skill | Plugin | What it checks |
+|-------|--------|----------------|
+| `/pf-import-check` | pf-react | Import paths across `@patternfly/*` packages |
+| `/pf-component-check` | pf-react | Component nesting, wrapper hierarchies, layout composition |
+| `/pf-color-scan` | pf-design-audit | Hardcoded hex/rgb/hsl values that should use design tokens |
+| `/pf-css-migration-scan` | pf-migration | Legacy CSS classes from older PF versions |
+| `/pf-security-scan` | pf-code-review | XSS, unsanitized user input in PF components, insecure href patterns |
 
-### Testing — implementation done or tests needed
+## Conditional — invoke when signals are present
 
-| Sub-skill | What it does | Plugin |
-|-----------|-------------|--------|
-| `/pf-test-gen` | Generate unit tests for React components using Testing Library | react |
+| Skill | Plugin | When to invoke |
+|-------|--------|----------------|
+| `/pf-component-reuse-check` | pf-react | Uncommitted changes contain custom components that may overlap PatternFly APIs |
+| `/pf-css-token-check` | pf-design-audit | Inline styles with hardcoded spacing, font sizes, or border values |
+| `/pf-test-gen` | pf-react | Components exist without corresponding test files |
+| `/pf-figma-check` | pf-design-audit | Figma URLs are in the conversation |
+| `/pf-figma-token-check` | pf-design-audit | Figma URLs are in the conversation |
+| `/pf-icon-finder` | pf-design-audit | Figma mockups contain icons to identify |
+| `/pf-project-gen` | pf-react | User is scaffolding a new project |
+| `/pf-ai-guide` | pf-design-guide | Feature involves AI-powered UX (chatbots, assistants, generation) |
 
-### Scaffolding — starting a new project or feature
+## Synthesis
 
-| Sub-skill | What it does | Plugin |
-|-----------|-------------|--------|
-| `/pf-project-gen` | Scaffold a PF React project with PF6-safe dependencies and starter layout | react |
+After all skills complete, produce a unified report:
 
-### Design — Figma or design-related work
-
-| Sub-skill | What it does | Plugin |
-|-----------|-------------|--------|
-| `/pf-icon-finder` | Identify PF icons in Figma mockups and provide React imports | design-audit |
-| `/pf-figma-design-mode` | Create and edit Figma files using PF component libraries | design-guide |
-| `/pf-design-comments-setup` | Integrate `@patternfly/design-comments` for on-page design feedback | react |
-| `/pf-ai-guide` | Apply Red Hat's AI design language to AI-powered features | design-guide |
-
-## Context detection
-
-Determine which contexts apply based on observable signals:
-
-- **Validation**: changed or new `.tsx`, `.jsx`, `.css`, `.scss` files; uncommitted custom React components that may duplicate PatternFly; files that import from `@patternfly/*`
-- **Testing**: recently implemented or modified components without corresponding test updates
-- **Scaffolding**: empty or new project directory, `package.json` just created, user asked to scaffold
-- **Design**: Figma URLs in conversation, design-related user requests, `.figma` references
-
-When multiple contexts apply, surface all relevant sub-skills and group findings by context. Only include context sections that were activated. Attribute findings to the specific sub-skill that produced them.
+1. Deduplicate findings that overlap across skills (e.g., a legacy CSS class flagged by both migration-scan and color-scan)
+2. Group by severity: errors first, then warnings
+3. For each finding, attribute which skill produced it
+4. End with a prioritized migration order

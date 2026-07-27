@@ -1,5 +1,5 @@
 name: pf-assist-eval
-description: Evaluate pf-assist agent's routing influence — does it surface specific PF sub-skills contextually?
+description: Evaluate pf-assist agent's orchestration — does it invoke the right PF sub-skills via Skill()?
 
 skill: ""
 
@@ -26,11 +26,11 @@ dataset:
   schema: |
     Each case directory IS the workspace (cwd for claude --print).
     Fixture files (package.json, .tsx components) go directly in the case dir.
-    - input.yaml: prompt field with a realistic post-workflow question
+    - input.yaml: prompt field with an action-oriented PatternFly audit request
     - annotations.yaml: expected_routing (list of sub-skill names) or gate-skip
-    Only the code-review plugin is loaded (plugin_dirs above). The agent routes
-    to skills across multiple plugins (react, design-audit, etc.), but judges
-    test routing influence (does the agent mention skill names), not execution.
+    Only the code-review plugin is loaded (plugin_dirs above). Judges verify
+    the agent attempts to invoke the right skills via Skill() tool calls,
+    not just mentions them in text.
 
 traces:
   stdout: true
@@ -40,72 +40,94 @@ traces:
 
 judges:
   - name: routes_to_subskills
-    description: Output references specific /pf-* sub-skill names from the agent's routing table
+    description: Agent invokes the expected /pf-* sub-skills via Skill() tool calls
     if: "annotations.get('expected_routing', []) and annotations.get('expected_routing') != 'none'"
     check: |
-      text = outputs.get("conversation", "")
-      for path, content in outputs.get("files", {}).items():
-          text += "\n" + content
-      text_lower = text.lower()
       annots = outputs.get("annotations", {})
       expected = annots.get("expected_routing", [])
-      found = []
-      missing = []
-      for skill_name in expected:
-          normalized = skill_name.lower().replace("/", "")
-          if normalized in text_lower or skill_name.lower() in text_lower:
-              found.append(skill_name)
-          else:
-              missing.append(skill_name)
+      skill_calls = []
+      for event in outputs.get("events", []):
+          if event.get("type") != "assistant":
+              continue
+          for tool in event.get("tools", []):
+              if tool.get("name") == "Skill":
+                  skill_name = tool.get("input", {}).get("skill", "")
+                  if ":" in skill_name:
+                      skill_name = skill_name.split(":")[-1]
+                  skill_name = skill_name.lstrip("/")
+                  skill_calls.append(skill_name)
+      if not skill_calls:
+          text = outputs.get("conversation", "").lower()
+          mentioned = [s for s in expected if s.lstrip("/").lower() in text]
+          if mentioned:
+              return False, f"Skills mentioned in text but not invoked via Skill(): {mentioned}"
+          return False, f"No Skill() calls found. Expected: {expected}"
+      found = [s for s in expected if s.lstrip("/") in skill_calls]
+      missing = [s for s in expected if s.lstrip("/") not in skill_calls]
       if not found:
-          return False, f"No expected sub-skills referenced. Expected: {expected}"
+          return False, f"Skill() calls made ({skill_calls}) but none match expected: {expected}"
       if missing:
-          return True, f"Found {found}, missing {missing} (partial match acceptable)"
-      return True, f"All expected sub-skills referenced: {found}"
+          return True, f"Invoked {found}, missing {missing} (partial match acceptable)"
+      return True, f"All expected skills invoked: {found}"
 
   - name: gate_skip_non_pf
-    description: Non-PF project gets no PF-specific routing — generic advice only
+    description: Non-PF project gets no PF-specific skill invocations
     if: "annotations.get('expected_routing') == 'none'"
     check: |
-      text = outputs.get("conversation", "")
-      for path, content in outputs.get("files", {}).items():
-          text += "\n" + content
-      text_lower = text.lower()
+      pf_skills = []
+      for event in outputs.get("events", []):
+          if event.get("type") != "assistant":
+              continue
+          for tool in event.get("tools", []):
+              if tool.get("name") == "Skill":
+                  skill_name = tool.get("input", {}).get("skill", "")
+                  if "pf-" in skill_name.lower():
+                      pf_skills.append(skill_name)
+      if pf_skills:
+          return False, f"Non-PF project got PF skill invocations: {pf_skills}"
+      text = outputs.get("conversation", "").lower()
       pf_subskills = [
           "pf-figma-check", "pf-color-scan", "pf-import-check",
           "pf-component-check", "pf-test-gen", "pf-figma-token-check",
           "pf-css-migration-scan", "pf-security-scan", "pf-project-gen",
-          "pf-icon-finder", "pf-figma-design-mode", "pf-design-comments-setup",
+          "pf-icon-finder",
           "pf-ai-guide"
       ]
-      found_pf = [s for s in pf_subskills if s in text_lower]
+      found_pf = [s for s in pf_subskills if s in text]
       if found_pf:
-          return False, f"Non-PF project got PF-specific routing: {found_pf}"
-      return True, "No PF sub-skill routing for non-PF project — gate check working"
+          return False, f"Non-PF project got PF-specific routing in text: {found_pf}"
+      return True, "No PF skill invocations for non-PF project — gate check working"
 
-  - name: actionable_next_step
-    description: Output includes a concrete next action (run a skill, apply a fix), not just a description
+  - name: executes_not_advises
+    description: Agent executes skills directly — does not list them as recommendations or ask permission
     if: "annotations.get('expected_routing', []) and annotations.get('expected_routing') != 'none'"
     check: |
-      text = outputs.get("conversation", "")
-      for path, content in outputs.get("files", {}).items():
-          text += "\n" + content
-      text_lower = text.lower()
-      action_signals = [
-          "run ", "want me to", "should i", "let me run",
-          "i can run", "try running", "execute", "invoke",
-          "recommended", "start with", "first,", "next step",
-          "suggest", "i'd start with", "you could", "i would"
+      text = outputs.get("conversation", "").lower()
+      advisory_signals = [
+          "want me to run", "should i run", "would you like me to",
+          "i can run", "which of these", "let me know if",
+          "do you want", "shall i"
       ]
-      has_action = any(s in text_lower for s in action_signals)
-      if not has_action:
-          return False, "Output describes issues but doesn't offer actionable next steps"
-      return True, "Output includes actionable next steps"
+      found_advisory = [s for s in advisory_signals if s in text]
+      skill_calls = []
+      for event in outputs.get("events", []):
+          if event.get("type") != "assistant":
+              continue
+          for tool in event.get("tools", []):
+              if tool.get("name") == "Skill":
+                  skill_calls.append(tool.get("input", {}).get("skill", ""))
+      if not skill_calls and found_advisory:
+          return False, f"Agent asked permission instead of executing: {found_advisory}"
+      if not skill_calls:
+          return False, "No Skill() calls made — agent neither executed nor advised"
+      if found_advisory:
+          return False, f"Agent invoked skills but also asked permission: {found_advisory}"
+      return True, f"Agent executed {len(skill_calls)} skills directly without asking"
 
 thresholds:
   routes_to_subskills:
     min_pass_rate: 1.0
   gate_skip_non_pf:
     min_pass_rate: 1.0
-  actionable_next_step:
+  executes_not_advises:
     min_pass_rate: 0.67
