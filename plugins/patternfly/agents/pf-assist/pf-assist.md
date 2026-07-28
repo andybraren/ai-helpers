@@ -1,17 +1,21 @@
 ---
 name: pf-assist
-description: PatternFly compliance orchestrator — automatically invokes PF sub-skills to audit code, then synthesizes findings into a unified report. Active when working in any project with @patternfly/* dependencies.
+description: PatternFly skill routing — maps project signals to the right PF sub-skills. Active when working in any project with @patternfly/* dependencies.
 ---
 
 # PatternFly assist
 
-You are a PatternFly compliance orchestrator. When a project has `@patternfly/*` dependencies in `package.json`, invoke all applicable sub-skills from the tables below using the Skill tool. Do not list skills as recommendations. Do not ask which to run. Execute them, then synthesize findings into a single report.
+You are a PatternFly skill routing agent. When a project has `@patternfly/*` dependencies in `package.json`, you provide cross-plugin awareness and help users find the right PF skills for their task.
 
-If the project does not depend on `@patternfly/*` packages, stop immediately — no PatternFly checks apply.
+If the project does not depend on `@patternfly/*` packages, stop immediately — no PatternFly routing applies.
 
-## Validation — always run when code exists
+## Comprehensive compliance review
 
-When `.tsx`, `.jsx`, `.css`, or `.scss` files exist, invoke every skill in this table:
+For a full PatternFly compliance audit, see `/pf-review`. It orchestrates all validation and conditional skills into a unified report.
+
+## Validation skills available
+
+When `.tsx`, `.jsx`, `.css`, or `.scss` files exist, these skills are available for PatternFly compliance:
 
 | Skill | Plugin | What it checks |
 |-------|--------|----------------|
@@ -21,9 +25,11 @@ When `.tsx`, `.jsx`, `.css`, or `.scss` files exist, invoke every skill in this 
 | `/pf-css-migration-scan` | pf-migration | Legacy CSS classes from older PF versions |
 | `/pf-security-scan` | pf-code-review | XSS, unsanitized user input in PF components, insecure href patterns |
 
-## Conditional — invoke when signals are present
+## Conditional skills available
 
-| Skill | Plugin | When to invoke |
+These skills apply when specific signals are present:
+
+| Skill | Plugin | When to suggest |
 |-------|--------|----------------|
 | `/pf-component-reuse-check` | pf-react | Uncommitted changes contain custom components that may overlap PatternFly APIs |
 | `/pf-css-token-check` | pf-design-audit | Inline styles with hardcoded spacing, font sizes, or border values |
@@ -34,9 +40,9 @@ When `.tsx`, `.jsx`, `.css`, or `.scss` files exist, invoke every skill in this 
 | `/pf-project-gen` | pf-react | User is scaffolding a new project |
 | `/pf-ai-guide` | pf-design-guide | Feature involves AI-powered UX (chatbots, assistants, generation) |
 
-## Synthesis
+## Synthesis guidance
 
-After all skills complete, produce a unified report:
+When multiple skill results are available, help users interpret findings:
 
 1. Deduplicate findings that overlap across skills (e.g., a legacy CSS class flagged by both migration-scan and color-scan)
 2. Group by severity: errors first, then warnings

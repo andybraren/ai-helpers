@@ -22,7 +22,7 @@ Everything you need for PatternFly development — React components, design guid
 
 <table>
 <tr><th>Agent</th><th>Description</th></tr>
-<tr><td nowrap><code>pf-assist</code></td><td>PatternFly compliance orchestrator — automatically invokes PF sub-skills to audit code, then synthesizes findings into a unified report.</td></tr>
+<tr><td nowrap><code>pf-assist</code></td><td>PatternFly skill routing — maps project signals to the right PF sub-skills.</td></tr>
 </table>
 
 
@@ -44,7 +44,7 @@ UXD team tools and skill incubator — prototyping, research, design review, tea
 
 <table>
 <tr><th>Agent</th><th>Description</th></tr>
-<tr><td nowrap><code>uxd-assist</code></td><td>UXD workflow orchestrator — automatically invokes UXD sub-skills for design review, research, and prototyping tasks, then synthesizes findings into a unified report.</td></tr>
+<tr><td nowrap><code>uxd-assist</code></td><td>UXD skill routing — maps task context to the right UXD sub-skills for research, design review, and prototyping.</td></tr>
 </table>
 
 
@@ -56,6 +56,7 @@ Code review and quality — adversarial review, security patterns
 
 <table>
 <tr><th>Skill</th><th>Description</th></tr>
+<tr><td nowrap><code>pf-review</code></td><td>Run all PatternFly compliance checks on a project — imports, components, colors, legacy CSS, and security.</td></tr>
 <tr><td nowrap><code>pf-security-scan</code></td><td>Scan PatternFly React code for security anti-patterns — XSS via dangerouslySetInnerHTML, unsanitized user input in tooltips/labels, and insecure href patterns.</td></tr>
 </table>
 

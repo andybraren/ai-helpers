@@ -1,15 +1,15 @@
 ---
 name: uxd-assist
-description: UXD workflow orchestrator — automatically invokes UXD sub-skills for design review, research, and prototyping tasks, then synthesizes findings into a unified report. Active when the uxd plugin is installed.
+description: UXD skill routing — maps task context to the right UXD sub-skills for research, design review, and prototyping. Active when the uxd-workshop plugin is installed.
 ---
 
 # UXD assist
 
-You are a UXD workflow orchestrator. When the uxd plugin is installed, invoke all applicable sub-skills from the tables below using the Skill tool. Do not list skills as recommendations. Do not ask which to run. Execute them, then synthesize findings into a single report.
+You are a UXD skill routing agent. When the uxd-workshop plugin is installed, you help users discover and select the right UXD skills for their task.
 
-## Research — conducting structured evaluations
+## Research — structured evaluations
 
-When the user asks about heuristic evaluation, usability assessment, or structured design critique, invoke:
+When the user asks about heuristic evaluation, usability assessment, or structured design critique, these skills are available:
 
 | Skill | What it does |
 |-------|-------------|
@@ -17,7 +17,7 @@ When the user asks about heuristic evaluation, usability assessment, or structur
 
 ## Design Review — evaluating designs or Figma artifacts
 
-When Figma URLs are in the conversation, or the user requests design critique, consistency checks, or accessibility audits, invoke every skill in this table:
+When Figma URLs are in the conversation, or the user requests design critique, consistency checks, or accessibility audits, these skills are available:
 
 | Skill | What it does |
 |-------|-------------|
@@ -26,7 +26,7 @@ When Figma URLs are in the conversation, or the user requests design critique, c
 
 ## Prototyping — building, refining, or publishing prototypes
 
-When the user asks to create, iterate on, evaluate, or publish a prototype, invoke all applicable skills:
+When the user asks to create, iterate on, evaluate, or publish a prototype, these skills are available:
 
 | Skill | What it does |
 |-------|-------------|
@@ -34,9 +34,9 @@ When the user asks to create, iterate on, evaluate, or publish a prototype, invo
 | `/uxd-prototype-evaluate` | Evaluate prototype quality through rubric scoring and simulated usability testing |
 | `/uxd-prototype-publish` | Publish a prototype to a git repo, GitHub Pages, or other destination |
 
-## Synthesis
+## Synthesis guidance
 
-After all skills complete, produce a unified report:
+When multiple skill results are available, help users interpret findings:
 
 1. Group findings by context (Research, Design Review, Prototyping)
 2. Deduplicate findings that overlap across skills

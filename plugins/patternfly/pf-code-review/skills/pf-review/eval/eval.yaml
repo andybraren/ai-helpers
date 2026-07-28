@@ -1,0 +1,119 @@
+name: pf-review-eval
+description: Evaluate pf-review skill's orchestration — does it invoke PF sub-skills via Skill() and produce a unified report?
+
+skill: pf-code-review:pf-review
+
+execution:
+  mode: case
+  arguments: "{prompt}"
+
+runner:
+  type: claude-code
+  plugin_dirs:
+    - ./plugins/patternfly/pf-react
+    - ./plugins/patternfly/pf-design-audit
+    - ./plugins/patternfly/pf-migration
+    - ./plugins/patternfly/pf-code-review
+
+models:
+  skill: claude-sonnet-4-6
+  judge: claude-sonnet-4-6
+
+permissions:
+  allow: []
+  deny:
+    - "mcp__*"
+
+dataset:
+  path: cases
+  schema: |
+    Each case directory IS the workspace (cwd for claude --print).
+    - input.yaml: prompt field with a PatternFly review request
+    - annotations.yaml: expected_skills (list of sub-skill names to invoke) or gate_result
+    - package.json: with or without @patternfly/* dependencies
+    - src/components/*.tsx: fixture components for PF cases
+    Judges verify the skill invokes sub-skills via Skill() tool calls
+    and produces a unified compliance report.
+
+traces:
+  stdout: true
+  stderr: true
+  events: true
+  metrics: true
+
+judges:
+  - name: invokes_validation_skills
+    description: Skill invokes expected PF sub-skills via Skill() tool calls
+    if: "annotations.get('expected_skills', []) and annotations.get('gate_result') != 'skip'"
+    check: |
+      annots = outputs.get("annotations", {})
+      expected = annots.get("expected_skills", [])
+      skill_calls = []
+      for event in outputs.get("events", []):
+          if event.get("type") != "assistant":
+              continue
+          for tool in event.get("tools", []):
+              if tool.get("name") == "Skill":
+                  skill_name = tool.get("input", {}).get("skill", "")
+                  if ":" in skill_name:
+                      skill_name = skill_name.split(":")[-1]
+                  skill_name = skill_name.lstrip("/")
+                  skill_calls.append(skill_name)
+      if not skill_calls:
+          text = outputs.get("conversation", "").lower()
+          mentioned = [s for s in expected if s.lstrip("/").lower() in text]
+          if mentioned:
+              return False, f"Skills mentioned in text but not invoked via Skill(): {mentioned}"
+          return False, f"No Skill() calls found. Expected: {expected}"
+      found = [s for s in expected if s.lstrip("/") in skill_calls]
+      missing = [s for s in expected if s.lstrip("/") not in skill_calls]
+      if not found:
+          return False, f"Skill() calls made ({skill_calls}) but none match expected: {expected}"
+      if missing:
+          return True, f"Invoked {found}, missing {missing} (partial match acceptable)"
+      return True, f"All expected skills invoked: {found}"
+
+  - name: gate_non_pf
+    description: Non-PF project gets no skill invocations — exits cleanly
+    if: "annotations.get('gate_result') == 'skip'"
+    check: |
+      pf_skills = []
+      for event in outputs.get("events", []):
+          if event.get("type") != "assistant":
+              continue
+          for tool in event.get("tools", []):
+              if tool.get("name") == "Skill":
+                  skill_name = tool.get("input", {}).get("skill", "")
+                  if "pf-" in skill_name.lower():
+                      pf_skills.append(skill_name)
+      if pf_skills:
+          return False, f"Non-PF project got PF skill invocations: {pf_skills}"
+      text = outputs.get("conversation", "").lower()
+      gate_signals = ["not a patternfly", "no patternfly", "no @patternfly", "does not depend"]
+      if any(s in text for s in gate_signals):
+          return True, "Gate check correctly identified non-PF project"
+      return True, "No PF skill invocations for non-PF project"
+
+  - name: produces_unified_report
+    description: Output contains a synthesized report with severity grouping AND skill attribution
+    if: "annotations.get('expected_skills', []) and annotations.get('gate_result') != 'skip'"
+    check: |
+      text = outputs.get("conversation", "").lower()
+      has_severity = any(s in text for s in ["error", "warning", "critical", "high", "info"])
+      has_attribution = any(s in text for s in ["pf-import", "pf-component", "pf-color", "pf-css", "pf-security"])
+      has_synthesis = any(s in text for s in ["compliance report", "prioritized action", "skills invoked", "action list"])
+      if not has_severity:
+          return False, "No severity grouping found in report"
+      if not has_attribution:
+          return False, "No skill attribution found in report"
+      if has_synthesis:
+          return True, "Unified report with severity grouping, skill attribution, and synthesis structure"
+      return True, "Report has severity grouping and skill attribution"
+
+thresholds:
+  invokes_validation_skills:
+    min_pass_rate: 1.0
+  gate_non_pf:
+    min_pass_rate: 1.0
+  produces_unified_report:
+    min_pass_rate: 0.67

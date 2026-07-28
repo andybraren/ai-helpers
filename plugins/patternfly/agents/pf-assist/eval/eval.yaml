@@ -1,5 +1,5 @@
 name: pf-assist-eval
-description: Evaluate pf-assist agent's orchestration — does it invoke the right PF sub-skills via Skill()?
+description: Evaluate pf-assist agent's routing — does it mention the right PF sub-skills and suggest /pf-review?
 
 skill: ""
 
@@ -26,11 +26,11 @@ dataset:
   schema: |
     Each case directory IS the workspace (cwd for claude --print).
     Fixture files (package.json, .tsx components) go directly in the case dir.
-    - input.yaml: prompt field with an action-oriented PatternFly audit request
+    - input.yaml: prompt field with an action-oriented PatternFly question
     - annotations.yaml: expected_routing (list of sub-skill names) or gate-skip
     Only the code-review plugin is loaded (plugin_dirs above). Judges verify
-    the agent attempts to invoke the right skills via Skill() tool calls,
-    not just mentions them in text.
+    the agent mentions relevant skills in its text output and suggests /pf-review
+    for comprehensive checks.
 
 traces:
   stdout: true
@@ -40,38 +40,22 @@ traces:
 
 judges:
   - name: routes_to_subskills
-    description: Agent invokes the expected /pf-* sub-skills via Skill() tool calls
+    description: Agent mentions the expected /pf-* sub-skills in its text output
     if: "annotations.get('expected_routing', []) and annotations.get('expected_routing') != 'none'"
     check: |
       annots = outputs.get("annotations", {})
       expected = annots.get("expected_routing", [])
-      skill_calls = []
-      for event in outputs.get("events", []):
-          if event.get("type") != "assistant":
-              continue
-          for tool in event.get("tools", []):
-              if tool.get("name") == "Skill":
-                  skill_name = tool.get("input", {}).get("skill", "")
-                  if ":" in skill_name:
-                      skill_name = skill_name.split(":")[-1]
-                  skill_name = skill_name.lstrip("/")
-                  skill_calls.append(skill_name)
-      if not skill_calls:
-          text = outputs.get("conversation", "").lower()
-          mentioned = [s for s in expected if s.lstrip("/").lower() in text]
-          if mentioned:
-              return False, f"Skills mentioned in text but not invoked via Skill(): {mentioned}"
-          return False, f"No Skill() calls found. Expected: {expected}"
-      found = [s for s in expected if s.lstrip("/") in skill_calls]
-      missing = [s for s in expected if s.lstrip("/") not in skill_calls]
-      if not found:
-          return False, f"Skill() calls made ({skill_calls}) but none match expected: {expected}"
+      text = outputs.get("conversation", "").lower()
+      mentioned = [s for s in expected if s.lstrip("/").lower() in text]
+      missing = [s for s in expected if s.lstrip("/").lower() not in text]
+      if not mentioned:
+          return False, f"No expected skills mentioned in text. Expected: {expected}"
       if missing:
-          return True, f"Invoked {found}, missing {missing} (partial match acceptable)"
-      return True, f"All expected skills invoked: {found}"
+          return True, f"Mentioned {mentioned}, missing {missing} (partial match acceptable)"
+      return True, f"All expected skills mentioned: {mentioned}"
 
   - name: gate_skip_non_pf
-    description: Non-PF project gets no PF-specific skill invocations
+    description: Non-PF project gets no PF-specific skill mentions
     if: "annotations.get('expected_routing') == 'none'"
     check: |
       pf_skills = []
@@ -90,44 +74,26 @@ judges:
           "pf-figma-check", "pf-color-scan", "pf-import-check",
           "pf-component-check", "pf-test-gen", "pf-figma-token-check",
           "pf-css-migration-scan", "pf-security-scan", "pf-project-gen",
-          "pf-icon-finder",
-          "pf-ai-guide"
+          "pf-icon-finder", "pf-ai-guide", "pf-review"
       ]
       found_pf = [s for s in pf_subskills if s in text]
       if found_pf:
           return False, f"Non-PF project got PF-specific routing in text: {found_pf}"
-      return True, "No PF skill invocations for non-PF project — gate check working"
+      return True, "No PF skill mentions for non-PF project — gate check working"
 
-  - name: executes_not_advises
-    description: Agent executes skills directly — does not list them as recommendations or ask permission
+  - name: suggests_pf_review
+    description: Agent suggests /pf-review for comprehensive PatternFly checks
     if: "annotations.get('expected_routing', []) and annotations.get('expected_routing') != 'none'"
     check: |
       text = outputs.get("conversation", "").lower()
-      advisory_signals = [
-          "want me to run", "should i run", "would you like me to",
-          "i can run", "which of these", "let me know if",
-          "do you want", "shall i"
-      ]
-      found_advisory = [s for s in advisory_signals if s in text]
-      skill_calls = []
-      for event in outputs.get("events", []):
-          if event.get("type") != "assistant":
-              continue
-          for tool in event.get("tools", []):
-              if tool.get("name") == "Skill":
-                  skill_calls.append(tool.get("input", {}).get("skill", ""))
-      if not skill_calls and found_advisory:
-          return False, f"Agent asked permission instead of executing: {found_advisory}"
-      if not skill_calls:
-          return False, "No Skill() calls made — agent neither executed nor advised"
-      if found_advisory:
-          return False, f"Agent invoked skills but also asked permission: {found_advisory}"
-      return True, f"Agent executed {len(skill_calls)} skills directly without asking"
+      if "pf-review" in text:
+          return True, "Agent mentioned /pf-review for comprehensive checks"
+      return False, "Agent did not mention /pf-review — should suggest it for comprehensive audits"
 
 thresholds:
   routes_to_subskills:
     min_pass_rate: 1.0
   gate_skip_non_pf:
     min_pass_rate: 1.0
-  executes_not_advises:
+  suggests_pf_review:
     min_pass_rate: 0.67
