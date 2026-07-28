@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Lint eval.yaml files for common check-block scoping bugs.
+"""Lint eval.yaml files for structural correctness.
 
-The eval harness wraps check: blocks in `def _check(outputs, arguments):`,
-so only `outputs` and `arguments` are in scope. Bare `annotations` references
-inside check blocks raise NameError at runtime. This script catches that
-before merge.
+Checks:
+  1. Bare `annotations` in check blocks — the harness wraps check: blocks in
+     `def _check(outputs, arguments):`, so only `outputs` and `arguments` are
+     in scope. Bare `annotations` references raise NameError at runtime.
+  2. `skill:` field placement — the harness reads `skill` from the root-level
+     YAML dict. A `skill:` nested under `execution:` is silently ignored,
+     causing the eval to run without loading the skill.
 
 Usage:
     python3 scripts/lint-evals.py [path ...]
@@ -43,15 +46,35 @@ def _is_workshop(path):
     return any(part in SKIP_DIRS for part in path.parts)
 
 
-def lint_check_blocks(filepath):
+def lint_skill_field(filepath, data, lines):
     errors = []
-    with open(filepath) as f:
-        data = yaml.safe_load(f)
-
-    if not data or "judges" not in data:
+    if not data:
         return errors
 
-    lines = filepath.read_text().splitlines()
+    has_root_skill = "skill" in data
+    exec_block = data.get("execution", {}) or {}
+    has_nested_skill = "skill" in exec_block
+
+    if has_nested_skill and not has_root_skill:
+        line_num = _find_line(lines, "skill:")
+        errors.append({
+            "file": str(filepath),
+            "judge": None,
+            "line": line_num,
+            "message": (
+                "`skill:` is nested under `execution:` but the harness reads it "
+                "from the root-level YAML dict. Move `skill:` to the top level "
+                "as a sibling of `name:` and `description:`."
+            ),
+        })
+
+    return errors
+
+
+def lint_check_blocks(filepath, data, lines):
+    errors = []
+    if not data or "judges" not in data:
+        return errors
 
     for judge in data["judges"]:
         name = judge.get("name", "<unnamed>")
@@ -88,10 +111,14 @@ def main():
     all_errors = []
 
     for filepath in find_eval_files(roots):
-        all_errors.extend(lint_check_blocks(filepath))
+        with open(filepath) as f:
+            data = yaml.safe_load(f)
+        lines = filepath.read_text().splitlines()
+        all_errors.extend(lint_skill_field(filepath, data, lines))
+        all_errors.extend(lint_check_blocks(filepath, data, lines))
 
     if not all_errors:
-        print("eval-lint: all check blocks clean")
+        print("eval-lint: all eval configs clean")
         return 0
 
     for err in all_errors:
