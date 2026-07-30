@@ -74,6 +74,9 @@ jobs:
         # Pin to a known-good version. Check https://www.npmjs.com/package/@anthropic-ai/claude-code for updates.
         run: npm install -g @anthropic-ai/claude-code@2.1.190
 
+      - name: Add eval harness marketplace
+        run: claude plugin marketplace add https://github.com/opendatahub-io/agent-eval-harness.git
+
       - name: Install eval harness plugin
         # Branch ref — plugin install does not support SHA pinning
         run: claude plugin install agent-eval-harness@agent-eval-harness-dev
