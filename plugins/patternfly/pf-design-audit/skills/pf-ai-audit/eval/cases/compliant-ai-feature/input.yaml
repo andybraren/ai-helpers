@@ -1,0 +1,10 @@
+prompt: |
+  Check this AI code generation feature for Red Hat AI design compliance.
+
+  The feature has a button labeled "Generate with AI" using the
+  rh-ui-icon-ai-create sparkle icon. Before first use, a notice reads:
+  "This feature uses AI technology. Do not include any personal information
+  or other sensitive information in your input." Generated code blocks
+  include a header "AI-generated code" with the rh-ui-icon-ai-info icon.
+  A persistent footer says "Always review AI-generated content prior to
+  use." All colors use standard PatternFly tokens, no gradients are used.

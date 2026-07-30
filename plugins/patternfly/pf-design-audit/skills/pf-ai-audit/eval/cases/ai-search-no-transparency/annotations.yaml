@@ -1,0 +1,4 @@
+expect_violations: true
+violation_types:
+  - transparency
+  - verbal

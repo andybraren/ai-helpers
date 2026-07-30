@@ -1,0 +1,8 @@
+prompt: |
+  Review this AI-powered search feature for Red Hat AI design compliance.
+
+  The search input has a sparkle icon to the right of the search box. When
+  results appear, they show under a heading "Search Results" with no AI
+  indicator on the heading or results. There is no transparency notice or
+  privacy statement reference anywhere on the page. The search results use
+  standard PatternFly Card components with flat colors, no gradients.

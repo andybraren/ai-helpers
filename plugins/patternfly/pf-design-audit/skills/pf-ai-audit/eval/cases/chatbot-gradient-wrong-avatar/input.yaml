@@ -1,0 +1,10 @@
+prompt: |
+  Audit this chatbot implementation for Red Hat AI design compliance.
+
+  The chatbot has a circular avatar using a friendly human face illustration.
+  The launch button in the bottom-right corner uses a purple-to-blue gradient
+  background. When opened, the chat window shows a notice at the top: "This
+  assistant uses AI. Always review AI-generated content before use." Chat
+  messages from the bot use flat gray backgrounds with standard PatternFly
+  tokens. The bot identifies itself as "Virtual Assistant" with no AI icon
+  or AI label anywhere in the interface.

@@ -38,7 +38,7 @@ These skills apply when specific signals are present:
 | `/pf-figma-token-check` | pf-design-audit | Figma URLs are in the conversation |
 | `/pf-icon-finder` | pf-design-audit | Figma mockups contain icons to identify |
 | `/pf-project-gen` | pf-react | User is scaffolding a new project |
-| `/pf-ai-guide` | pf-design-guide | Feature involves AI-powered UX (chatbots, assistants, generation) |
+| `/pf-ai-audit` | pf-design-audit | Feature involves AI-powered UX (chatbots, assistants, generation) |
 
 ## Synthesis guidance
 

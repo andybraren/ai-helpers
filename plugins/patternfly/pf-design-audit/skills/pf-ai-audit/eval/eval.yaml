@@ -1,0 +1,90 @@
+name: pf-ai-audit-eval
+description: Evaluate pf-ai-audit's ability to identify Red Hat AI design language violations
+
+skill: design-audit:pf-ai-audit
+
+execution:
+  mode: case
+  arguments: "{prompt}"
+
+runner:
+  type: claude-code
+
+models:
+  skill: claude-sonnet-4-6
+  judge: claude-sonnet-4-6
+
+permissions:
+  allow: []
+  deny:
+    - "mcp__*"
+
+dataset:
+  path: cases
+  schema: |
+    Each case directory contains:
+    - input.yaml: prompt describing an AI feature UI for compliance audit
+    - annotations.yaml: expect_violations (true/false), violation_types (list of keywords)
+    Prompts provide design context inline (no Figma MCP required).
+
+traces:
+  stdout: true
+  stderr: true
+  events: true
+  metrics: true
+
+judges:
+  - name: flags_violations
+    description: Identifies Red Hat AI design violations described in the prompt
+    if: "annotations.get('expect_violations') == True"
+    check: |
+      annots = outputs.get("annotations", {})
+      expected = annots.get("violation_types", [])
+      text = outputs.get("conversation", "").lower()
+      found = [v for v in expected if v.lower() in text]
+      missing = [v for v in expected if v.lower() not in text]
+      if not found:
+          return False, f"No expected violations flagged. Expected: {expected}"
+      if missing:
+          return True, f"Found {found}, missing {missing} (partial match acceptable)"
+      return True, f"All violations flagged: {found}"
+
+  - name: references_rh_specifics
+    description: References Red Hat-specific rules, not generic design advice
+    if: "annotations.get('expect_violations') == True"
+    check: |
+      text = outputs.get("conversation", "").lower()
+      rh_specifics = [
+          "rh-ui-icon-ai",
+          "robot",
+          "red hat",
+          "patternfly",
+          "design language"
+      ]
+      found = [s for s in rh_specifics if s in text]
+      if len(found) < 2:
+          return False, f"Only {len(found)} Red Hat-specific references found: {found}. Output may be generic advice."
+      return True, f"References Red Hat-specific rules: {found}"
+
+  - name: no_false_positives
+    description: Does not flag violations in a fully compliant design
+    if: "annotations.get('expect_violations') == False"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      violation_pattern = re.compile(
+          r'(❌|non-compliant|violation|does not meet|failed)',
+          re.IGNORECASE
+      )
+      matches = violation_pattern.findall(text)
+      if matches:
+          return False, f"False positives in compliant design: {matches[:5]}"
+      return True, "No false positives for compliant design"
+
+thresholds:
+  flags_violations:
+    min_pass_rate: 1.0
+  references_rh_specifics:
+    min_pass_rate: 1.0
+  no_false_positives:
+    min_pass_rate: 1.0

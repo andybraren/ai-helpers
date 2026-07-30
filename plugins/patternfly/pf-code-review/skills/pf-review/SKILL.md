@@ -47,7 +47,7 @@ Check each condition against the current project context. Invoke only the skills
 | `/pf-figma-token-check` | Figma URLs are in the conversation |
 | `/pf-icon-finder` | Figma mockups contain icons to identify |
 | `/pf-project-gen` | User is scaffolding a new project |
-| `/pf-ai-guide` | Feature involves AI-powered UX (chatbots, assistants, generation) |
+| `/pf-ai-audit` | Feature involves AI-powered UX (chatbots, assistants, generation) |
 
 ## Synthesis
 

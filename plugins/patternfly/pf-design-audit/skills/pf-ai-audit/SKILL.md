@@ -1,6 +1,6 @@
 ---
-name: pf-ai-guide
-description: Apply Red Hat's AI design language to AI-powered features — chatbots, assistants, generation UIs. Use when building AI experiences that should follow Red Hat brand and UX patterns.
+name: pf-ai-audit
+description: Audit AI-powered features against Red Hat's AI design language — transparency notices, iconography, chatbot patterns, color and gradient rules. Use when reviewing chatbots, AI assistants, or generation UIs for brand compliance.
 ---
 
 # Red Hat AI Experience Design Patterns

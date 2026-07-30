@@ -148,20 +148,27 @@ All skills use a domain prefix — `pf-` for PatternFly, `uxd-` for UXD — rega
 - Skill directory: `skills/pf-test-gen/SKILL.md` with `name: pf-test-gen`
 - Agent file: `agents/pf-coding-standards.md` with `name: pf-coding-standards`
 
-### Recommended verb suffixes
+### Verb suffixes
 
-End your skill name with a verb that tells users what it does. This also helps routing agents select the right skill programmatically.
+End your skill name with one of these four verbs. This is a closed set — every skill must use one of them.
 
 | Suffix | Meaning | Examples |
 |--------|---------|----------|
-| `-check` | Validates rules, reports findings | `pf-component-check`, `uxd-heuristic-check` |
-| `-scan` | Searches broadly across files or content | `pf-css-migration-scan`, `uxd-content-scan` |
-| `-gen` | Produces new files or output | `pf-test-gen`, `uxd-prototype-gen` |
-| `-setup` | Configures or integrates something | `pf-design-comments-setup` |
-| `-create` | Creates a resource or artifact | `uxd-prototype-create` |
-| `-read` | Retrieves information | `uxd-figma-read` |
+| `-gen` | Produces a new artifact that didn't exist before | `pf-test-gen`, `pf-form-gen`, `pf-project-gen` |
+| `-review` | Examines existing work and provides judgment-based feedback | `pf-design-review` |
+| `-audit` | Validates an existing artifact against fixed rules or a reference catalog | `pf-ai-audit`, `pf-color-scan`, `pf-component-check` |
+| `-migrate` | Transforms code or designs from one version to another | `pf-migrate` |
 
-Other verbs are fine when these don't fit — `-deploy`, `-diff`, `-debug` all communicate clearly. The goal is a predictable verb at the end, not a rigid vocabulary.
+**Decision tree:**
+
+1. Does your skill produce something new? → `-gen`
+2. Does your skill check existing work with judgment? → `-review`
+3. Does your skill validate against fixed rules? → `-audit`
+4. Does your skill transform code between versions? → `-migrate`
+
+If none of these fit, open a PR proposing a new verb. Justify why the four core verbs don't apply — the bar is high.
+
+**Note:** Some existing skills use older suffixes (`-check`, `-scan`, `-setup`, `-read`) that predate this convention. These map to the core verbs: `-check` and `-scan` → `-audit`, `-setup` and `-create` → `-gen`, `-read` → `-review`. New skills must use the core verbs.
 
 ## Writing descriptions
 
