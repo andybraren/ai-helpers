@@ -75,6 +75,16 @@ Self-contained HTML at `.artifacts/<KEY>/eval/evaluation-report.html` plus CSV/J
 
 Set `tracking.sheet_id` in `config/product-overlay.yaml` (or `EVAL_SHEET_ID`). Leave empty to disable. Requires `gcloud auth login --enable-gdrive-access`.
 
+## Validators
+
+Scripts that check pipeline output quality:
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/validate-phase-b-output.js` | Validates Phase B persona discovery output schemas and score contracts |
+| `scripts/validate-artifact-schemas.js` | Schema validation for all pipeline artifact files |
+| `scripts/validate-report-rendering.js` | Report rendering quality checks (screenshot selection, persona names, fix history, score contract) |
+
 ## Phase procedures
 
 Orchestration is in `SKILL.md`. Detailed phase instructions:
