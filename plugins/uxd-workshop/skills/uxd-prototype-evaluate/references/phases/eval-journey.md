@@ -13,6 +13,8 @@ Executes Playwright walkthroughs for each journey defined by eval-extract. Opera
 | Prototype URL | Live URL to test against (e.g., `http://localhost:4200`) | Yes |
 | `--mode` | `informed` (x-ray mode, the only mode for this skill) | No |
 | `--rerun-only` | Comma-separated AC IDs — only run journeys testing these ACs | No |
+| `--capture-only` | Re-capture screenshots without changing verdicts | No |
+| `--all-journeys` | Run all journeys (not just rerun set) | No |
 | `tests/fixtures/manifest.json` | Test fixtures for file uploads and chat input | No |
 
 ## Outputs
@@ -86,15 +88,30 @@ fi
 mkdir -p "${ARTIFACTS_DIR}/scripts" "${ARTIFACTS_DIR}/screenshots"
 ```
 
-**Browser selection:** Use Firefox by default (more reliable CSS rendering for PatternFly expandable components). Chromium's headless mode can incorrectly collapse `isExpanded={false}` rows to zero height.
+**Browser selection:** Use Chromium (headless). Firefox caused blank screenshots in 3/4
+pipeline runs due to PatternFly CSS rendering failures in headless mode.
 
 ```javascript
-import { firefox } from 'playwright';  // preferred
-// fallback: import { chromium } from 'playwright';
-const browser = await firefox.launch({ headless: true });
+import { chromium } from 'playwright';
+const browser = await chromium.launch({ headless: true });
+// MANDATORY: 1920x900 viewport. Default 800x600 truncates table columns.
+// 1440 is insufficient for tables with 10+ columns.
+const context = await browser.newContext({ viewport: { width: 1920, height: 900 } });
+const page = await context.newPage();
 ```
 
-If Firefox is not installed, fall back to Chromium. The script should import and try Firefox first.
+**Blank screenshot detection:** After each screenshot, check the file size. Images under
+10 KB are likely blank (rendering not yet complete). When detected:
+1. Wait 2 seconds and retry once (the page may still be loading)
+2. If still blank after retry, log a warning and continue — base the verdict on DOM state
+   (selectors, getBoundingClientRect), not screenshot appearance
+
+**Hidden row detection:** PatternFly's `Tr` component treats any explicit `isExpanded` value
+(including `false`) as its own visibility control, rendering rows with `hidden=""`. Before
+reporting AC failures for missing table data, check whether rows exist in the DOM but have
+zero bounding rect (`getBoundingClientRect().height === 0`). If so, report ONE root cause
+("N rows exist but are hidden by isExpanded={false}") instead of separate per-AC failures —
+this is a single prototype bug, not N independent issues.
 
 ### Step 2: Prepare screenshots directory
 
@@ -271,6 +288,28 @@ async function runJourney5(page) {
 
 But the function MUST exist and MUST produce a verdict. No journey definition may be skipped.
 
+#### Visual Differentiation Rule (MANDATORY)
+
+**Each journey MUST produce a screenshot showing a UNIQUE visual state.** Never screenshot the same default table view for multiple journeys. Before capturing the final screenshot, each journey must perform at least one interaction that visibly changes the page:
+
+| AC type | Required interaction before screenshot |
+|---|---|
+| Feature visibility (columns, labels) | Default table view is acceptable for ONE journey only |
+| Tooltip content ("hover over X") | `page.hover()` → screenshot WITH tooltip visible on screen |
+| Expandable row ("details", "resource info") | Click expand toggle → screenshot showing expanded content |
+| Feature absence ("when disabled", "no indicators") | Source verification → FLAGGED (can't toggle in prototype) |
+| Error absence ("no errors", "graceful degradation") | Check DOM for errors → screenshot (can share default view if no errors) |
+| Unmanaged/alternative state | Scroll to or highlight the specific row showing different state |
+| Multiple resource types | Expand a row showing the specific type, or navigate to a detail view |
+
+**Enforcement:** After generating the script, verify that no two journey functions produce screenshots at the same page state. If journeys 1, 3, and 4 all just navigate to the same page and screenshot the same table, the script is INVALID — add interactions (hover, expand, scroll) to differentiate them.
+
+**POST-GENERATION VALIDATION:** After generating `journey-test.mjs`, scan the script
+for screenshot calls. If all `screenshot()` calls share the same page state (no
+`hoverElement`, `expandRow`, `navigateTo`, `click`, or `scrollIntoView` between
+baseline and any journey screenshot), the script will produce identical screenshots.
+Regenerate with actual interactions.
+
 #### Journey Step Relevance Rule
 
 Every step in a journey MUST be necessary to verify the AC. Do not add steps that:
@@ -290,6 +329,11 @@ If an AC describes a disabled/alternative state (e.g., "when Kueue is not enable
 For Tier 1 criteria, a PASS verdict requires AT LEAST ONE screenshot showing the feature working as described. Source-code-only verification for T1 criteria MUST produce FLAGGED, never PASS.
 
 Extra exploration (checking adjacent pages, testing edge cases) goes in the `exploration[]` section, NOT in the journey steps. Journey steps are the minimum path to verify the AC.
+
+**Viewport validation:** After generating `journey-test.mjs`, verify the script contains `viewport` before running it:
+```bash
+grep -q "viewport" "${ARTIFACTS_DIR}/scripts/journey-test.mjs" || { echo "FATAL: Generated script missing viewport. Regenerate."; exit 1; }
+```
 
 Run the script:
 ```bash
@@ -396,6 +440,24 @@ async function runJourney1(page) {
 
 After all journeys complete, assign verdicts for EVERY AC in the CSV.
 
+**CRITICAL: The CSV is the source of truth for the report.** The report renders verdicts from the CSV, not the journey-log. If the CSV says FAIL but journey-log says PASS, the report shows FAIL.
+
+**Verdict determination flow (do NOT write to CSV until all judgment is complete):**
+
+1. Run Playwright script → collect raw results (element found/not found, visible/invisible)
+2. Apply ALL verdict rules to the raw results:
+   - Visual Truth Rule (screenshots show it working → PASS)
+   - Default-state ACs (visible state matches AC description → PASS)
+   - Source analysis (component-map confirms feature exists → informs verdict)
+   - Error/RBAC detection (no errors on page → PASS for graceful degradation ACs)
+3. Produce a FINAL verdict per AC — this is the verdict AFTER judgment, not the raw Playwright result
+4. Write the FINAL verdict to BOTH:
+   - `evaluation-report.csv` Section 1 (verdicts, rationale, evidence columns)
+   - `journey-log.json` journey verdict fields
+5. **Both files MUST have identical verdicts for every AC.** If you write PASS to journey-log, you MUST also write PASS to the CSV.
+
+**NEVER write raw Playwright results to the CSV.** The CSV gets the final judged verdict only. If Playwright selectors timed out but screenshots show the feature working, the verdict is PASS (Visual Truth Rule) — and PASS goes to both files.
+
 **T3 criteria (backend-only):** These are pre-assigned verdict=PASS at classify time with a note. Do not generate journey steps for T3 ACs — they have no UI surface to test.
 
 **Journey verdict is determined by AC-critical steps only:**
@@ -440,6 +502,12 @@ Do NOT flag or fail ACs solely because their backend portion cannot be verified.
 | Subjective quality judgment (T4) | FLAGGED | Human call |
 | Source code confirms feature but screenshot shows nothing | FAIL | Visual truth wins |
 | Hardware API (mic, camera, etc.) | PASS (noted) | Code exists; hardware demo not possible in headless |
+| AC describes absent/disabled state AND current UI matches | PASS | Current visible state satisfies the AC |
+| No errors/403s on page when AC tests graceful degradation | PASS | Absence of errors IS the expected behavior |
+
+**Default-state ACs:** If an AC describes what should happen when a feature is absent or disabled (e.g., "no Kueue indicators when disabled", "normal status with no Kueue indicators", "no error indicators"), and the current prototype state matches that description, the verdict is **PASS** — not FLAGGED. The AC is satisfied by the current visible state. Only FLAG if the AC requires demonstrating a STATE TRANSITION (enabled → disabled) that the prototype can't toggle.
+
+**Example:** AC-3 says "InferenceService with no associated Workload CR displays normal KServe-derived status with no Kueue indicators." If the table has rows showing "Unmanaged" with standard status and no Kueue columns for that row, that IS the AC being satisfied — PASS, not FLAGGED.
 
 **Verdict rules:**
 - Simulated/placeholder responses in prototypes = PASS (UI flow works)

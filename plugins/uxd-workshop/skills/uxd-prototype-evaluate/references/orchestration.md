@@ -147,10 +147,6 @@ LOOP:
   # If violations found (exit 1): fix CSV verdicts to FLAGGED for contradicted ACs before continuing.
   # A journey FAIL + CSV PASS is never acceptable unless journey-log is corrected with visual evidence.
 
-  # ── Archive this iteration ─────────────────────────────────────
-  cp ${ARTIFACTS_DIR}/evaluation-report.csv → ${ARTIFACTS_DIR}/evaluation-report-iter-<iteration>.csv
-  cp -r ${ARTIFACTS_DIR}/screenshots/ → ${ARTIFACTS_DIR}/screenshots-iter-<iteration>/
-
   # ── Compute counts FROM the CSV (source of truth) ──────────────
   Read ${ARTIFACTS_DIR}/evaluation-report.csv Section 1 (ACCEPTANCE CRITERIA)
   Parse using proper CSV quoting (fields may contain commas):
@@ -198,7 +194,7 @@ LOOP:
     # Otherwise continue to fix loop — eval-fix will attempt FLAGGED suggestions
 
   if iteration > 1:
-    Compare current CSV verdicts against previous iteration's archived CSV
+    Compare current CSV verdicts against previous iteration in iteration-log.json
     if any criterion flipped PASS → FAIL:
       Set exit_reason = "regression"
       python3 ${CLAUDE_SKILL_DIR}/scripts/eval_state.py set ${ARTIFACTS_DIR}/eval-state.yaml \
@@ -414,10 +410,10 @@ This reduces Playwright execution proportionally to passing criteria count.
 
 ## Regression Detection
 
-After each Phase A iteration (2+), compare verdicts against the previous CSV:
+After each Phase A iteration (2+), compare verdicts against the previous iteration:
 - If a criterion that was PASS becomes FAIL → **regression**
 - Stop immediately, report which criterion regressed and which fix caused it
-- The archived CSVs (`evaluation-report-iter-N.csv`) provide the comparison baseline
+- The `iteration-log.json` provides the comparison baseline
 - Phase B still runs after regression (captures usability of current state)
 
 ## iteration-log.json format
