@@ -164,6 +164,16 @@ the markdown files are only consumed by the full HTML report renderer.
 
 Each persona runs their OWN Playwright walkthrough as an independent sub-agent. Navigation behavior is driven by the persona's YAML fields — not a shared script.
 
+**Step 1d-gen: Generate the walkthrough script scaffold:**
+
+```bash
+node ${CLAUDE_SKILL_DIR}/scripts/generate-journey-script.js ${ARTIFACTS_DIR}/ --mode=discover --screenshots=<full|key-only>
+```
+
+This produces `${ARTIFACTS_DIR}/persona-walkthrough.mjs` with mechanical scaffolding (browser setup, PF6 utilities, per-task function shells, main loop). The script uses a content-based cache hash — if inputs haven't changed since last run, it skips regeneration.
+
+**Fill LLM_FILL blocks:** Read the generated script and complete `// LLM_FILL:` comment blocks with task-specific navigation, persona-driven interactions, and step-by-step screenshots. The mechanical sections (browser launch, viewport, addInitScript, utilities) are pre-filled and must not be modified.
+
 **REQUIRED script structure for `.artifacts/<KEY>/eval/scripts/persona-walkthrough.mjs`:**
 
 The generated script MUST have:
@@ -484,7 +494,17 @@ After persona walkthroughs complete, read each persona's output:
 
 For each persona's trace, assess:
 1. **Comprehension** — did the persona understand the UI elements? Check against domain_knowledge map.
-2. **Patience drain and recovery** — apply the model from `.context/usability-testing/prompts/evaluate-flow.md` exactly as specified:
+2. **Patience drain and recovery** — run the deterministic calculator:
+
+   ```bash
+   node ${CLAUDE_SKILL_DIR}/scripts/compute-patience-drain.js ${ARTIFACTS_DIR}/
+   ```
+
+   This reads `persona-results.json` trace events and each persona's patience attribute, then recalculates `patience_end` using the exact rubric formula. The script overwrites `patience_end` and `confusion_events` in persona-results.json.
+
+   Do NOT manually compute patience drain — the script enforces the formula mechanically.
+
+   Reference model from `.context/usability-testing/prompts/evaluate-flow.md`:
 
    **CRITICAL: Patience resets to 100% at the start of each task** (each task runs in an independent browser context/sub-agent). Per-task patience values in `persona-results.json` are independent — do NOT carry patience from task 1 into task 2.
 

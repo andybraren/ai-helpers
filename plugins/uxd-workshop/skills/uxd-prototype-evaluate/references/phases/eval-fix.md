@@ -139,6 +139,26 @@ Key rules for each entry:
 - `timestamp`: ISO 8601 string when the fix was applied or skipped
 - `type`, `criterion_id`, `file`, `change`, `confidence`: the semantic detail fields
 
+### Step 7: PatternFly compliance validation (static checks only)
+
+After all fixes are applied, read each modified file and verify the fixes didn't introduce PatternFly violations. These are **source-code-only checks** — no rendering or viewport verification.
+
+**Import completeness:**
+- Every PatternFly component used in the file has a corresponding import from `@patternfly/react-core` or `@patternfly/react-table`
+- Icon components (`*Icon`) are imported from `@patternfly/react-icons`
+
+**Label/status patterns:**
+- Non-interactive `<Label>` components use `variant="outline"` (filled variant implies onClick)
+- Tooltips use `<Tooltip content={...}>` wrapper, not inline `title` attributes
+
+**Table structure (static tables only — skip for `.map()`-rendered dynamic tables):**
+- If columns were added/removed in literal JSX, verify `<Thead>` column count matches `<Tbody>` rows
+- Expandable rows have correct `colSpan` on the expanded `<Td>`
+
+**If any check fails:** Fix the issue before writing fix-log.json.
+
+**Note:** Viewport-level rendering validation (column truncation, responsive layout) cannot be verified from source alone. That's what eval-consistency `--mode=visual` handles post-journey.
+
 ## Rules
 
 - Never fix something that was deliberately de-scoped by a design decision
@@ -149,3 +169,4 @@ Key rules for each entry:
 - Every applied fix MUST trace back to a `criterion_id` or `guideline_id` — no speculative improvements
 - Do NOT make changes that aren't backed by a specific suggestion in refinement-suggestions.json
 - Do NOT add features, polish, or enhancements beyond what the failing AC or violated guideline requires
+- **Single-pass file reading:** When multiple suggestions target the same file, read it once, apply all matching fixes in a single pass, then run Step 7 validation. Do not read-fix-read-fix the same file repeatedly.
