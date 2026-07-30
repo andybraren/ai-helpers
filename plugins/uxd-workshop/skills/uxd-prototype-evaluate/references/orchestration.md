@@ -258,6 +258,16 @@ LOOP:
 
   GOTO LOOP
 
+# ── Loop integrity check ──────────────────────────────────────────
+# Catches the case where fixes were applied but never re-verified
+if iteration == 1:
+  Read ${ARTIFACTS_DIR}/fix-log.json
+  if fix-log has applied entries (applied == true):
+    echo "WARNING: Fixes were applied in iteration 1 but never re-verified."
+    echo "Setting exit_reason to 'fix_not_reverified' for accurate reporting."
+    python3 ${CLAUDE_SKILL_DIR}/scripts/eval_state.py set ${ARTIFACTS_DIR}/eval-state.yaml \
+      exit_reason=fix_not_reverified
+
 # ═══════════════════════════════════════════════════════════════════
 # FINAL-STATE CAPTURE (N+1 pass — only when fix loop actually ran)
 # Ensures the report shows post-fix screenshots, not pre-fix evidence
@@ -349,7 +359,13 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/eval_state.py set ${ARTIFACTS_DIR}/eval-stat
 # Phase B is NOT inference-only scoring — it MUST produce new screenshots.
 # Do NOT skip the Playwright walkthroughs and score from Phase A evidence alone.
 
-Read ${CLAUDE_SKILL_DIR}/references/phases/eval-usability.md and execute it
+# When --no-report is set, pass --screenshots=key-only to eval-usability.
+# This captures 1 screenshot per persona-task (final state) instead of per-step,
+# reducing from ~30 to 6 screenshots and cutting Playwright time + tokens.
+if --no-report:
+  Read ${CLAUDE_SKILL_DIR}/references/phases/eval-usability.md and execute it with --screenshots=key-only
+else:
+  Read ${CLAUDE_SKILL_DIR}/references/phases/eval-usability.md and execute it
 # Use Task tool with run_in_background=true for each persona-task pair when possible.
 # Produces: per-persona screenshots, think-aloud traces, 7-dimension scores,
 #           usability suggestions for human review
@@ -648,3 +664,10 @@ Only `refinement-suggestions.json` entries of `type: "usability"` with `confiden
 ### What This Enables
 
 Phase B persona walkthroughs currently identify issues like "junior user couldn't find the scheduling column because it requires scrolling right." With the feedback loop, this finding would generate a suggestion like "Add horizontal scroll indicator or move scheduling status column left" that eval-fix can apply, then Phase A re-verifies the fix works.
+
+## Error Handling
+
+- **Prototype URL unreachable:** Wait 10s, retry once. If still down, stop with error.
+- **eval-fix produces no changes:** Stop Phase A — more iterations won't help. Proceed to Phase B.
+- **Dev server crashes after fix:** Stop Phase A, note which files may have caused it. Proceed to Phase B.
+- **Missing .context/ directories:** Phase A runs without consistency. Phase B skipped if usability-testing missing.
