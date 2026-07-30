@@ -51,7 +51,7 @@ Enable auto-update to receive new skills as they're merged:
 
 ### Cursor
 
-Cursor doesn't support the `dependencies` feature that powers the `patternfly` meta-plugin, so install plugins individually. Add the marketplace in **Settings → Marketplace**, then install the ones you need — see the [Plugins](#plugins) table below for the full list.
+Install the plugins you need — see the [Plugins](#plugins) table below for the full list. Add the marketplace in **Settings → Marketplace**, then install individually:
 
 <details>
 <summary>See it in action</summary>
@@ -69,7 +69,7 @@ After installing, skills work the same way — slash commands in any project:
 /pf-design-audit:pf-color-scan # Scan for hardcoded colors that should be tokens
 ```
 
-> **Note:** Install `pf-mcp` separately for MCP server access. See the [FAQ](FAQ.md#how-do-i-test-a-skill-without-the-patternfly-mcp-server) for setup.
+For MCP server access (component docs and design tokens), also install `pf-mcp`. See the [FAQ](FAQ.md#how-do-i-test-a-skill-without-the-patternfly-mcp-server) for setup.
 
 ## Plugins
 
@@ -92,7 +92,7 @@ See [PLUGINS.md](PLUGINS.md) for the full list of skills, agents, and usage deta
 ## How It Works
 
 1. You add this repo as a **marketplace** in Claude Code or Cursor
-2. You install plugins — on Claude Code, `patternfly` auto-installs all PF sub-plugins; on Cursor, install them individually
+2. You install plugins — on Claude Code, `patternfly` auto-installs all PF sub-plugins; on Cursor, pick the ones you need
 3. Skills become available as `/<plugin>:<skill>` slash commands in any project
 
 ## Repository Structure

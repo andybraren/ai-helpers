@@ -44,7 +44,6 @@ The `patternfly` plugin at `plugins/patternfly/` is a **meta-plugin** — it use
 
 **Delisted plugins** (kept on disk, not in marketplace.json):
 - `pf-a11y` — empty, no skills yet
-- `pf-code-review` — empty after pf-assist moved to meta-plugin
 
 ## Versioning
 
