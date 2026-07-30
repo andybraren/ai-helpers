@@ -8,7 +8,6 @@ Design guide — component selection, interaction patterns, AI experience patter
 
 ### Skills
 
-- **PF AI Guide** (`/pf-design-guide:pf-ai-guide`) — Apply Red Hat's AI design language to AI-powered features — chatbots, assistants, generation UIs.
 - **PF Figma Design Mode** (`/pf-design-guide:pf-figma-design-mode`) — Create and edit Figma design files using PatternFly-approved component libraries.
 
 ### Agents

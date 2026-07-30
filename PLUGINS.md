@@ -69,6 +69,7 @@ Design audit — validate existing code and designs against PatternFly standards
 
 <table>
 <tr><th>Skill</th><th>Description</th></tr>
+<tr><td nowrap><code>pf-ai-audit</code></td><td>Audit AI-powered features against Red Hat's AI design language — transparency notices, iconography, chatbot patterns, color and gradient rules.</td></tr>
 <tr><td nowrap><code>pf-color-scan</code></td><td>Find raw color values (hex, rgb, hsl) in code and suggest PatternFly design token replacements.</td></tr>
 <tr><td nowrap><code>pf-css-token-check</code></td><td>Detect hardcoded color, spacing, typography, border radius and shadow values that have PF token equivalents and suggest the correct design token replacements.</td></tr>
 <tr><td nowrap><code>pf-figma-check</code></td><td>Check Figma designs against PatternFly v6 standards for colors, typography, spacing, and component usage.</td></tr>
@@ -85,7 +86,6 @@ Design guide — component selection, interaction patterns, AI experience patter
 
 <table>
 <tr><th>Skill</th><th>Description</th></tr>
-<tr><td nowrap><code>pf-ai-guide</code></td><td>Apply Red Hat's AI design language to AI-powered features — chatbots, assistants, generation UIs.</td></tr>
 <tr><td nowrap><code>pf-figma-design-mode</code></td><td>Create and edit Figma design files using PatternFly-approved component libraries.</td></tr>
 </table>
 
