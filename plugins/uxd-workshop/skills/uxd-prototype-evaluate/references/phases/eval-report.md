@@ -47,7 +47,7 @@ If any required file is missing, stop and report which file is absent. The upstr
 Before rendering, validate all artifact JSON files against the schemas render-report.js expects:
 
 ```bash
-node ${CLAUDE_SKILL_DIR}/scripts/validate-artifacts.js $ARTIFACTS_DIR/
+node ${CLAUDE_SKILL_DIR}/scripts/validate-artifact-schemas.js $ARTIFACTS_DIR/
 ```
 
 If any violations are found, fix them before proceeding. The script prints specific fix instructions for each violation.
