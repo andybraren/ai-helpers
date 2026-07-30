@@ -2,6 +2,21 @@
 
 Read and follow this file when running the full evaluate pipeline. Phase procedures live in `references/phases/` — execute each when the orchestrator reaches that step.
 
+## Model Defaults Per Phase
+
+Each phase delegates to `--model` when launched via Task tool. These defaults
+are derived from MLflow comparison runs (2026-07-22, 24 traces).
+
+| Phase | Default model | Rationale |
+|-------|--------------|-----------|
+| eval-extract | `claude-sonnet-5` | Mechanical Jira parsing. No quality difference vs Opus. 3× faster. |
+| eval-classify | `claude-sonnet-5` | Mechanical tier assignment. 34s vs 93s. No quality difference. |
+| eval-fix | `claude-opus-4-6` | Code changes require careful reasoning. Shares journey's context window. |
+| eval-consistency | `claude-opus-4-6` | Focused execution (7 turns vs 23). Precision matters for design audits. |
+| eval-report | `claude-sonnet-5` | Template rendering. No quality-sensitive judgment. |
+
+When `--model` is set, ALL phases use that model (useful for comparison runs).
+
 **Artifact paths:** Pin `UXD_PROJECT_ROOT`, `KEY_DIR`, and absolute `ARTIFACTS_DIR` first (see SKILL.md "Artifact location"). All eval writes use `${ARTIFACTS_DIR}` (absolute = `.artifacts/<KEY>/eval`). Never write under `${CLAUDE_SKILL_DIR}`. After any `cd` (skill install or `.artifacts/<KEY>/code` clone), keep using the absolute `ARTIFACTS_DIR`.
 
 ```
