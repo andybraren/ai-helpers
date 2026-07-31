@@ -15,6 +15,7 @@ React component development — coding standards, testing, and structure.
 - **PF Form Gen** (`/pf-react:pf-form-gen`) — Generate PatternFly form components with validation, layout, and accessibility.
 - **PF Import Check** (`/pf-react:pf-import-check`) — Audit and fix invalid PatternFly import paths across packages.
 - **PF Project Gen** (`/pf-react:pf-project-gen`) — Scaffolds PatternFly React projects with PF6-safe dependencies, imports, and starter layout.
+- **PF Table Gen** (`/pf-react:pf-table-gen`) — Generate PatternFly table components with sorting, filtering, pagination, and expandable rows.
 - **PF Test Gen** (`/pf-react:pf-test-gen`) — Generate a unit test file for a React component using Testing Library.
 
 ### Agents
