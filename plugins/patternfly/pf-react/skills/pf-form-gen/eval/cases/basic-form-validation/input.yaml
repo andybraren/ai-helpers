@@ -1,0 +1,5 @@
+prompt: >
+  Generate a PatternFly login form with username and password fields.
+  Username is required and must be at least 3 characters.
+  Password is required and must be at least 8 characters.
+  Include a "Log in" submit button and a "Forgot password?" link.

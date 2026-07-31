@@ -1,0 +1,8 @@
+prompt: >
+  Generate a PatternFly user registration form with these fields:
+  - Name (required)
+  - Email (required, must be valid email format)
+  - Account type: select between "Personal" and "Organization"
+  - If "Organization" is selected, show additional fields: Company name (required) and Department (optional)
+  - Password with strength validation showing real-time feedback
+  Include proper validation and error messages.

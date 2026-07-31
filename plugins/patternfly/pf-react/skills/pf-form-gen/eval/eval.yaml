@@ -1,0 +1,107 @@
+name: pf-form-gen-eval
+description: Evaluate pf-form-gen's use of PF-specific form patterns vs generic React forms
+
+skill: pf-react:pf-form-gen
+
+execution:
+  mode: case
+  arguments: "{prompt}"
+
+runner:
+  type: claude-code
+  plugin_dirs:
+    - plugins/patternfly/pf-react
+
+models:
+  skill: claude-sonnet-4-6
+  judge: claude-sonnet-4-6
+
+permissions:
+  allow: []
+  deny:
+    - "mcp__*"
+
+dataset:
+  path: cases
+  schema: |
+    Each case directory contains:
+    - input.yaml: prompt field with a realistic user request
+    - annotations.yaml: form_type (simple/complex) and expect_pf (true/false)
+
+outputs:
+  - path: artifacts
+    schema: |
+      The skill generates a React form component. Judges check both
+      conversation text and collected file artifacts for PF-specific patterns.
+
+traces:
+  stdout: true
+  stderr: true
+  events: true
+  metrics: true
+
+judges:
+  - name: uses_formgroup
+    description: Output uses FormGroup wrapping pattern instead of bare labels
+    if: "annotations.get('expect_pf') == True"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      if not re.search(r'FormGroup', text):
+          return False, "Missing FormGroup — used bare labels instead of PF form structure"
+      if not re.search(r'fieldId\s*=', text):
+          return False, "FormGroup present but missing fieldId prop"
+      return True, "Uses FormGroup with fieldId — correct PF form structure"
+
+  - name: uses_pf_validation
+    description: Uses PF validated prop pattern instead of custom error rendering
+    if: "annotations.get('expect_pf') == True"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      validated_pattern = re.compile(r'validated\s*[={]')
+      helper_pattern = re.compile(r'(FormHelperText|HelperTextItem)')
+      if not validated_pattern.search(text):
+          return False, "Missing validated prop — not using PF validation pattern"
+      if not helper_pattern.search(text):
+          return False, "Missing FormHelperText/HelperTextItem for validation messages"
+      return True, "Uses PF validated prop and helper text pattern"
+
+  - name: has_action_group
+    description: Uses ActionGroup for form buttons instead of bare Button placement
+    if: "annotations.get('expect_pf') == True"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      if not re.search(r'ActionGroup', text):
+          return False, "Missing ActionGroup — buttons not wrapped in PF action container"
+      return True, "Uses ActionGroup for form buttons"
+
+  - name: gate_non_pf
+    description: Non-PF project should not produce PF-specific form code
+    if: "annotations.get('expect_pf') == False"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      pf_pattern = re.compile(r'@patternfly/react-core')
+      if pf_pattern.search(text):
+          return False, "Generated PF imports for a non-PF project"
+      return True, "Did not produce PF-specific code for non-PF project"
+
+thresholds:
+  uses_formgroup:
+    min_pass_rate: 1.0
+  uses_pf_validation:
+    min_pass_rate: 0.67
+  has_action_group:
+    min_pass_rate: 1.0
+  gate_non_pf:
+    min_pass_rate: 1.0

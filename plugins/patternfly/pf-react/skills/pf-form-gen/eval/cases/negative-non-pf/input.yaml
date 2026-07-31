@@ -1,0 +1,3 @@
+prompt: >
+  Generate a contact form for a plain React app that uses Tailwind CSS for styling.
+  Fields: name, email, message. No PatternFly.
