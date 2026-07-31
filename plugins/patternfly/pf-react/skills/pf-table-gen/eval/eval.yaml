@@ -1,0 +1,107 @@
+name: pf-table-gen-eval
+description: Evaluate pf-table-gen's use of PF composable table API vs generic HTML tables
+
+skill: pf-react:pf-table-gen
+
+execution:
+  mode: case
+  arguments: "{prompt}"
+
+runner:
+  type: claude-code
+  plugin_dirs:
+    - plugins/patternfly/pf-react
+
+models:
+  skill: claude-sonnet-4-6
+  judge: claude-sonnet-4-6
+
+permissions:
+  allow: []
+  deny:
+    - "mcp__*"
+
+dataset:
+  path: cases
+  schema: |
+    Each case directory contains:
+    - input.yaml: prompt field with a realistic user request
+    - annotations.yaml: table_type (simple/interactive) and expect_pf (true/false)
+
+outputs:
+  - path: artifacts
+    schema: |
+      The skill generates a React table component. Judges check both
+      conversation text and collected file artifacts for PF composable API.
+
+traces:
+  stdout: true
+  stderr: true
+  events: true
+  metrics: true
+
+judges:
+  - name: uses_composable_api
+    description: Uses Thead/Tbody/Tr/Th/Td composable API, not legacy table
+    if: "annotations.get('expect_pf') == True"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      composable = all(
+          re.search(pattern, text)
+          for pattern in [r'\bThead\b', r'\bTbody\b', r'\bTr\b', r'\bTh\b', r'\bTd\b']
+      )
+      if not composable:
+          return False, "Missing composable table components (Thead/Tbody/Tr/Th/Td)"
+      if re.search(r'<table\b', text, re.IGNORECASE) and not re.search(r'<Table\b', text):
+          return False, "Uses HTML <table> instead of PF <Table> component"
+      return True, "Uses PF composable table API"
+
+  - name: has_data_labels
+    description: Td elements have dataLabel props for responsive stacked layout
+    if: "annotations.get('expect_pf') == True"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      if not re.search(r'dataLabel\s*=', text):
+          return False, "Missing dataLabel on Td — responsive stacked layout won't work"
+      return True, "Td elements have dataLabel props"
+
+  - name: correct_import_path
+    description: Imports from @patternfly/react-table
+    if: "annotations.get('expect_pf') == True"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      if not re.search(r'@patternfly/react-table', text):
+          return False, "Missing import from @patternfly/react-table"
+      return True, "Correctly imports from @patternfly/react-table"
+
+  - name: gate_non_pf
+    description: Non-PF project should not produce PF table code
+    if: "annotations.get('expect_pf') == False"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      pf_pattern = re.compile(r'@patternfly/react-table')
+      if pf_pattern.search(text):
+          return False, "Generated PF imports for a non-PF project"
+      return True, "Did not produce PF-specific code for non-PF project"
+
+thresholds:
+  uses_composable_api:
+    min_pass_rate: 1.0
+  has_data_labels:
+    min_pass_rate: 0.67
+  correct_import_path:
+    min_pass_rate: 1.0
+  gate_non_pf:
+    min_pass_rate: 1.0

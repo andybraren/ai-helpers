@@ -1,0 +1,7 @@
+prompt: >
+  Generate a PatternFly table of users with columns: Name, Email, Role, Status.
+  Include a toolbar above the table with:
+  - A text filter for Name
+  - Bulk select checkbox in the header
+  - Pagination at the bottom (10 items per page)
+  The table should support selecting multiple rows and show a count of selected items.

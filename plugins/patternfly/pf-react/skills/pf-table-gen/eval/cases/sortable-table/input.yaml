@@ -1,0 +1,5 @@
+prompt: >
+  Generate a PatternFly table showing a list of servers with columns:
+  Name, Status, CPU Usage, Memory Usage, Last Updated.
+  Name and CPU Usage columns should be sortable.
+  Each row should have a kebab menu with "Edit" and "Delete" actions.

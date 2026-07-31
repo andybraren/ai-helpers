@@ -1,0 +1,4 @@
+prompt: >
+  Generate a simple HTML table using Material UI's Table component
+  to display a list of products with name, price, and quantity.
+  No PatternFly.
