@@ -1,0 +1,5 @@
+prompt: >
+  Generate a PatternFly bar chart showing quarterly sales data for three regions
+  (North America, Europe, Asia Pacific) over Q1-Q4.
+  Use PatternFly's blue color scheme. Include tooltips showing exact values
+  on hover and proper axis labels.

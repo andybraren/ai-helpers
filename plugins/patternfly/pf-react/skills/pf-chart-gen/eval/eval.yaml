@@ -1,0 +1,111 @@
+name: pf-chart-gen-eval
+description: Evaluate pf-chart-gen's use of PF chart wrappers with correct import paths and theming
+
+skill: pf-react:pf-chart-gen
+
+execution:
+  mode: case
+  arguments: "{prompt}"
+
+runner:
+  type: claude-code
+  plugin_dirs:
+    - plugins/patternfly/pf-react
+
+models:
+  skill: claude-sonnet-4-6
+  judge: claude-sonnet-4-6
+
+permissions:
+  allow: []
+  deny:
+    - "mcp__*"
+
+dataset:
+  path: cases
+  schema: |
+    Each case directory contains:
+    - input.yaml: prompt field with a realistic user request
+    - annotations.yaml: chart_type (bar/donut) and expect_pf (true/false)
+
+outputs:
+  - path: artifacts
+    schema: |
+      The skill generates a React chart component. Judges check both
+      conversation text and collected file artifacts for PF chart patterns.
+
+traces:
+  stdout: true
+  stderr: true
+  events: true
+  metrics: true
+
+judges:
+  - name: correct_import_path
+    description: Imports from @patternfly/react-charts/victory, not bare root
+    if: "annotations.get('expect_pf') == True"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      victory_path = re.search(r'@patternfly/react-charts/victory', text)
+      bare_root = re.search(r"from\s+['\"]@patternfly/react-charts['\"]", text)
+      if bare_root and not victory_path:
+          return False, "Imports from bare @patternfly/react-charts root — must use /victory subpath"
+      if not victory_path:
+          return False, "Missing import from @patternfly/react-charts/victory"
+      return True, "Correctly imports from @patternfly/react-charts/victory"
+
+  - name: has_accessibility
+    description: Chart has ariaTitle and ariaDesc props
+    if: "annotations.get('expect_pf') == True"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      has_title = re.search(r'ariaTitle\s*=', text)
+      has_desc = re.search(r'ariaDesc\s*=', text)
+      if not has_title or not has_desc:
+          return False, "Missing ariaTitle or ariaDesc on Chart component"
+      return True, "Chart has ariaTitle and ariaDesc for accessibility"
+
+  - name: uses_pf_theming
+    description: Uses PF theme system, not hardcoded colors or raw Victory themes
+    if: "annotations.get('expect_pf') == True"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      raw_victory = re.search(r'import\s.*VictoryTheme|VictoryTheme\s*[,}]', text)
+      hardcoded_hex = re.findall(r'(?:color|fill|stroke)\s*[:=]\s*["\']#[0-9a-fA-F]{3,8}["\']', text)
+      if raw_victory:
+          return False, "Uses raw Victory theme instead of PF chart theming"
+      if len(hardcoded_hex) > 2:
+          return False, f"Found {len(hardcoded_hex)} hardcoded hex colors — should use PF theme system"
+      return True, "Uses PF theme system, no raw Victory themes or excessive hardcoded colors"
+
+  - name: gate_non_pf
+    description: Non-PF project should not produce PF chart code
+    if: "annotations.get('expect_pf') == False"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      for path, content in outputs.get("files", {}).items():
+          text += "\n" + content
+      pf_pattern = re.compile(r'@patternfly/react-charts')
+      if pf_pattern.search(text):
+          return False, "Generated PF imports for a non-PF project"
+      return True, "Did not produce PF-specific code for non-PF project"
+
+thresholds:
+  correct_import_path:
+    min_pass_rate: 1.0
+  has_accessibility:
+    min_pass_rate: 1.0
+  uses_pf_theming:
+    min_pass_rate: 0.67
+  gate_non_pf:
+    min_pass_rate: 1.0

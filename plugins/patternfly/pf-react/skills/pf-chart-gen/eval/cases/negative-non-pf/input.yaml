@@ -1,0 +1,3 @@
+prompt: >
+  Generate a line chart using Chart.js to show website traffic over the past
+  30 days. No PatternFly — this is a vanilla React project with Chart.js.

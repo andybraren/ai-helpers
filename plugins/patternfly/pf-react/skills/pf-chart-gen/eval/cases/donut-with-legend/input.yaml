@@ -1,0 +1,5 @@
+prompt: >
+  Generate a PatternFly donut chart showing storage usage breakdown:
+  Used (75GB), Available (25GB), Reserved (10GB).
+  Show the total (110GB) in the center of the donut.
+  Include a legend to the right of the chart labeling each segment.
