@@ -16,11 +16,31 @@ tmp/
 # Eval run artifacts
 **/eval/runs/
 
+# MLflow (development — POC7 cluster is canonical; see Makefile mlflow-poc7)
+mlflow.db*
+*.db.bak*
+*.db.old*
+mlruns/
+mlartifacts/
+
+# Trace run outputs (from mlflow-compare-models / mlflow-trace-pipeline)
+tmp/trace-runs/
+
 # Environment variables (contributor credentials)
 .env*
 
 # Local Claude Code settings (user-specific)
 .claude/settings.local.json
+.claude/settings.json
 
 # Generated artifacts
 .artifacts/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Local-only skills (cloned for development, not published)
+eval-optimize-mlflow/
