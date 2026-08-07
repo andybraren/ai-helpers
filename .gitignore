@@ -36,6 +36,9 @@ tmp/trace-runs/
 # Generated artifacts
 .artifacts/
 
+# Bootstrap caches (consistency-checker, usability-testing clones)
+.context/
+
 # Python
 __pycache__/
 *.pyc
