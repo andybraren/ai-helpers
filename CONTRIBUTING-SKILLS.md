@@ -97,7 +97,6 @@ Plugin names must tell a user exactly what the plugin helps them do. A user brow
 <!-- BEGIN GOOD NAMES -->
 **Good names** describe the capability:
 - `patternfly` — Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs
-- `uxd-workshop` — UXD team tools and skill incubator — prototyping, research, design review, team workflows
 - `pf-a11y` — Accessibility auditing, reporting, and documentation
 - `pf-code-review` — Code review and quality — adversarial review, security patterns
 - `pf-design-audit` — Design audit — validate existing code and designs against PatternFly standards

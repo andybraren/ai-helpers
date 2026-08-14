@@ -304,6 +304,7 @@ if [ -f "$README" ]; then
   # Count plugins and skills
   plugin_count=0
   skill_count=0
+  agent_count=0
   for plugin_dir in plugins/*/ plugins/*/*/; do
     [ -f "${plugin_dir}.claude-plugin/plugin.json" ] || continue
     plugin=$(basename "$plugin_dir")
@@ -313,6 +314,11 @@ if [ -f "$README" ]; then
     if [ -d "${plugin_dir}skills" ]; then
       for skill_dir in "${plugin_dir}skills"/*/; do
         [ -d "$skill_dir" ] && [ -f "${skill_dir}SKILL.md" ] && skill_count=$((skill_count + 1))
+      done
+    fi
+    if [ -d "${plugin_dir}agents" ]; then
+      for agent_file in "${plugin_dir}agents"/*.md; do
+        [ -f "$agent_file" ] && agent_count=$((agent_count + 1))
       done
     fi
   done
@@ -325,7 +331,12 @@ if [ -f "$README" ]; then
   else
     sed_i "s|\(.*plugins-.*blueviolet.*\)|\1\n[![Skills](https://img.shields.io/badge/skills-${skill_count}-blue)](./PLUGINS.md)|" "$README"
   fi
-  echo "Updated badges in $README (${plugin_count} plugins, ${skill_count} skills)"
+  if grep -q "agents-[0-9]*-green" "$README"; then
+    sed_i "s|agents-[0-9]*-green|agents-${agent_count}-green|" "$README"
+  else
+    sed_i "s|\(.*skills-.*blue.*\)|\1\n[![Agents](https://img.shields.io/badge/agents-${agent_count}-green)](./PLUGINS.md)|" "$README"
+  fi
+  echo "Updated badges in $README (${plugin_count} plugins, ${skill_count} skills, ${agent_count} agents)"
 
   # Update plugin table
   table_content=""
