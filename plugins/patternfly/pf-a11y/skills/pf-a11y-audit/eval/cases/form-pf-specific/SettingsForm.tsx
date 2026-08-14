@@ -23,7 +23,6 @@ const SettingsForm: React.FC = () => {
 
   return (
     <Form>
-      {/* Missing label and fieldId */}
       <FormGroup>
         <TextInput id="settings-name" value={name} onChange={(_e, v) => setName(v)} />
         {nameError && (
@@ -33,12 +32,10 @@ const SettingsForm: React.FC = () => {
         )}
       </FormGroup>
 
-      {/* Missing isRequired even though field is required */}
       <FormGroup label="Email" fieldId="settings-email">
         <TextInput id="settings-email" value={email} onChange={(_e, v) => setEmail(v)} />
       </FormGroup>
 
-      {/* FormSelect without fieldId association */}
       <FormGroup label="Role">
         <FormSelect id="settings-role">
           <FormSelectOption value="admin" label="Admin" />
@@ -46,7 +43,6 @@ const SettingsForm: React.FC = () => {
         </FormSelect>
       </FormGroup>
 
-      {/* TextArea with validation error shown only via color */}
       <FormGroup label="Notes" fieldId="settings-notes">
         <TextArea id="settings-notes" />
         <HelperText>
