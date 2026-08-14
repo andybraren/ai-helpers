@@ -8,4 +8,4 @@ Accessibility auditing, reporting, and documentation.
 
 ### Skills
 
-- **PF Accessibility Audit** (`/pf-a11y:pf-a11y-audit`) — Audit PatternFly components and pages against WCAG 2.2 and ARIA best practices.
+- **PF Accessibility Audit** (`/pf-a11y:pf-a11y-audit`) — Audit PatternFly components and pages against WCAG and ARIA best practices.

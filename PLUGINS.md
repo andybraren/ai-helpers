@@ -57,7 +57,7 @@ Accessibility auditing, reporting, and documentation
 
 <table>
 <tr><th>Skill</th><th>Description</th></tr>
-<tr><td nowrap><code>pf-a11y-audit</code></td><td>Audit PatternFly components and pages against WCAG 2.2 and ARIA best practices.</td></tr>
+<tr><td nowrap><code>pf-a11y-audit</code></td><td>Audit PatternFly components and pages against WCAG and ARIA best practices.</td></tr>
 </table>
 
 
