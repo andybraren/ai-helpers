@@ -2,13 +2,9 @@
 
 ## Before you start: which repo?
 
-If your skill accesses any of these, it belongs in the [internal repo](https://gitlab.cee.redhat.com/uxd/internal-ai-helpers) (VPN required):
-
-- Employee data (names, managers, reporting lines)
-- Internal APIs or MCP endpoints
-- Internal spreadsheets, Slack workspaces, or GitLab projects
-
-Everything else belongs here. If you're not sure, start here — PR review will catch it.
+> **Does your skill touch internal data or VPN-only systems?**
+> Yes → [internal repo on GitLab](https://gitlab.cee.redhat.com/uxd/internal-ai-helpers)
+> No or not sure → **this repo.** PR review will catch anything that should move.
 
 ## Step 1: Create your skill locally
 
@@ -341,6 +337,22 @@ Existing violations are baselined. You'll only see issues introduced by your cha
 
 *Inspired by [RedHatProductSecurity/prodsec-skills](https://github.com/RedHatProductSecurity/prodsec-skills).*
 
+### AI Guardian
+
+[AI Guardian](https://github.com/RedHatProductSecurity/ai-guardian) scans bundled scripts and skill files for security issues that content linters miss: credential exfiltration patterns, code vulnerabilities (via bandit/semgrep), and prompt injection attacks.
+
+**You don't need to install anything.** AI Guardian runs in CI on every PR that touches `plugins/`. If you want to run it locally:
+
+```bash
+make security
+```
+
+This uses `uvx` (zero-install) to run AI Guardian against the plugins directory. You need [uv](https://docs.astral.sh/uv/getting-started/installation/) installed.
+
+AI Guardian findings are **blocking** — address them before merge.
+
+*A cross-team collaboration with [Red Hat Product Security](https://github.com/RedHatProductSecurity).*
+
 ### Security rules
 
 Skills are instructions that an AI tool follows on behalf of a user. Contributors must not include instructions that:
@@ -351,7 +363,7 @@ Skills are instructions that an AI tool follows on behalf of a user. Contributor
 - Use `eval`, `exec`, or `curl | bash` patterns in bundled scripts
 - Access files outside the target project without stating why
 
-Bundled scripts (`.sh`, `.js`, `.py`, `.ts`) are reviewed for these patterns automatically by CodeRabbit. See [GOVERNANCE.md](GOVERNANCE.md) for the full review process.
+Bundled scripts (`.sh`, `.js`, `.py`, `.ts`) are reviewed for these patterns automatically by CodeRabbit and [AI Guardian](#ai-guardian). See [GOVERNANCE.md](GOVERNANCE.md) for the full review process.
 
 ## Skill ideas to get you started
 
