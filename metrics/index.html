@@ -104,7 +104,7 @@
 
     <div class="charts" id="charts-container"></div>
 
-    <p class="section-label">Traffic Sources</p>
+    <p class="section-label" id="traffic-label" style="display:none">Traffic Sources</p>
     <div id="traffic-sources" class="charts" style="margin-bottom:28px"></div>
 
     <p class="footer">Updated <span id="last-updated"></span> · Collected weekly by GitHub Actions</p>
@@ -397,10 +397,9 @@
 
     function renderTrafficSources(trafficRows) {
       const container = document.getElementById('traffic-sources');
-      if (!trafficRows.length) {
-        container.innerHTML = '<div class="chart-card full-width"><h2>Traffic Sources</h2><p class="empty-hint">Traffic data will appear after the first weekly collection run.</p></div>';
-        return;
-      }
+      if (!trafficRows.length) return;
+
+      document.getElementById('traffic-label').style.display = '';
 
       const latest = trafficRows.map(r => r.date).sort().pop();
       const latestRows = trafficRows.filter(r => r.date === latest);

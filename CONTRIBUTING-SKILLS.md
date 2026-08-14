@@ -150,7 +150,7 @@ All skills use a domain prefix — `pf-` for PatternFly, `uxd-` for UXD — rega
 
 ### Verb suffixes
 
-End your skill name with one of these four verbs. This is a closed set — every skill must use one of them.
+End your skill name with one of these four verbs, unless the name is already a recognizable process.
 
 | Suffix | Meaning | Examples |
 |--------|---------|----------|
@@ -161,14 +161,15 @@ End your skill name with one of these four verbs. This is a closed set — every
 
 **Decision tree:**
 
-1. Does your skill produce something new? → `-gen`
-2. Does your skill check existing work with judgment? → `-review`
-3. Does your skill validate against fixed rules? → `-audit`
-4. Does your skill transform code between versions? → `-migrate`
+1. Is the skill name already a recognizable process (e.g., discovery, synthesis, handoff, triage)? → suffix optional
+2. Does your skill produce something new? → `-gen`
+3. Does your skill check existing work with judgment? → `-review`
+4. Does your skill validate against fixed rules? → `-audit`
+5. Does your skill transform code between versions? → `-migrate`
 
-If none of these fit, open a PR proposing a new verb. Justify why the four core verbs don't apply — the bar is high.
+If none of these fit, open a PR proposing a new verb. Justify why the four core verbs don't apply — the bar is high. When in doubt, add the suffix — clarity over brevity.
 
-**Note:** Some existing skills use older suffixes (`-check`, `-scan`, `-setup`, `-read`) that predate this convention. These map to the core verbs: `-check` and `-scan` → `-audit`, `-setup` and `-create` → `-gen`, `-read` → `-review`. New skills must use the core verbs.
+**Note:** Some existing skills use older suffixes (`-check`, `-scan`, `-setup`, `-read`) that predate this convention. These map to the core verbs: `-check` and `-scan` → `-audit`, `-setup` and `-create` → `-gen`, `-read` → `-review`.
 
 ## Writing descriptions
 
@@ -294,6 +295,19 @@ Treat MCP servers as **enhancements, not requirements** unless the skill's entir
 - **Use "if available" fallback language.** If MCP enriches your skill but isn't essential, say so: *"If `@patternfly/patternfly-mcp` is available, use it for current props and examples."* See `pf-component-check` for the pattern.
 - **Don't claim MCP as required when it isn't.** If your skill works fine without MCP, don't put "Requires MCP" in the description.
 - **Separate decisions from execution.** Even MCP-driven skills make decisions (component selection, layout structure) before calling MCP tools. Your skill's judgment should be testable without MCP connected.
+
+### Skill maturity
+
+Skills use a `version` field in frontmatter to signal maturity:
+
+| Version | Meaning |
+|---------|---------|
+| `0.x.0` | Draft — functional but not yet reviewed or validated. |
+| `1.0.0` | Evals passing and team has approved the version bump via PR. |
+
+Version signals maturity within whatever plugin the skill lives in — it does not determine who the skill is for. Which plugin a skill belongs to determines that (e.g., workshop plugins are team tools and incubating skills, consumer plugins are for anyone). A skill can reach `1.0.0` in a workshop plugin and stay there, or graduate to a consumer plugin.
+
+A `1.0.0` bump requires evals regardless of which plugin the skill lives in. Bump when the skill materially changes, not on every edit.
 
 ### Evals
 
