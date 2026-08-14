@@ -366,10 +366,10 @@ if [ -f "$README" ]; then
   else
     sed_i "s|\(.*plugins-.*blueviolet.*\)|\1\n[![Skills](https://img.shields.io/badge/skills-${skill_count}-blue)](./PLUGINS.md)|" "$README"
   fi
-  if grep -q "agents-[0-9]*-green" "$README"; then
-    sed_i "s|agents-[0-9]*-green|agents-${agent_count}-green|" "$README"
+  if grep -q "agents-[0-9]*-" "$README"; then
+    sed_i "s|agents-[0-9]*-[a-z]*|agents-${agent_count}-teal|" "$README"
   else
-    sed_i "s|\(.*skills-.*blue.*\)|\1\n[![Agents](https://img.shields.io/badge/agents-${agent_count}-green)](./PLUGINS.md)|" "$README"
+    sed_i "s|\(.*skills-.*blue.*\)|\1\n[![Agents](https://img.shields.io/badge/agents-${agent_count}-teal)](./PLUGINS.md)|" "$README"
   fi
   echo "Updated badges in $README (${plugin_count} plugins, ${skill_count} skills, ${agent_count} agents)"
 
