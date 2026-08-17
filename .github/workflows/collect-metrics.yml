@@ -11,6 +11,7 @@ concurrency:
 
 jobs:
   collect:
+    if: github.repository == 'rh-uxd/ai-helpers'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -21,7 +22,7 @@ jobs:
 
       - name: Collect metrics
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.METRICS_TOKEN }}
         run: |
           set -e
           REPO="${{ github.repository }}"
