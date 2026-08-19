@@ -51,7 +51,7 @@ outputs:
       acceptance criteria, and accessibility notes. Offline cases use
       fixture-design.md; no Figma/MCP/network.
   - tool: AskUserQuestion
-    schema: Component inventory review and design input clarifying questions.
+    schema: Design input clarifying questions.
 
 traces:
   stdout: true
