@@ -5,10 +5,9 @@
 [![Plugins](https://img.shields.io/badge/plugins-9-blueviolet)](./PLUGINS.md)
 [![Skills](https://img.shields.io/badge/skills-48-blue)](./PLUGINS.md)
 [![Agents](https://img.shields.io/badge/agents-6-teal)](./PLUGINS.md)
-[![Eval Coverage](https://img.shields.io/badge/eval_coverage-100%25-brightgreen)](./PLUGINS.md)
 [![skillsaw grade](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Frh-uxd%2Fai-helpers%2Fmain%2F.skillsaw-badge.json)](https://github.com/rh-uxd/ai-helpers/blob/main/.skillsaw-baseline.json)
 
-AI skills for PatternFly and UXD teams — component development, design, accessibility, and migration. Skills work in both **Claude Code** and **Cursor**; the `patternfly` meta-plugin is Claude Code-only.
+AI skills for PatternFly and UXD teams — component development, design, accessibility, and migration. Skills work in both **Claude Code** and **Cursor**; the `patternfly` meta-plugin is Claude Code-only. All consumer-facing skills include eval suites with discriminating judges.
 
 <p align="center">
   <img src="assets/install-plugins-terminal.gif" alt="Browsing and installing plugins interactively in Claude Code" width="600">
