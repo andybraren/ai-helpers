@@ -35,6 +35,8 @@ UXD team tools and skill incubator — prototyping, research, design review, tea
 
 <table>
 <tr><th>Skill</th><th>Description</th><th>Eval</th></tr>
+<tr><td nowrap><code>uxd-design-handoff</code></td><td>Produce an implementation-ready design handoff spec from a validated design.</td><td>stable</td></tr>
+<tr><td nowrap><code>uxd-discovery</code></td><td>Produce a structured UX discovery brief from a feature request, Jira issue, or problem statement.</td><td>stable</td></tr>
 <tr><td nowrap><code>uxd-evaluate-design-heuristics</code></td><td>Score a design against accessibility, visual hierarchy, content, and state coverage heuristics.</td><td>—</td></tr>
 <tr><td nowrap><code>uxd-figma-read</code></td><td>Retrieve design context from a Figma file.</td><td>—</td></tr>
 <tr><td nowrap><code>uxd-prototype-create</code></td><td>Create or refine a UX prototype from various input sources — a Jira ticket, Figma design, feature description, or just an idea.</td><td>—</td></tr>
@@ -198,4 +200,4 @@ PatternFly team tools and skill incubation — issue triage, release management,
 **Eval coverage**
 
 - Consumer: 25/25 (100%)
-- Workshop: 1/23 (4%)
+- Workshop: 3/25 (12%)
