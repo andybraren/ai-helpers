@@ -86,7 +86,7 @@ Design audit — validate existing code and designs against PatternFly standards
 <tr><td nowrap><code>pf-ai-audit</code></td><td>Audit AI-powered features against Red Hat's AI design language — transparency notices, iconography, chatbot patterns, color and gradient rules.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-color-scan</code></td><td>Find raw color values (hex, rgb, hsl) in code and suggest PatternFly design token replacements.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-css-token-check</code></td><td>Detect hardcoded color, spacing, typography, border radius and shadow values that have PF token equivalents and suggest the correct design token replacements.</td><td>stable</td></tr>
-<tr><td nowrap><code>pf-figma-check</code></td><td>Check Figma designs against PatternFly v6 standards for colors, typography, spacing, and component usage.</td><td>—</td></tr>
+<tr><td nowrap><code>pf-figma-check</code></td><td>Check Figma designs against PatternFly v6 standards for colors, typography, spacing, and component usage.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-figma-token-check</code></td><td>Audit designs against the PatternFly 6 token architecture and bridge Figma styles to PF semantic tokens.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-icon-finder</code></td><td>Identify PatternFly icons in design mockups and provide the correct React import statements.</td><td>stable</td></tr>
 </table>
@@ -128,7 +128,7 @@ PF version migration — breaking change detection, class scanning, upgrade plan
 <table>
 <tr><th>Skill</th><th>Description</th><th>Eval</th></tr>
 <tr><td nowrap><code>pf-css-migration-scan</code></td><td>Scan code for legacy PatternFly CSS classes and recommend PF6-safe replacements.</td><td>stable</td></tr>
-<tr><td nowrap><code>pf-react-migration-scan</code></td><td>Scan code for @patternfly/react-* API breaking changes and produce a markdown report.</td><td>—</td></tr>
+<tr><td nowrap><code>pf-react-migration-scan</code></td><td>Scan code for @patternfly/react-* API breaking changes and produce a markdown report.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-release-candidate-update</code></td><td>Update @patternfly/* npm dependencies to the latest release candidate versions.</td><td>stable</td></tr>
 </table>
 
@@ -143,8 +143,8 @@ React component development — coding standards, testing, and structure
 <tr><th>Skill</th><th>Description</th><th>Eval</th></tr>
 <tr><td nowrap><code>pf-chart-gen</code></td><td>Generate PatternFly chart components with theming, responsive sizing, and accessibility.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-component-check</code></td><td>Audit PatternFly React component nesting, wrapper hierarchies, and layout structure.</td><td>stable</td></tr>
-<tr><td nowrap><code>pf-component-reuse-check</code></td><td>Detects custom React components in newly created or modified (uncommitted) code that overlap with PatternFly React components, suggests the PatternFly equivalent, and can replace the custom component then build to verify.</td><td>—</td></tr>
-<tr><td nowrap><code>pf-deploy</code></td><td>Deploy a PatternFly React project to GitHub Pages using pfcli deploy.</td><td>—</td></tr>
+<tr><td nowrap><code>pf-component-reuse-check</code></td><td>Detects custom React components in newly created or modified (uncommitted) code that overlap with PatternFly React components, suggests the PatternFly equivalent, and can replace the custom component then build to verify.</td><td>stable</td></tr>
+<tr><td nowrap><code>pf-deploy</code></td><td>Deploy a PatternFly React project to GitHub Pages using pfcli deploy.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-design-comments-setup</code></td><td>Integrate @patternfly/design-comments into React apps for on-page design feedback, pinned comment threads, GitHub Issues sync, and Jira linking.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-form-gen</code></td><td>Generate PatternFly form components with validation, layout, and accessibility.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-import-check</code></td><td>Audit and fix invalid PatternFly import paths across packages.</td><td>stable</td></tr>
@@ -197,5 +197,5 @@ PatternFly team tools and skill incubation — issue triage, release management,
 
 **Eval coverage**
 
-- Consumer: 21/25 (84%)
+- Consumer: 25/25 (100%)
 - Workshop: 1/23 (4%)
