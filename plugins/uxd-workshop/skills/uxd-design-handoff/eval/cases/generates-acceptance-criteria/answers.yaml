@@ -1,0 +1,4 @@
+# Guidance for the AskUserQuestion auto-answerer (eval harness).
+instruction: >
+  If asked to review the component inventory, confirm it looks correct
+  and approve proceeding. Answer "yes" or "looks good" for confirmations.
