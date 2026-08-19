@@ -10,7 +10,7 @@ description: >-
 
 # Design Handoff
 
-Produces a structured, implementation-ready handoff spec from a validated design. Works with prototypes, Figma exports, text descriptions, or any design artifact. Maps every UI element to design system components, enumerates all visual and interaction states, and generates testable acceptance criteria traced back to design decisions.
+Produces a structured, implementation-ready handoff spec from a validated design. Works with prototypes, Figma exports, text descriptions, journey maps, or any design artifact. Maps every UI element to design system components, enumerates all visual and interaction states, and generates testable acceptance criteria traced back to design decisions.
 
 This skill is standalone -- any team can use it without a broader workflow.
 
@@ -19,6 +19,7 @@ This skill is standalone -- any team can use it without a broader workflow.
 | Input | Required | Source |
 |-------|----------|--------|
 | Design artifact (prototype files, Figma screenshots, text description) | **Yes** | User-provided or upstream skill output |
+| Journey map or user flow | Optional | User-provided; scopes the spec to relevant screens and steps |
 | Research findings or design rationale | Recommended | User-provided or linked document |
 | Target design system | Optional | Auto-detected from project or user-specified |
 | Responsive breakpoints | Optional | Defaults to standard breakpoints if not specified |
@@ -26,6 +27,8 @@ This skill is standalone -- any team can use it without a broader workflow.
 If no design artifact is provided, **stop and ask** the user to share one before proceeding.
 
 ## Output
+
+The handoff spec is written to a local file (markdown by default, JSON when `--format=json`). It includes:
 
 | Output | Description |
 |--------|-------------|
@@ -46,7 +49,7 @@ Parse as: `<design-input> [--design-system <name>] [--breakpoints <list>] [--for
 |------|---------|-------------|
 | `--design-system` | auto-detect | Target design system (e.g., `patternfly`, `material`, `custom`). Auto-detected from project dependencies when possible. |
 | `--breakpoints` | `sm:576, md:768, lg:992, xl:1200, 2xl:1450` | Responsive breakpoints to enumerate. |
-| `--format` | `markdown` | Output format. `json` returns a structured object for programmatic consumption. |
+| `--format` | `markdown` | Output format. `json` writes a structured object to a local file for programmatic consumption. |
 
 ---
 
@@ -59,10 +62,13 @@ If no design input is present, ask:
 > What design should I create a handoff spec for? You can share:
 > - Prototype files or a path to a prototype directory
 > - Exported Figma screenshots
+> - A journey map or user flow for the design
 > - A text description of the design
 > - A link to design documentation
 
 Do not proceed until a design artifact is available.
+
+If a journey map or user flow is available, use it to keep the handoff scoped to the screens and steps that are actually relevant. Do not expand the spec to every screen in the design artifact unless those screens appear in the flow.
 
 If research findings or design rationale are available (e.g., from a research study, design review, or decision log), read those too -- they inform traceability in the acceptance criteria.
 
@@ -79,11 +85,7 @@ Walk through the design screen by screen. For each UI element, identify:
 - **Variants/Props** -- relevant configuration (e.g., `variant="compact"`, `isStriped`)
 - **Content** -- labels, placeholder text, icons, data shape
 
-Present the component inventory as a table and **ask the developer to review it** before proceeding:
-
-> Here is the component inventory I identified. Please review and let me know if anything should be added, removed, or remapped before I generate the full spec.
-
-Wait for confirmation or corrections before continuing to Step 4.
+Continue to Step 4.
 
 ## Step 4: State Enumeration
 
@@ -106,7 +108,7 @@ For responsive states, describe the behavior at each breakpoint rather than list
 
 Document:
 
-- **User flows** -- happy path and key alternatives, step by step
+- **User flows** -- happy path and key alternatives, step by step. If a journey map or user flow was provided, use it as the source rather than reconstructing flows from the design alone, and stay scoped to those steps.
 - **Transitions** -- animations, progressive disclosure, route changes between states
 - **Keyboard navigation** -- tab order, arrow key behavior within composite widgets, shortcut keys
 - **Focus management** -- where focus moves after modals close, inline edits, async operations
@@ -137,7 +139,9 @@ For each component, document applicable WCAG success criteria, required ARIA rol
 
 ## Step 8: Generate Handoff Document
 
-Compile the full handoff spec using this structure:
+Compile the full handoff spec using this structure into a local file. Name the file after the feature or page (e.g. `design-handoff-{slug}.md`) and write it in the current workspace.
+
+**Note: If `--format=json`**, write the same content as a structured JSON object to a local `.json` file instead of markdown.
 
 ```markdown
 # Design Handoff: [Feature/Page Name]
@@ -182,16 +186,14 @@ Compile the full handoff spec using this structure:
 [Ambiguities or gaps needing clarification]
 ```
 
-**If `--format=json`**, return the same content as a structured JSON object instead of markdown.
+Present the handoff spec to the user for review. Provide a link or directory path to any output files.
 
-Present the handoff spec to the user for review:
-
-> Here is the complete handoff spec. Please review it with the development team. Let me know if any sections need revision or if there are open questions to resolve.
+> Here is the complete handoff spec: <insert-link-here>. Please review it with the development team. Let me know if any sections need revision or if there are open questions to resolve.
 
 ## Guardrails
 
 - **Do not fabricate UI elements.** Only map components that are visible or described in the design input. If something is ambiguous, add it to Open Questions.
-- **Do not skip the component inventory review.** Step 3 requires developer confirmation before generating the full spec.
+- **Stay scoped to the journey.** If a journey map or user flow was provided, do not document screens or interactions outside that flow.
 - **Do not assume a design system.** If none is detected or specified, use generic descriptions.
 - **Acceptance criteria must be testable.** Avoid vague language like "should look good" or "should be intuitive." Every AC must have a verifiable pass/fail condition.
 - **Trace when possible, not when imagined.** Only reference research findings or design decisions that actually exist in the provided materials. Do not invent rationale.
