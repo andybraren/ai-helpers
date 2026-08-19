@@ -101,6 +101,7 @@ Design guide — component selection, interaction patterns, AI experience patter
 <table>
 <tr><th>Skill</th><th>Description</th><th>Eval</th></tr>
 <tr><td nowrap><code>pf-figma-design-mode</code></td><td>Create and edit Figma design files using PatternFly-approved component libraries.</td><td>stable</td></tr>
+<tr><td nowrap><code>pf-screenshot-mapping</code></td><td>Maps screenshots and UI mockups (any fidelity) to PatternFly 6 layout and building-block components.</td><td>stable</td></tr>
 </table>
 
 <table>
@@ -196,5 +197,5 @@ PatternFly team tools and skill incubation — issue triage, release management,
 
 **Eval coverage**
 
-- Consumer: 20/24 (83%)
+- Consumer: 21/25 (84%)
 - Workshop: 1/23 (4%)
