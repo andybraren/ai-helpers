@@ -12,7 +12,8 @@
     "url": "https://github.com/patternfly/patternfly-mcp",
     "description": "An MCP server that provides access to PatternFly rules and documentation.",
     "files": [
-      "src/docs.json"
+      "src/docs.json",
+      "src/__tests__/__snapshots__/collection.patternFlyDocs.test.ts.snap"
     ]
   },
   {
@@ -23,6 +24,14 @@
       "packages/documentation-site/patternfly-docs/content/AI/marketplace/marketplace.md",
       "packages/documentation-site/patternfly-docs/content/AI/rapid-prototyping/new-prototypes.md",
       "packages/documentation-site/patternfly-docs/content/AI/rapid-prototyping/enhancing-existing-projects.md"
+    ]
+  },
+  {
+    "name": "zhoux77899/claude-code-insights",
+    "url": "https://github.com/zhoux77899/claude-code-insights",
+    "description": "A daily-updated collection of insights for the Claude Code ecosystem, automatically tracking the most popular and active Claude Code repositories.",
+    "files": [
+      "plugins/cached-repos.txt"
     ]
   }
 ]
