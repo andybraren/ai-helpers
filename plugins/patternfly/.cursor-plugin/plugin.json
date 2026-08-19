@@ -5,21 +5,17 @@
     "pf-react",
     "pf-design-guide",
     "pf-design-audit",
+    "pf-a11y",
     "pf-migration",
     "pf-code-review",
-    "pf-mcp",
-    "pf-a11y"
+    "pf-mcp"
   ],
-  "agents": [
-    "./agents/pf-assist/pf-assist.md"
-  ],
+  "agents": ["./agents/pf-assist/pf-assist.md"],
   "author": {
     "name": "UXD Team",
     "url": "https://www.patternfly.org"
   },
   "repository": "https://github.com/rh-uxd/ai-helpers",
   "license": "MIT",
-  "keywords": [
-    "patternfly"
-  ]
+  "keywords": ["patternfly"]
 }
