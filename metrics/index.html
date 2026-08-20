@@ -294,41 +294,6 @@
           options: chartOpts(),
         });
 
-        // Per-plugin adoption — only show when there's real data
-        const pluginKeys = ['patternfly_refs', 'pf_react_refs', 'pf_design_guide_refs', 'pf_design_audit_refs', 'pf_migration_refs', 'pf_code_review_refs', 'pf_mcp_refs', 'uxd_workshop_refs'];
-        const hasPluginData = pluginKeys.some(k => parseInt(latest[k] || 0) > 0);
-
-        if (hasPluginData) {
-          const pluginNames = ['patternfly', 'pf-react', 'pf-design-guide', 'pf-design-audit', 'pf-migration', 'pf-code-review', 'pf-mcp', 'uxd-workshop'];
-          const pluginColors = ['#bc8cff', '#58a6ff', '#3fb950', '#d29922', '#f85149', '#e67e73', '#76d9e6', '#8b949e'];
-
-          const pluginCard = document.createElement('div');
-          pluginCard.className = 'chart-card full-width';
-          pluginCard.innerHTML = '<h2>Per-Plugin Adoption</h2><canvas id="plugin-chart"></canvas>';
-          container.appendChild(pluginCard);
-
-          new Chart(document.getElementById('plugin-chart'), {
-            type: 'bar',
-            data: {
-              labels: pluginNames,
-              datasets: [{
-                label: 'References in other repos',
-                data: pluginKeys.map(k => parseInt(latest[k] || 0)),
-                backgroundColor: pluginColors,
-                borderRadius: 4,
-              }],
-            },
-            options: {
-              responsive: true,
-              indexAxis: 'y',
-              plugins: { legend: { display: false } },
-              scales: {
-                x: { beginAtZero: true, ticks: { color: themeColor('--text-dim'), stepSize: 1, font: { size: 10 } }, grid: { color: themeColor('--grid') } },
-                y: { ticks: { color: themeColor('--text-muted'), font: { size: 11 } }, grid: { display: false } },
-              },
-            },
-          });
-        }
       }
     }
 

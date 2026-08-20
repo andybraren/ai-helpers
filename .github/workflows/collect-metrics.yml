@@ -50,26 +50,12 @@ jobs:
           SKILLS=$(find plugins -name 'SKILL.md' | wc -l | tr -d ' ')
           AGENTS=$(find plugins -path '*/agents/*.md' -not -path '*/agents/*/*.md' | wc -l | tr -d ' ')
 
-          plugin_refs() {
-            local name="$1"
-            sleep 1
-            gh api "search/code?q=%22${name}%22+%22rh-uxd/ai-helpers%22+NOT+repo:rh-uxd/ai-helpers" --jq '.total_count'
-          }
-          PF_REFS=$(plugin_refs "patternfly")
-          PF_REACT_REFS=$(plugin_refs "pf-react")
-          PF_DESIGN_GUIDE_REFS=$(plugin_refs "pf-design-guide")
-          PF_DESIGN_AUDIT_REFS=$(plugin_refs "pf-design-audit")
-          PF_MIGRATION_REFS=$(plugin_refs "pf-migration")
-          PF_CODE_REVIEW_REFS=$(plugin_refs "pf-code-review")
-          PF_MCP_REFS=$(plugin_refs "pf-mcp")
-          UXD_WORKSHOP_REFS=$(plugin_refs "uxd-workshop")
-
           REFERRERS=$(gh api "repos/${REPO}/traffic/popular/referrers")
           PATHS=$(gh api "repos/${REPO}/traffic/popular/paths")
           echo "${REFERRERS}" | jq -r --arg d "$DATE" '.[] | [$d, "referrer", .referrer, (.count|tostring), (.uniques|tostring)] | @csv' >> metrics/traffic-discovery.csv
           echo "${PATHS}" | jq -r --arg d "$DATE" '.[] | [$d, "path", .path, (.count|tostring), (.uniques|tostring)] | @csv' >> metrics/traffic-discovery.csv
 
-          echo "${DATE},${VISITORS},${TOTAL_VIEWS},${REPO_REFS},${EXTERNAL_ISSUES},${EXTERNAL_PRS},${PLUGINS},${SKILLS},${AGENTS},${PF_REFS},${PF_REACT_REFS},${PF_DESIGN_GUIDE_REFS},${PF_DESIGN_AUDIT_REFS},${PF_MIGRATION_REFS},${PF_CODE_REVIEW_REFS},${PF_MCP_REFS},${UXD_WORKSHOP_REFS}" >> metrics/adoption-metrics.csv
+          echo "${DATE},${VISITORS},${TOTAL_VIEWS},${REPO_REFS},${EXTERNAL_ISSUES},${EXTERNAL_PRS},${PLUGINS},${SKILLS},${AGENTS}" >> metrics/adoption-metrics.csv
 
       - name: Commit updated metrics
         env:
