@@ -33,12 +33,19 @@ jobs:
           TOTAL_VIEWS=$(echo "${VIEWS_JSON}" | jq '.count')
 
           REPO_REFS_RAW=$(gh api "search/code?q=%22rh-uxd/ai-helpers%22+NOT+repo:rh-uxd/ai-helpers+NOT+repo:rh-uxd/ai-helpers-internal&per_page=100")
-          REPO_REFS=$(echo "${REPO_REFS_RAW}" | jq '.total_count')
+          RAW_COUNT=$(echo "${REPO_REFS_RAW}" | jq '.total_count')
           PREV_REFS=$(jq length metrics/repo-references.json 2>/dev/null || echo 0)
-          if [ "$REPO_REFS" -eq 0 ] && [ "$PREV_REFS" -gt 0 ]; then
+          if [ "$RAW_COUNT" -eq 0 ] && [ "$PREV_REFS" -gt 0 ]; then
             echo "WARNING: code search returned 0 results but previous data has ${PREV_REFS} entries — keeping existing repo-references.json"
+            REPO_REFS="$PREV_REFS"
           else
-            echo "${REPO_REFS_RAW}" | jq '[.items | group_by(.repository.full_name)[] | {name: .[0].repository.full_name, url: .[0].repository.html_url, description: (.[0].repository.description // ""), files: [.[].path]}] | sort_by(.name)' > metrics/repo-references.json
+            echo "${REPO_REFS_RAW}" | jq '
+              [.items | group_by(.repository.full_name)[] |
+               {name: .[0].repository.full_name, url: .[0].repository.html_url, description: (.[0].repository.description // ""), files: [.[].path]}] |
+              map(select(.files | map(test("\\.(txt|csv|log)$") or test("(^|/)README") or test("(^|/)(awesome-|cached-)")) | all | not)) |
+              sort_by(.name)
+            ' > metrics/repo-references.json
+            REPO_REFS=$(jq length metrics/repo-references.json)
           fi
 
           # GITHUB_TOKEN lacks org:read — hardcoded maintainers list (update when team changes)

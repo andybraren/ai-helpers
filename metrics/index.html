@@ -66,9 +66,10 @@
     .empty-state h2 { margin-bottom: 8px; color: var(--text); }
 
     .refs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
-    .refs-col-pending { border-left: 2px dashed var(--pending-border); padding-left: 24px; }
-    .refs-section h3 { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin: 14px 0 6px; font-weight: 600; }
-    .refs-section h3:first-child { margin-top: 0; }
+    .refs-grid > div:first-child { padding-right: 28px; }
+    .refs-col-pending { border-left: 2px dashed var(--pending-border); padding-left: 28px; }
+    .refs-section h3 { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin: 24px 0 8px; font-weight: 600; }
+    .refs-section h3:first-child { margin-top: 4px; }
     .refs-section table { width: 100%; border-collapse: collapse; }
     .refs-section td { padding: 6px 0; font-size: 0.8rem; color: var(--text-muted); vertical-align: top; }
     .refs-section td:first-child { font-weight: 500; white-space: nowrap; padding-right: 24px; }

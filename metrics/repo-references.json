@@ -25,13 +25,5 @@
       "packages/documentation-site/patternfly-docs/content/AI/rapid-prototyping/new-prototypes.md",
       "packages/documentation-site/patternfly-docs/content/AI/rapid-prototyping/enhancing-existing-projects.md"
     ]
-  },
-  {
-    "name": "zhoux77899/claude-code-insights",
-    "url": "https://github.com/zhoux77899/claude-code-insights",
-    "description": "A daily-updated collection of insights for the Claude Code ecosystem, automatically tracking the most popular and active Claude Code repositories.",
-    "files": [
-      "plugins/cached-repos.txt"
-    ]
   }
 ]
