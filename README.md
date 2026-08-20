@@ -133,6 +133,10 @@ Every pull request runs through automated quality gates:
 | Gate | What it checks |
 |------|---------------|
 | **Validate** | Manifest consistency, generated docs freshness, skill frontmatter integrity |
+| **Skillsaw** | Skill content quality — structure, clarity, completeness |
+| **Eval lint** | Eval config correctness — schema validation, judge quality |
+| **Eval required** | Consumer-facing skills must include an eval suite |
+| **AI Guardian** | Security scanning for prompt injection, unsafe patterns |
 | **Secret scan** | Internal URLs and potential credentials in tracked files |
 | **Link check** | Broken internal markdown links |
 | **Boundary check** | PF skills don't reference UXD internals and vice versa |
