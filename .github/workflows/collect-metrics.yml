@@ -23,6 +23,7 @@ jobs:
       - name: Collect metrics
         env:
           GH_TOKEN: ${{ secrets.METRICS_TOKEN }}
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
           set -e
           REPO="${{ github.repository }}"
@@ -48,6 +49,58 @@ jobs:
             REPO_REFS=$(jq length metrics/repo-references.json)
           fi
 
+          # Discover pending integrations (open PRs/MRs referencing this marketplace)
+          gh api "search/issues?q=%22rh-uxd/ai-helpers%22+is:pr+is:open+-repo:rh-uxd/ai-helpers+-repo:rh-uxd/ai-helpers-internal&per_page=100" \
+            > /tmp/gh-pending1.json || echo '{"items":[]}' > /tmp/gh-pending1.json
+          gh api "search/issues?q=%22uxd-workshop%22+is:pr+is:open+-repo:rh-uxd/ai-helpers+-repo:rh-uxd/ai-helpers-internal&per_page=100" \
+            > /tmp/gh-pending2.json || echo '{"items":[]}' > /tmp/gh-pending2.json
+          jq -s '
+            [.[].items[] | {
+              name: (.repository_url | split("/") | .[-2:] | join("/")),
+              url: .html_url,
+              description: .title
+            }] | unique_by(.url) | group_by(.name) | map(.[0])
+          ' /tmp/gh-pending1.json /tmp/gh-pending2.json > /tmp/gh-pending.json
+
+          echo '[]' > /tmp/gl-pending.json
+          if [ -n "${GITLAB_TOKEN:-}" ]; then
+            GL_API="https://gitlab.cee.redhat.com/api/v4"
+            for project in hybrid-platforms%2Forg; do
+              project_name=$(echo "$project" | sed 's/%2F/\//g')
+              for term in ai-helpers uxd-workshop ai-workflows; do
+                curl -sf "${GL_API}/projects/${project}/merge_requests?state=opened&search=${term}" \
+                  -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" 2>/dev/null | \
+                  jq --arg name "$project_name" '[.[] | {name: $name, url: .web_url, description: .title}]' \
+                  >> /tmp/gl-raw.json || true
+              done
+            done
+            if [ -s /tmp/gl-raw.json ]; then
+              jq -s 'add | unique_by(.url) | group_by(.name) | map(.[0])' /tmp/gl-raw.json > /tmp/gl-pending.json
+            fi
+          else
+            echo "INFO: GITLAB_TOKEN not set — skipping GitLab pending integration discovery"
+          fi
+
+          PREV_PENDING=$(jq length metrics/pending-integrations.json 2>/dev/null || echo 0)
+          cp metrics/manual-references.json /tmp/manual-refs.json 2>/dev/null || echo '[]' > /tmp/manual-refs.json
+          jq -n \
+            --slurpfile gh /tmp/gh-pending.json \
+            --slurpfile gl /tmp/gl-pending.json \
+            --slurpfile refs metrics/repo-references.json \
+            --slurpfile manual /tmp/manual-refs.json \
+            '
+            ($refs[0] + $manual[0] | map(.name)) as $adopted |
+            ($gh[0] + $gl[0]) | group_by(.name) | map(.[0]) |
+            [.[] | select(.name as $n | $adopted | index($n) | not)] |
+            sort_by(.name)
+            ' > /tmp/pending-final.json
+          NEW_PENDING=$(jq length /tmp/pending-final.json)
+          if [ "$NEW_PENDING" -eq 0 ] && [ "$PREV_PENDING" -gt 0 ]; then
+            echo "WARNING: searches returned 0 pending results but previous data has ${PREV_PENDING} entries — keeping existing pending-integrations.json"
+          else
+            cp /tmp/pending-final.json metrics/pending-integrations.json
+          fi
+
           # GITHUB_TOKEN lacks org:read — hardcoded maintainers list (update when team changes)
           MAINTAINERS="-author:jpuzz0+-author:dlabaj+-author:andybraren"
           EXTERNAL_ISSUES=$(gh api "search/issues?q=repo:${REPO}+is:issue+is:open+${MAINTAINERS}" --jq '.total_count')
@@ -71,7 +124,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-          git add metrics/adoption-metrics.csv metrics/traffic-discovery.csv metrics/repo-references.json
+          git add metrics/adoption-metrics.csv metrics/traffic-discovery.csv metrics/repo-references.json metrics/pending-integrations.json
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
