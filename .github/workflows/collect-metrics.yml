@@ -91,6 +91,7 @@ jobs:
           echo "${REFERRERS}" | jq -r --arg d "$DATE" '.[] | [$d, "referrer", .referrer, (.count|tostring), (.uniques|tostring)] | @csv' >> metrics/traffic-discovery.csv
           echo "${PATHS}" | jq -r --arg d "$DATE" '.[] | [$d, "path", .path, (.count|tostring), (.uniques|tostring)] | @csv' >> metrics/traffic-discovery.csv
 
+          sed -i "/^${DATE},/d" metrics/adoption-metrics.csv
           echo "${DATE},${VISITORS},${TOTAL_VIEWS},${REPO_REFS},${EXTERNAL_ISSUES},${EXTERNAL_PRS},${PLUGINS},${SKILLS},${AGENTS}" >> metrics/adoption-metrics.csv
 
       - name: Commit updated metrics
