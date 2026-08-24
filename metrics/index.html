@@ -146,12 +146,13 @@
       const lines = text.trim().split('\n');
       if (lines.length < 2) return null;
       const headers = lines[0].split(',');
-      return lines.slice(1).map(line => {
+      const rows = lines.slice(1).map(line => {
         const vals = line.split(',');
         const obj = {};
         headers.forEach((h, i) => { obj[h.trim()] = vals[i]?.trim(); });
         return obj;
       });
+      return [...new Map(rows.map(r => [r.date, r])).values()];
     }
 
     function deltaText(current, previous) {
