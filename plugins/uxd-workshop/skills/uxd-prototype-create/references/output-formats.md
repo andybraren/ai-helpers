@@ -6,19 +6,19 @@ Schema definitions for artifacts produced by the prototype creation pipeline. Lo
 
 ```
 .artifacts/{ID}/
-  code/                 # cloned target repo (workspace mode)
+  code/                 # cloned workspace repo (workspace mode)
   prototype/            # standalone HTML
   decisions/            # decision pages + decisions.json
-  scripts/              # generated Playwright scripts (from evaluate)
-  screenshots/          # eval evidence
-  *.json / *.md / …     # snapshots, reports, metadata
+  eval/                 # evaluate outputs (report, screenshots, Playwright scripts)
+  exports/              # optional journey × scenario captures
+  *.json / *.md / …     # snapshots, metadata, journeys, scenarios
 ```
 
-Never write these under the skill install directory (`${CLAUDE_SKILL_DIR}`).
+Never write these under the skill install directory (`${CLAUDE_SKILL_DIR}`). Eval files belong in `eval/`, not the key root.
 
 ## .artifacts/{ID}/workspace-analysis.json
 
-Written during Step 6 (codebase analysis). Critical for workspace mode — `submit_to_repo.py` reads `branch` (workspace clone), `clone_url`, optional `upstream_url`, and optional `target_branch` (MR/PR base) from this file.
+Written during Step 6 (codebase analysis). Critical for workspace mode — publish's `submit_to_repo.py` reads `branch` (workspace clone), `clone_url`, optional `upstream_url`, and optional `target_branch` (MR/PR base) from this file.
 
 ```json
 {
@@ -141,7 +141,7 @@ Or write it directly from `metadata.json` fields. Schema: see `uxd-prototype-exp
 
 ## .artifacts/{ID}/changeset.md
 
-Written during Step 10 (workspace mode). Lists all files affected.
+Written during Step 9. Lists all files affected.
 
 ```markdown
 ---
@@ -264,98 +264,23 @@ When the refinement procedure runs, update `prototype-summary.yaml` in place:
 
 ## .artifacts/{ID}/journeys.json
 
-Written during Step 4 (and kept in sync if flows change). Drives implementation reachability in Step 8 and batch export via `uxd-prototype-export`. Full action vocabulary: `uxd-prototype-export/references/journeys-schema.md`.
+Written during Step 4 (kept in sync if flows change). Drives implementation reachability in Step 8 and batch export.
 
-```json
-{
-  "prototype_id": "PROJ-298",
-  "extracted_at": "2025-01-15T10:30:00Z",
-  "journeys": [
-    {
-      "id": "journey-1",
-      "title": "Create API key",
-      "persona": "app-developer",
-      "source": "jira",
-      "ac_ids": ["AC-1"],
-      "steps": [
-        {
-          "id": "list",
-          "name": "API key list",
-          "route": "/api-keys",
-          "export": true
-        },
-        {
-          "id": "open-create",
-          "name": "Create modal open",
-          "route": "/api-keys",
-          "export": true,
-          "actions": [
-            { "type": "click", "selector": "[data-ouia-component-id=\"create-api-key\"]" },
-            { "type": "wait_for", "selector": "[role=\"dialog\"]" }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| `steps[].route` | Path relative to the prototype base URL |
-| `steps[].export` | When `true`, included in create `--export` / `export-journey.mjs` |
-| `steps[].actions` | Optional UI actions before capture (open modal, fill, wait) — not only distinct URLs |
+**Canonical schema:** [journeys-schema.md](../../uxd-prototype-export/references/journeys-schema.md) in `uxd-prototype-export`.
 
 Also keep the flat `screens` list in `metadata.json` / `prototype-summary.yaml` as a convenience index of screen names.
 
 ## .artifacts/{ID}/scenarios.json
 
-Written during Step 4 (kept in sync if pages/conditions change). Sibling to `journeys.json`. Catalog of **data/condition variants** per page (empty, load error, validation, alternate selection, match/availability/recovery branches). Interaction states (modal open) stay in journey `actions` — not scenarios.
+Written during Step 4 (kept in sync if pages/conditions change). Sibling to `journeys.json`. Catalog of **data/condition variants** per page. Interaction states (modal open) stay in journey `actions` — not scenarios.
 
-Brainstorm checklist: [scenario-brainstorm.md](scenario-brainstorm.md). Full schema: `uxd-prototype-export/references/scenarios-schema.md`. Mock wiring: [scenario-mocks.md](scenario-mocks.md).
+**Canonical schema:** [scenarios-schema.md](../../uxd-prototype-export/references/scenarios-schema.md) in `uxd-prototype-export`.
 
-```json
-{
-  "prototype_id": "PROJ-298",
-  "extracted_at": "2025-01-15T10:30:00Z",
-  "pages": [
-    {
-      "route": "/api-keys",
-      "screen": "ApiKeyList",
-      "scenarios": [
-        {
-          "id": "default",
-          "name": "Populated list",
-          "description": "Happy path with several API keys",
-          "default": true
-        },
-        {
-          "id": "empty",
-          "name": "Empty state",
-          "description": "No API keys yet"
-        },
-        {
-          "id": "load-error",
-          "name": "Load error",
-          "description": "Failed to fetch keys"
-        }
-      ]
-    }
-  ]
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| `pages[].route` | Must match journey step routes |
-| `pages[].scenarios[].id` | Filename-safe (`[a-z0-9-]+`); used in `?scenario=<id>` and export filenames |
-| `pages[].scenarios[].default` | Exactly one `true` per page (or imply `id: "default"`) |
-
-Every journey route needs at least a `default` scenario. Export captures each exportable journey step × each scenario for that step’s route.
+Brainstorm checklist: [scenario-brainstorm.md](scenario-brainstorm.md). Mock wiring: [scenario-mocks.md](scenario-mocks.md). Every journey route needs at least a `default` scenario.
 
 ## .artifacts/{ID}/verification.json
 
-Written during Step 10 (workspace mode post-change verification).
+Written during Step 11 (workspace mode post-change verification).
 
 ```json
 {

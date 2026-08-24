@@ -105,7 +105,7 @@ Active scenario on the page: `?scenario=<id>` (default when absent: `default`). 
 | **uxd-prototype-create** (Step 9) | Write initial file from `source`, `source_rfes`, Figma URL, title; sync scenarios |
 | **uxd-prototype-evaluate** | Merge outcome / strat keys from `outcome-context.json` into `sources` |
 | **publish-report.sh** | Set `views.eval` to Pages URL or `/evals/{KEY}/`; write `report-url.txt` |
-| **install-prototype-bar.sh** | Inject config into standalone HTML or copy next to workspace public assets; install `uxd-scenario-runtime.js` |
+| **install-prototype-bar.sh** | With `--artifacts`: sync config, inject into standalone HTML or copy next to workspace public assets, install `uxd-scenario-runtime.js`, copy eval report for Pages |
 
 Use `scripts/sync-prototype-bar-config.mjs` to create or merge the file from metadata + optional outcome context + `scenarios.json`.
 

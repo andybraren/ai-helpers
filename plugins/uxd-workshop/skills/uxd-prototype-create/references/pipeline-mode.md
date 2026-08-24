@@ -19,13 +19,13 @@ After normal create questions, also ask:
 ```
 1. CREATE    → follow uxd-prototype-create Steps 1–13
                (Prototype Bar on by default; optional --export after serve URL is known)
-1b. BAR      → install-and-sync-prototype-bar.sh (ALWAYS unless --no-prototype-bar)
+1b. BAR      → install-prototype-bar.sh --artifacts (ALWAYS unless --no-prototype-bar)
                Syncs prototype-bar.json from metadata + installs assets into source.
                Must run BEFORE serve so the bar is visible immediately.
 2. SERVE     → ensure prototype is reachable at {URL}
-2b. EXPORT?  → if --export, run Step 11 (journey static HTML / tree under .artifacts/{ID}/exports)
+2b. EXPORT?  → if --export, run Step 12 (journey static HTML / tree under .artifacts/{ID}/exports)
 3. EVALUATE  → /uxd-prototype-evaluate {ID} {URL} [--workspace=…]
-3b. BAR (refresh) → re-run install-and-sync-prototype-bar.sh after evaluate.
+3b. BAR (refresh) → re-run install-prototype-bar.sh --artifacts after evaluate.
                This re-syncs the config AND copies the eval report into
                public/evals/{ID}/ so the Eval tab works on Pages.
                (Happens automatically — Step 3 in the unified script detects the report.)
