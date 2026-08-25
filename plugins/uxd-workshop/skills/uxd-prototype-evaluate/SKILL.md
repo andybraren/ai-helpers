@@ -1,257 +1,199 @@
 ---
 name: uxd-prototype-evaluate
+version: 0.1.0
 description: >-
-  Evaluate a prototype's quality through rubric scoring, simulated usability
-  testing, and desirability studies. Three evaluation depths: quick (rubric
-  only), standard (rubric + usability), or full (rubric + usability +
-  desirability).
+  Evaluate a running prototype against a Jira ticket's acceptance criteria,
+  automatically fix what fails, then run persona-based usability walkthroughs.
+  Produces an HTML evidence report with screenshots, scores, and findings.
+  Use when you want to validate a prototype, check usability, or generate
+  evidence for an MR review.
 ---
 
 # Evaluate Prototype
 
-Evaluate a prototype against its source RFE using a structured quality rubric, simulated usability testing with personas, and desirability analysis. Choose from three evaluation depths depending on context:
+Two-phase eval: **Phase A (x-ray)** validates acceptance criteria with source access and can fix FAILs; **Phase B (discovery)** always runs persona Playwright walkthroughs. Writes a self-contained HTML report with screenshots, think-aloud traces, and AC verdicts.
 
-1. **Quick** — Rubric scoring only (3 dimensions, 0-2 each, max 6). Fast pass/fail gate.
-2. **Standard** — Rubric + simulated usability testing with personas. Recommended for most workflows.
-3. **Full** — Rubric + usability + desirability study. Runs every evaluation. Use for high-stakes or externally-facing prototypes.
-
-## Flags
-
-| Flag | Values | Default | Description |
-|------|--------|---------|-------------|
-| `--depth` | `quick`, `standard`, `full` | `quick` | How thorough the evaluation should be |
-| `--usability` | flag | off | Run usability testing (equivalent to `--depth standard` minimum) |
-| `--desirability` | flag | off | Run desirability study (equivalent to `--depth full`) |
-
-Individual flags override `--depth`. For example, `--depth quick --desirability` runs the rubric and desirability study but skips usability testing. `--usability --desirability` is equivalent to `--depth full`.
-
-## Conversational Guidance
-
-If the user asks to evaluate without specifying a depth or flags:
-
-- "review", "score", "check" → default to **quick**
-- "usability", "test", "walkthrough" → default to **standard**
-- "desirability", "emotional", "aesthetic", "brand", "everything", "full evaluation" → default to **full**
+Family: `uxd-prototype-create` → **evaluate** → `uxd-prototype-publish`. Re-run after changes. Full loop: [references/orchestration.md](references/orchestration.md). Phase procedures: `references/phases/` — follow each file when that phase runs.
 
 ## Inputs
 
-| Input | Source | Required |
-|-------|--------|----------|
-| Prototype HTML files | `.artifacts/{ID}/prototype/` or workspace modified files | Yes |
-| RFE snapshot | `.artifacts/{ID}/rfe-snapshot.md` | Yes |
-| `metadata.json` | `.artifacts/{ID}/metadata.json` | Yes |
-| Research context | `.context/research-context/` (personas, journey maps) | No |
-| Evaluation depth | `--depth` flag, `--usability`/`--desirability` flags, or conversational selection | Yes |
+| Input | Example | Required |
+|-------|---------|----------|
+| Jira story key | `PROJ-298` | **Yes** |
+| Prototype URL | `http://localhost:3000` | Conditional |
+| MR URL | `https://gitlab.example.com/…/-/merge_requests/42` | No |
+| `--workspace` | Path to prototype repo | No |
 
-## Step 0: Detect Mode and Choose Depth
+Need a **reachable URL** or `--workspace` with a built `dist/`. If the key or URL is missing, **stop and ask** — do not start Playwright.
 
-1. **Prototype ID** — from `$ARGUMENTS` or auto-detected from `.artifacts/`
-2. **Evaluation depth** — resolve from flags: `--depth`, `--usability`, `--desirability`
-3. **Mode detection:**
-   - Workspace mode: `workspace-analysis.json` exists, files tracked via `changeset.md`
-   - Standalone mode: prototype lives in `.artifacts/{ID}/prototype/`
+**Remote-only (blocking):** URL but no `--workspace` and no MR URL → warn (no fix loop, no source-mode consistency, heuristic navigation only) and wait for confirm before proceeding.
 
----
+**URL resolution:** probe remote URLs; if unreachable and `dist/` exists, serve with `sirv` (`--single` for SPAs). Hybrid: MR URL + remote prototype clones source into `.artifacts/<KEY>/code/` for route/component-map data; Playwright still uses the remote URL.
 
-# Rubric Review
+## Outputs
 
-Score each dimension using the rubric definitions in [references/ux-rubric.yaml](references/ux-rubric.yaml).
+Per-key eval files under `${UXD_PROJECT_ROOT}/.artifacts/<KEY>/eval/` (`ARTIFACTS_DIR`):
 
-## Step 1: Load the Prototype and RFE
+| File | Description |
+|------|-------------|
+| `evaluation-report.html` | Final HTML report (both phases) |
+| `evaluation-report.csv` | AC verdicts + usability dimensions |
+| `iteration-log.json` | Per-iteration counts + Phase B usability |
+| `journey-log.json` | Playwright step log + usability overlays |
+| `scripts/journey-test.mjs` / `persona-walkthrough.mjs` | Generated Playwright scripts |
+| `evaluation-report-iter-N.csv`, `screenshots-iter-N/` | Phase A archives |
+| `screenshots/persona-<id>-step-N.png` | Phase B screenshots |
+| `usability-thinkaloud-<id>.md` | Phase B traces |
+| `runs/<timestamp>/` | Archived copy of this run |
+| `report-url.txt` | Hosted eval URL after `publish-report.sh` |
 
-**Workspace mode:** Read `changeset.md` for modified files, `workspace-analysis.json` for context, all prototype files, and the RFE source.
+Cross-key (`.artifacts/eval/`, not deleted by `--fresh`): `runs/run-log.csv`, `pain-leaderboard.html`.
 
-**Standalone mode:** Read all HTML files in `.artifacts/{ID}/prototype/`, the RFE snapshot, and `metadata.json`.
+Create-owned (key root, not deleted by `--fresh`): `.artifacts/<KEY>/prototype-bar.json` — sync with `--artifacts ${KEY_DIR}` after the report. Local Eval browsing: export skill `export-helper.mjs` on port 9417. Static Pages: `copy-eval-for-pages.sh` / `install-prototype-bar.sh --artifacts` into `public/evals/<KEY>/`.
 
-## Step 2: Run Three Independent Review Dimensions
+## Flags
 
-Each dimension scores 0-2. Evaluate independently.
+$ARGUMENTS
 
-### Dimension 1: Completeness
+Parse as: `<KEY> <prototype-url> [mr-url] [--workspace=…]` or `review <KEY>`
 
-Does the prototype cover the user stories and acceptance criteria?
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--workspace` | — | Prototype repo (enables the fix loop) |
+| `--max-iterations` | `3` | Max Phase A fix-loop iterations |
+| `--no-iterate` | Off | Single Phase A pass, no loop |
+| `--no-fix` | Off | Evaluate only — FAILs remain; Phase B still runs |
+| `--reset` | Off | Hard-reset workspace to origin HEAD before eval |
+| `--fresh` | Off | Delete `.artifacts/<KEY>/eval/` only (not the key root, not `.artifacts/eval/`) |
+| `--no-report` | Off | Compact chat summary; run `review` later for the full report |
 
-| Score | Criteria |
-|-------|----------|
-| 2 | All user stories represented. Acceptance criteria traceable. Core + alternate flows present. |
-| 1 | Primary story represented but secondary missing. Happy path only. |
-| 0 | Major stories missing. Core flow not represented. |
+```
+/uxd-prototype-evaluate PROJ-298 http://localhost:3000 --workspace=/path/to/prototype
+/uxd-prototype-evaluate PROJ-298 http://localhost:4200 --max-iterations=2
+/uxd-prototype-evaluate PROJ-298 https://pages.example.com/mr-42/ https://gitlab.example.com/group/repo/-/merge_requests/42
+/uxd-prototype-evaluate review PROJ-298
+```
 
-Instructions: List every user story, map each to a screen/flow, check acceptance criteria coverage.
+## Artifact locations
 
-### Dimension 2: Usability
+Eval runtime outputs live in the **consumer project**, never under `${CLAUDE_SKILL_DIR}` (the skill install). Mixing them into the create/publish key root also breaks `--fresh` and publish.
 
-Evaluated against Nielsen's 10 heuristics.
+| Variable | Path | Role |
+|----------|------|------|
+| `UXD_PROJECT_ROOT` | Consumer project root (git toplevel, never the skill install, never a nested clone) | Pin first |
+| `KEY_DIR` | `${UXD_PROJECT_ROOT}/.artifacts/<KEY>` | Create/publish key root |
+| `ARTIFACTS_DIR` | `${KEY_DIR}/eval` | **All** per-key eval outputs |
 
-| Score | Criteria |
-|-------|----------|
-| 2 | No major heuristic violations. Patterns clear and consistent. States handled. |
-| 1 | Minor violations. Core flows usable but with friction. Error states missing. |
-| 0 | Major violations (3+). Dead-end flows. Navigation broken. |
+Pinned by `scripts/pipeline-setup.sh` at pipeline start.
 
-**Nielsen's 10 Heuristics Checklist:**
+1. After any `cd`, use absolute `${ARTIFACTS_DIR}` — never a relative `.artifacts/<KEY>/eval/…`.
+2. `cd "${CLAUDE_SKILL_DIR}"` only for `npm install` / Playwright browsers, then return to `${UXD_PROJECT_ROOT}`.
+3. Generated Playwright scripts go in `${ARTIFACTS_DIR}/scripts/`.
+4. `--fresh` deletes only `${ARTIFACTS_DIR}` (`.artifacts/<KEY>/eval/`). Never the key root, never `.artifacts/eval/`, never `rm -rf .artifacts` from an unknown cwd.
+5. Create-owned siblings (`decisions/`, `prototype-bar.json`, …) stay at `${KEY_DIR}`.
+6. Node helpers resolve via `scripts/resolve-root.js` (honors `UXD_PROJECT_ROOT`).
 
-1. Visibility of system status
-2. Match between system and real world
-3. User control and freedom
-4. Consistency and standards
-5. Error prevention
-6. Recognition rather than recall
-7. Flexibility and efficiency of use
-8. Aesthetic and minimalist design
-9. Help users recognize, diagnose, recover from errors
-10. Help and documentation
+BAD: `cd .artifacts/<KEY>/code && echo "result" > eval/report.csv` — relative write lands in the clone.
 
-Rate each: satisfied / partially satisfied / violated.
+In phase docs, `.artifacts/<KEY>/eval/…` means `${UXD_PROJECT_ROOT}/.artifacts/<KEY>/eval/…`.
 
-### Dimension 3: Feasibility
+## Prerequisites
 
-Can the prototype be built with PatternFly 6?
-
-| Score | Criteria |
-|-------|----------|
-| 2 | All elements map to PF6 components. Standard layout patterns. |
-| 1 | Most elements map but 1-2 need custom development. |
-| 0 | Multiple elements have no PF6 equivalent. Would require custom design system. |
-
-Instructions: List every UI component, map to PF6 equivalent, flag custom needs.
-
-## Step 3: Write Individual Review Files
-
-For each dimension, write `.artifacts/{ID}/reviews/{dimension}.md` with frontmatter:
+Marketplace install copies files only — it does not run `npm install` or `package.json` `postinstall`. Before proceeding, install Node deps and Chromium from the skill directory:
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/frontmatter.py set .artifacts/{ID}/reviews/{dimension}.md \
-  prototype_id={ID} dimension={dimension} score={score} \
-  verdict={verdict} reviewed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+export UXD_PROJECT_ROOT="$(node -e "console.log(require('${CLAUDE_SKILL_DIR}/scripts/resolve-root').resolveProjectRoot())" 2>/dev/null || git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "${CLAUDE_SKILL_DIR}"
+npm install
+npx playwright install chromium
+cd "${UXD_PROJECT_ROOT}"
 ```
 
-Each review file must follow this structure:
+Stop if Chromium install fails; do not start Playwright without it.
 
-```markdown
-# {Dimension} Review — {ID}
+Context repos (`.context/consistency-checker/`, `.context/usability-testing/`) bootstrap on first run when `CONSISTENCY_CHECKER_REPO` / `USABILITY_TESTING_REPO` (or overlay `context_repos`) are set; otherwise those phases degrade. Product overlay: [references/skill-overlays.md](references/skill-overlays.md).
 
-## Score: {score}/2 — {Pass|Partial|Fail}
+**Personas:** `${CLAUDE_PLUGIN_ROOT}/knowledge/personas/catalog.yaml` + overlays. Deep YAML from `.context/usability-testing/`. Internal study URLs: `node ${CLAUDE_SKILL_DIR}/scripts/overlay-get.js --knowledge-persona <id>` when internal-ai-helpers is present.
 
-## Findings
+IDE auto-approve for the bundled scripts is optional and tool-specific — see this skill's README if the user is prompted on every script.
 
-{Detailed findings organized by sub-criteria. Reference specific screens,
-components, and flows. For usability, list each heuristic evaluated.
-For completeness, trace each user story to its screen.}
+## Workflow (two-phase)
 
-## Evidence
+```
+PHASE A (X-Ray — Informed AC Validation Loop):
+  eval-extract (--phase=core) → eval-consistency (--mode=source) → eval-classify → eval-journey
+                                                                                     ↓
+                                                                             Exit condition met? → Phase B (ALWAYS)
+                                                                             FAIL + cycle ≤ max → eval-fix → loop from eval-classify
 
-{Specific references to prototype files, screens, or elements that support
-the score. Quote filenames, line numbers, or UI element names so the
-reviewer can verify.}
+  Exit conditions (any triggers Phase B):
+    all_pass          — 0 FAIL, 0 FLAGGED
+    flagged_unfixable — 0 FAIL, FLAGGED items unfixable
+    max_iterations    — still has FAILs after N loops
+    regression        — fix loop broke a previously-passing AC
+    no_fix/no_iterate — user flag or single-run mode
 
-## Recommendations
+POST-PHASE-A:
+  eval-consistency (--mode=visual) → eval-extract (--phase=enrichment) → eval-hint
 
-{Actionable suggestions for improvement. Only include if score < 2.
-Each recommendation should be specific enough to implement —
-e.g., "Add an empty state to ApiKeyList when no keys exist"
-not "Improve completeness."}
+PHASE B (Discovery — Per-Persona Usability Walkthroughs) — ALWAYS FIRES:
+  eval-usability → eval-report
+  Runs on whatever prototype state exists after Phase A exits.
 ```
 
-## Step 4: Score and Produce Summary
+**Phase A** exits on zero FAIL in `evaluation-report.csv` Section 1, or max iterations. FLAGGED items need human review; the loop only targets FAILs.
 
-- Total = sum of 3 scores (max 6)
-- **Pass**: total ≥ 5 AND no dimension scored 0
-- **Needs attention**: total < 5 OR any dimension scored 0
+**Phase B always fires**, regardless of Phase A outcome (including `--no-fix`). When `exit_reason != all_pass`, usability scores may reflect missing features.
 
-Run the scoring script:
+Do not improvise the loop from this overview — follow [references/orchestration.md](references/orchestration.md).
 
-```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/score_prototype.py {ID}
-```
+## Review Mode
 
-Writes `.artifacts/{ID}/reviews/summary.md` with per-dimension scores, total, verdict, key findings, and recommendations.
+`/uxd-prototype-evaluate review <KEY>` (or "show me the eval for …"): follow [references/phases/eval-review.md](references/phases/eval-review.md). Do not re-run Playwright unless asked.
 
-## Step 5: Apply Labels (Optional)
+## Error Handling
 
-If Jira integration available and running in pipeline mode: apply `rubric-pass` or `needs-attention` label.
+| Problem | Action |
+|---------|--------|
+| Prototype URL unreachable | Fall back to workspace `dist/` via `resolve-prototype-url.sh`; fail clearly if neither exists |
+| eval-fix produces no changes | Stop Phase A; proceed to Phase B |
+| Dev server crashes after fix | Stop Phase A; note suspect files; proceed to Phase B |
+| Missing `.context/` | Phase A degrades (token-check fallback); Phase B uses bundled personas |
 
-## Step 6: Report Results
+## What's Next
 
-Print a console summary table showing all dimensions, scores, verdicts, and the total.
+Report: `.artifacts/<KEY>/eval/evaluation-report.html`.
 
-If depth is **quick** (and neither `--usability` nor `--desirability` flag is set), stop here.
+| Result | Next step |
+|--------|-----------|
+| All ACs pass, usability acceptable | `/uxd-prototype-publish` |
+| FLAGGED only | Review, then publish |
+| Major failures or low usability | `/uxd-prototype-create` with eval findings |
+| Re-run after changes | `/uxd-prototype-evaluate <KEY> <URL>` |
 
----
+After each run, offer: fix a specific issue, explain a finding, re-run, or accept.
 
-# Usability Testing
+## Guardrails
 
-Read [references/usability-testing.md](references/usability-testing.md) when the evaluation depth is **standard** or **full**, or when the `--usability` flag is set.
+- **Do not start Playwright** until Chromium is installed (`npx playwright install chromium`), and the Jira key and a URL or `--workspace` are known.
+- **Never write eval artifacts to `${CLAUDE_SKILL_DIR}`.**
+- **`--fresh` deletes `.artifacts/<KEY>/eval/` only** — key root and `.artifacts/eval/` stay intact.
+- **Phase B is not optional** and is not inference from Phase A screenshots.
+- **`--no-fix` skips the fix loop;** FAILs remain; Phase B still runs.
 
-Simulated usability testing walks through the prototype as real users performing tasks, using persona-based perspectives to predict where users would succeed, struggle, or fail.
+## Reference Docs
 
-**Quick summary of the procedure:**
-1. Load or construct personas (3 minimum: primary user, power user, infrequent user)
-2. Extract user stories from the RFE
-3. Define 4-8 task scenarios covering happy path, secondary flows, error recovery, discovery
-4. Walk through each scenario step-by-step from each persona's perspective
-5. Identify and severity-rank issues (S1 critical → S4 enhancement)
-6. Apply Nielsen's 10 heuristics evaluation
-7. Generate `.artifacts/{ID}/report-usability.md`
-
-If depth is **standard** (and `--desirability` flag is not set), stop after usability. For **full**, continue to desirability.
-
----
-
-# Desirability Study
-
-Read [references/desirability-study.md](references/desirability-study.md) when the evaluation depth is **full**, or when the `--desirability` flag is set.
-
-Evaluates aesthetic and emotional impact using methods adapted from the Microsoft Desirability Toolkit. Measures whether the prototype *feels* right, not just whether it works.
-
-**Quick summary of the procedure:**
-1. Analyze visual design, layout, microcopy tone, information density
-2. Load personas or use default lenses (end user, evaluator, new user)
-3. Word association: select 5 words per screen from positive/negative/neutral lists
-4. Emotional response mapping across flow stages (confidence, control, satisfaction, trust, engagement)
-5. Preference comparison against alternatives
-6. Calculate desirability score (1-10) from four weighted factors
-7. Generate `.artifacts/{ID}/report-desirability.md`
-
----
-
-# Pipeline Report
-
-After completing evaluation at any depth, generate the HTML pipeline report:
-
-```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/generate-report.py --output .artifacts/pipeline-report.html
-```
-
-Aggregates all prototype reviews into a single dashboard.
-
----
-
-# Edge Cases
-
-| Scenario | Handling |
-|----------|----------|
-| Missing prototype files | Stop and report error. |
-| Missing RFE snapshot | Proceed but mark Completeness as unevaluable. |
-| Single-screen prototype | Reduce to 2-3 scenarios. Focus on within-screen interactions. |
-| Minimal styling | Focus on flow and IA, not visual polish. |
-| No user stories in RFE | Infer from problem description. Note inference. |
-| Many screens (10+) | Group into flows, evaluate representative samples. |
-| Happy path only | Flag in Completeness. Create edge-case scenarios anyway. |
-| No research context | Use default personas. Live research should validate. |
-| Purely functional (no styling) | Skip full evaluation. Focus usability on flow and IA. |
-
----
-
-# Next Steps Guidance
-
-| Outcome | Suggested Next Step |
-|---------|-------------------|
-| Quick: rubric-pass (5+, no zeros) | Suggest standard evaluation or proceed to submission |
-| Quick: needs-attention | Identify lowest dimensions, suggest targeted refinement |
-| Standard: no S1/S2 issues | Proceed to submission or full evaluation |
-| Standard: S1 issues found | Critical fixes needed — list blockers, suggest refinement |
-| Standard: S2 issues only | Recommend fixing before proceeding |
-| Full: desirability 7+ | Ready for stakeholder review |
-| Full: desirability 4-6 | Suggest visual/tonal refinements |
-| Full: desirability 1-3 | Recommend design direction review |
+| Doc | When to load |
+|-----|-------------|
+| [orchestration.md](references/orchestration.md) | Running a full eval |
+| [phases/eval-extract.md](references/phases/eval-extract.md) | Jira context, ACs, MR delta |
+| [phases/eval-classify.md](references/phases/eval-classify.md) | AC tier classification |
+| [phases/eval-consistency.md](references/phases/eval-consistency.md) | PatternFly checks |
+| [phases/eval-journey.md](references/phases/eval-journey.md) | Phase A Playwright |
+| [phases/eval-fix.md](references/phases/eval-fix.md) | Applying fixes |
+| [phases/eval-hint.md](references/phases/eval-hint.md) | Navigation hints |
+| [phases/eval-usability.md](references/phases/eval-usability.md) | Phase B walkthroughs |
+| [phases/eval-report.md](references/phases/eval-report.md) | HTML report |
+| [phases/eval-review.md](references/phases/eval-review.md) | Reviewing a prior run |
+| [playwright-rules.md](references/playwright-rules.md) | Writing Playwright scripts |
+| [skill-overlays.md](references/skill-overlays.md) | Product-specific config |
