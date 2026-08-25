@@ -3,5 +3,10 @@
     "name": "atat/carbonite",
     "url": "https://gitlab.cee.redhat.com/atat/carbonite",
     "description": "Portable AI agent sandboxes with credential management, sandbox lifecycle tooling, and multi-platform support"
+  },
+  {
+    "name": "opendatahub-io/skills-registry",
+    "url": "https://github.com/opendatahub-io/skills-registry",
+    "description": "Central registry for AI skills and plugins developed across the opendatahub-io organization"
   }
 ]

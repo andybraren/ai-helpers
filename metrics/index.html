@@ -311,7 +311,8 @@
         ]);
         const autoRefs = autoResp?.ok ? await autoResp.json() : [];
         const manualRefs = manualResp?.ok ? await manualResp.json() : [];
-        const repos = [...autoRefs, ...manualRefs];
+        const merged = [...manualRefs, ...autoRefs];
+        const repos = merged.filter((r, i) => merged.findIndex(x => x.name === r.name) === i);
         if (!repos.length) { panel.innerHTML = '<p class="empty-hint">No references found yet.</p>'; return; }
 
         const ECOSYSTEM_ORGS = ['patternfly', 'rh-uxd'];

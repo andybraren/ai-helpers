@@ -38,10 +38,11 @@ jobs:
           if [ "$RAW_COUNT" -eq 0 ] && [ "$PREV_REFS" -gt 0 ]; then
             echo "WARNING: code search returned 0 results but previous data has ${PREV_REFS} entries — keeping existing repo-references.json"
           else
-            echo "${REPO_REFS_RAW}" | jq '
+            echo "${REPO_REFS_RAW}" | jq --argjson manual "$(jq '[.[].name]' metrics/manual-references.json 2>/dev/null || echo '[]')" '
               [.items | group_by(.repository.full_name)[] |
                {name: .[0].repository.full_name, url: .[0].repository.html_url, description: (.[0].repository.description // ""), files: [.[].path]}] |
               map(select(.files | map(test("\\.(txt|csv|log)$") or test("(^|/)README") or test("(^|/)(awesome-|cached-)")) | all | not)) |
+              map(select(.name as $n | $manual | index($n) | not)) |
               sort_by(.name)
             ' > metrics/repo-references.json
           fi

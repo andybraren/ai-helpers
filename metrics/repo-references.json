@@ -1,14 +1,5 @@
 [
   {
-    "name": "opendatahub-io/skills-registry",
-    "url": "https://github.com/opendatahub-io/skills-registry",
-    "description": "Central registry for AI skills and plugins developed across the opendatahub-io organization",
-    "files": [
-      ".claude-plugin/marketplace.json",
-      "registry.yaml"
-    ]
-  },
-  {
     "name": "openshift-eng/ai-helpers",
     "url": "https://github.com/openshift-eng/ai-helpers",
     "description": "Developer productivity tools for Claude Code & other AI assistants",
