@@ -37,7 +37,6 @@ jobs:
           PREV_REFS=$(jq length metrics/repo-references.json 2>/dev/null || echo 0)
           if [ "$RAW_COUNT" -eq 0 ] && [ "$PREV_REFS" -gt 0 ]; then
             echo "WARNING: code search returned 0 results but previous data has ${PREV_REFS} entries — keeping existing repo-references.json"
-            REPO_REFS="$PREV_REFS"
           else
             echo "${REPO_REFS_RAW}" | jq '
               [.items | group_by(.repository.full_name)[] |
@@ -45,8 +44,10 @@ jobs:
               map(select(.files | map(test("\\.(txt|csv|log)$") or test("(^|/)README") or test("(^|/)(awesome-|cached-)")) | all | not)) |
               sort_by(.name)
             ' > metrics/repo-references.json
-            REPO_REFS=$(jq length metrics/repo-references.json)
           fi
+          AUTO_REFS=$(jq length metrics/repo-references.json 2>/dev/null || echo 0)
+          MANUAL_REFS=$(jq length metrics/manual-references.json 2>/dev/null || echo 0)
+          REPO_REFS=$((AUTO_REFS + MANUAL_REFS))
 
           # Discover pending integrations (open GitHub PRs referencing this marketplace)
           gh api "search/issues?q=%22rh-uxd/ai-helpers%22+is:pr+is:open+-repo:rh-uxd/ai-helpers+-repo:rh-uxd/ai-helpers-internal&per_page=100" \
