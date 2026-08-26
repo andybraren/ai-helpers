@@ -6,9 +6,15 @@ skill: uxd-workshop:uxd-figma-read
 execution:
   mode: case
   arguments: "{prompt}"
+  env:
+    FIGMA_PAT: ""
 
 runner:
   type: claude-code
+  plugin_dirs:
+    - plugins/uxd-workshop
+  env:
+    FIGMA_PAT: ""
 
 models:
   skill: claude-sonnet-4-6
@@ -18,14 +24,22 @@ permissions:
   allow: []
   deny:
     - "mcp__*"
+    - "Bash"
+    - "WebFetch"
+    - "WebSearch"
 
 dataset:
   path: cases
+  workspace:
+    files:
+      - metadata.xml
   schema: |
     Each case directory contains:
     - input.yaml: prompt field with a realistic user request
     - annotations.yaml: case_type for conditional judges
-    - Optional fixture files (e.g. metadata XML) the prompt references
+    - Optional fixture files (e.g. metadata.xml) the prompt references
+    FIGMA_PAT is cleared via execution.env and runner.env so credential
+    gating does not depend on prompt text.
 
 outputs:
   - path: artifacts
@@ -45,12 +59,22 @@ judges:
     description: Extracts file key and converts URL node-id dashes to API colons
     if: "annotations.get('case_type') == 'url-parse'"
     check: |
+      import re
       text = outputs.get("conversation", "")
       file_key = annotations.get("expected_file_key", "AbCdEfGhIjKlMnOp")
-      api_node = annotations.get("expected_api_node_id", "16:1047")
-      url_node = annotations.get("url_node_id", "16-1047")
+      api_node = annotations.get("expected_api_node_id") or ""
+      url_node = annotations.get("url_node_id") or ""
       if file_key not in text:
           return False, f"File key {file_key} not found in output"
+      if not api_node:
+          scope = re.search(
+              r"entire file|whole file|no node-?id|missing node-?id|first page|all pages",
+              text,
+              re.IGNORECASE,
+          )
+          if not scope:
+              return False, "Did not treat a URL without node-id as whole-file / first-page scope"
+          return True, "Parsed file key and reported whole-file scope"
       if api_node not in text:
           return False, f"API node ID {api_node} not found (expected dash-to-colon conversion from {url_node})"
       return True, f"Parsed file key and converted node ID to {api_node}"
@@ -61,18 +85,43 @@ judges:
     check: |
       import re
       text = outputs.get("conversation", "")
-      asks_pat = re.search(r"FIGMA_PAT|personal access token|access token", text, re.IGNORECASE)
-      asks_mcp = re.search(r"Figma MCP|connect.*MCP|MCP.*Figma", text, re.IGNORECASE)
+      asks_pat = re.search(
+          r"(?:set|provide|export|configure|add|create|supply)\b.{0,60}"
+          r"(?:FIGMA_PAT|personal access token)|"
+          r"(?:FIGMA_PAT|personal access token).{0,40}"
+          r"(?:to (?:set|provide|export|configure))",
+          text,
+          re.IGNORECASE,
+      )
+      asks_mcp = re.search(
+          r"(?:connect|enable|configure|install|set up)\b.{0,40}"
+          r"(?:Figma MCP|MCP.{0,20}Figma)|"
+          r"(?:Figma MCP|MCP.{0,20}Figma).{0,40}(?:connect|enable|configure)",
+          text,
+          re.IGNORECASE,
+      )
       if not asks_pat and not asks_mcp:
-          return False, "Did not ask for FIGMA_PAT or Figma MCP connection"
+          return False, "Did not ask the user to provide FIGMA_PAT or connect Figma MCP"
+      cannot_proceed = re.search(
+          r"cannot proceed|can't proceed|can’t proceed|"
+          r"unable to (?:continue|proceed|retrieve|access)|"
+          r"(?:do not|don't|won'?t|will not) proceed|"
+          r"stop(?:ping)? (?:here|until|without)|"
+          r"without (?:(?:a |the |valid )?(?:token|credentials?|FIGMA_PAT|MCP connection))",
+          text,
+          re.IGNORECASE,
+      )
+      if not cannot_proceed:
+          return False, "Did not state it cannot proceed without credentials or MCP"
       invented = re.search(
-          r"(page names?|frame names?|screenshot|design tokens).{0,80}(Option|V2|Final|Explor)",
+          r"(?:page names?|frame names?|design tokens).{0,80}"
+          r"(?:Option\s*[A-Z0-9]|V2\b|Final\b|Explor)",
           text,
           re.IGNORECASE,
       )
       if invented:
           return False, "Appears to invent Figma file contents without credentials"
-      return True, "Asked for credentials and did not invent file contents"
+      return True, "Asked for credentials, cannot proceed, and did not invent file contents"
 
   - name: chooses_frame_not_page
     description: Selects frame node IDs for screenshots, not the page ID
@@ -85,24 +134,12 @@ judges:
       found_frames = [fid for fid in frame_ids if fid in text]
       if len(found_frames) < 1:
           return False, f"No frame IDs from {frame_ids} found in screenshot selection"
-      # Fail if the only node recommended for screenshots is the page
       screenshot_mentions = re.findall(
-          r"screenshot[^\n]{0,120}", text, re.IGNORECASE
+          r"screenshot[^\n]{0,160}", text, re.IGNORECASE
       )
-      page_as_screenshot = False
       for mention in screenshot_mentions:
           if page_id in mention and not any(fid in mention for fid in frame_ids):
-              page_as_screenshot = True
-      if page_as_screenshot and len(found_frames) == 0:
-          return False, f"Recommended page ID {page_id} for screenshots instead of frames"
-      # Stronger check: if it explicitly says to screenshot the page node alone
-      bad = re.search(
-          r"screenshot.{0,40}" + re.escape(page_id) + r"(?!.*(?:frame|16:))",
-          text,
-          re.IGNORECASE | re.DOTALL,
-      )
-      if bad and not found_frames:
-          return False, f"Chose page node {page_id} for screenshots"
+              return False, f"Recommended page ID {page_id} for screenshots instead of frames"
       return True, f"Selected frame IDs for screenshots: {found_frames}"
 
 thresholds:
