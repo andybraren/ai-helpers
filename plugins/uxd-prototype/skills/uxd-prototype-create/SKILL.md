@@ -1,6 +1,6 @@
 ---
 name: uxd-prototype-create
-version: 0.1.0
+version: 1.0.0
 description: >-
   Create or refine a UX prototype from a Jira ticket, Figma design, feature
   description, or rough idea. Enumerates user journeys and page scenarios
