@@ -7,7 +7,7 @@ Export prototype pages as static HTML, a component tree, or a PatternFly impleme
 ## Setup
 
 ```bash
-cd plugins/uxd-workshop/skills/uxd-prototype-export
+cd plugins/uxd-prototype/skills/uxd-prototype-export
 npm install
 ```
 

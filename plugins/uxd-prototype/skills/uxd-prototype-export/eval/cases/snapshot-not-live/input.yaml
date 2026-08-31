@@ -1,0 +1,5 @@
+prompt: >-
+  Using the uxd-prototype-export skill: I exported a page to static HTML.
+  Can I ship that HTML as the running React app for engineering to extend?
+  Explain what the file actually is and what they should use instead. Do not
+  run an export.

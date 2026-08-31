@@ -1,0 +1,179 @@
+name: uxd-prototype-export-eval
+description: Evaluate uxd-prototype-export's path selection, snapshot vs live-app contract, and install-bar vs batch-export requirements
+
+skill: uxd-prototype:uxd-prototype-export
+
+execution:
+  mode: case
+  arguments: "{prompt}"
+
+runner:
+  type: claude-code
+  plugin_dirs:
+    - plugins/uxd-prototype
+
+models:
+  skill: claude-sonnet-5
+  judge: claude-sonnet-5
+
+permissions:
+  allow: []
+  deny:
+    - "mcp__*"
+
+mlflow:
+  experiment: uxd-prototype-export
+  tags:
+    team: uxd
+    pipeline: prototype-evaluator
+
+dataset:
+  path: cases
+  schema: |
+    Each case directory contains:
+    - input.yaml: prompt field with a realistic user request
+    - annotations.yaml: case_type for conditional judges
+
+outputs:
+  - path: artifacts
+    schema: |
+      Judges check conversation text for path prompts, snapshot warnings,
+      and install-bar vs batch-export requirement differences.
+      Cases must not launch Playwright or write export files.
+
+traces:
+  stdout: true
+  stderr: true
+  events: true
+  metrics: true
+
+judges:
+  - name: asks_which_path
+    description: Asks which export path when the user only says export
+    if: "annotations.get('case_type') == 'asks-which-path'"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      asks = re.search(
+          r"(what|which|how).{0,40}(export|capture)|current page|journey|install.{0,20}(bar|prototype bar)",
+          text,
+          re.IGNORECASE | re.DOTALL,
+      )
+      lists_options = (
+          re.search(r"current page|on screen|Prototype Bar", text, re.IGNORECASE)
+          and re.search(r"journey|batch", text, re.IGNORECASE)
+          and re.search(r"install.{0,20}(bar|Prototype Bar)", text, re.IGNORECASE)
+      )
+      if not asks and not lists_options:
+          return False, "Did not ask which export path or list the three options"
+      launched = re.search(
+          r"npx playwright|playwright install|export-journey|export-current|npm install",
+          text,
+          re.IGNORECASE,
+      )
+      if launched:
+          return False, "Must not start capture or Playwright when the path is unspecified"
+      return True, "Asked which export path without launching capture"
+
+  - name: snapshot_not_live
+    description: States static HTML is a visual snapshot, not a live React app
+    if: "annotations.get('case_type') == 'snapshot-not-live'"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      snapshot = re.search(
+          r"snapshot|static HTML|visual.{0,20}(capture|copy)|does not rehydrate|not a live",
+          text,
+          re.IGNORECASE,
+      )
+      if not snapshot:
+          return False, "Did not describe static HTML as a snapshot / not a live app"
+      live_claim = re.search(
+          r"(runs? as|rehydrate|interactive React|live React app)",
+          text,
+          re.IGNORECASE,
+      )
+      if live_claim and not re.search(r"not|doesn.t|do not|cannot|won't", text, re.IGNORECASE):
+          return False, "Appears to treat exported HTML as a live React app"
+      spec = re.search(
+          r"implementation-spec|pf-spec|PatternFly implementation",
+          text,
+          re.IGNORECASE,
+      )
+      if not spec:
+          return False, "Did not point implementers at pf-spec / implementation-spec.json"
+      return True, "Described static HTML as a snapshot and pointed at the PF spec"
+
+  - name: install_bar_no_url
+    description: Install Prototype Bar does not require a live URL or Playwright
+    if: "annotations.get('case_type') == 'install-bar-no-url'"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      mentions_bar = re.search(r"install.{0,20}(bar|Prototype Bar)|--install-bar", text, re.IGNORECASE)
+      if not mentions_bar:
+          return False, "Did not discuss installing the Prototype Bar"
+      no_playwright = re.search(
+          r"(does not|do not|don't|no need|not required|without).{0,40}(Playwright|live URL|running app)",
+          text,
+          re.IGNORECASE,
+      ) or re.search(
+          r"(Playwright|live URL|running app).{0,40}(not required|not needed|unnecessary)",
+          text,
+          re.IGNORECASE,
+      )
+      if not no_playwright:
+          return False, "Did not state install-bar skips Playwright / live URL"
+      asks_source = re.search(
+          r"--source|prototype (dir|directory|path)|workspace",
+          text,
+          re.IGNORECASE,
+      )
+      if not asks_source:
+          return False, "Did not mention --source / prototype path for install-bar"
+      launched = re.search(
+          r"npx playwright|playwright install|export-journey|export-current",
+          text,
+          re.IGNORECASE,
+      )
+      if launched:
+          return False, "Must not launch Playwright for install-bar"
+      return True, "Correctly described install-bar without a live URL"
+
+  - name: batch_needs_url
+    description: Batch journey export requires a live URL, Playwright, and journey files
+    if: "annotations.get('case_type') == 'batch-needs-url'"
+    check: |
+      import re
+      text = outputs.get("conversation", "")
+      needs_url = re.search(
+          r"(need|require|missing|ask).{0,40}(URL|base-url|localhost)|--base-url|live (URL|prototype)",
+          text,
+          re.IGNORECASE,
+      )
+      if not needs_url:
+          return False, "Did not require a live prototype URL for batch export"
+      journeys = re.search(r"journeys\.json|scenarios\.json", text, re.IGNORECASE)
+      if not journeys:
+          return False, "Did not mention journeys.json / scenarios.json"
+      playwright = re.search(r"Playwright", text, re.IGNORECASE)
+      if not playwright:
+          return False, "Did not mention Playwright for batch export"
+      launched = re.search(
+          r"npx playwright|playwright install|npm install",
+          text,
+          re.IGNORECASE,
+      )
+      if launched:
+          return False, "Must not launch Playwright when the live URL is missing"
+      return True, "Required live URL, journey files, and Playwright without launching"
+
+thresholds:
+  asks_which_path:
+    min_pass_rate: 1.0
+  snapshot_not_live:
+    min_pass_rate: 1.0
+  install_bar_no_url:
+    min_pass_rate: 1.0
+  batch_needs_url:
+    min_pass_rate: 1.0

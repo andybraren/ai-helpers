@@ -1,6 +1,6 @@
 ---
 name: uxd-prototype-export
-version: 0.1.0
+version: 1.0.0
 description: >-
   Export a prototype page or journey step as static HTML, a React component
   tree, or a PatternFly implementation spec, and install the Prototype Bar

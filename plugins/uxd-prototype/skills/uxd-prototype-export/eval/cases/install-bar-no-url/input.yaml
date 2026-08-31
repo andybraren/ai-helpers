@@ -1,0 +1,5 @@
+prompt: >-
+  Using the uxd-prototype-export skill: install the Prototype Bar into my
+  standalone prototype at /tmp/demo-proto. I do not have a running server.
+  Explain what you need and whether Playwright or a live URL is required.
+  Do not run Playwright or capture pages.
