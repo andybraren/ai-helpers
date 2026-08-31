@@ -26,7 +26,7 @@ When Figma URLs are in the conversation, or the user requests design critique, c
 
 ## Prototyping — building, refining, exporting, or publishing prototypes
 
-When the user asks to create, iterate on, evaluate, export, or publish a prototype, these skills are available:
+These skills live in the **uxd-prototype** plugin. If it is not installed, tell the user to install `uxd-prototype`. When it is available:
 
 | Skill | What it does |
 |-------|-------------|

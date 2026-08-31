@@ -2,7 +2,7 @@
 
 # UXD Workshop Plugin
 
-UXD team tools and skill incubator — prototyping, research, design review, team workflows.
+UXD team tools and skill incubator — research, design review, team workflows.
 
 ## What's Included
 
@@ -12,7 +12,6 @@ UXD team tools and skill incubator — prototyping, research, design review, tea
 - **UXD Discovery** (`/uxd-workshop:uxd-discovery`) — Produce a structured UX discovery brief from a feature request, Jira issue, or problem statement.
 - **UXD Evaluate Design Heuristics** (`/uxd-workshop:uxd-evaluate-design-heuristics`) — Score a design against accessibility, visual hierarchy, content, and state coverage heuristics.
 - **UXD Figma Read** (`/uxd-workshop:uxd-figma-read`) — Retrieve design context from a Figma file.
-- **UXD Prototype Publish** (`/uxd-workshop:uxd-prototype-publish`) — Publish a prototype to a git merge request, GitHub Pages, GitLab Pages, or Vercel.
 - **UXD Research Heuristic Eval** (`/uxd-workshop:uxd-research-heuristic-eval`) — Conduct a heuristic evaluation of a prototype or interface using three independent expert evaluators.
 
 ### Agents

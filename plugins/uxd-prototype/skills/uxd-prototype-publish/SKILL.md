@@ -1,6 +1,6 @@
 ---
 name: uxd-prototype-publish
-version: 0.1.0
+version: 1.0.0
 description: >-
   Publish a prototype to a git merge request, GitHub Pages, GitLab Pages, or
   Vercel. Use when sharing a finished prototype for review, deploying a

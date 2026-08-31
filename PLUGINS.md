@@ -6,7 +6,7 @@ Quick reference of all plugins and what they contain. This file is auto-generate
 
 - [patternfly](#patternfly) — Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs
 - [uxd-prototype](#uxd-prototype) — UX prototyping pipeline — create, evaluate, and publish prototypes
-- [uxd-workshop](#uxd-workshop) — UXD team tools and skill incubator — prototyping, research, design review, team workflows
+- [uxd-workshop](#uxd-workshop) — UXD team tools and skill incubator — research, design review, team workflows
 - [pf-a11y](#pf-a11y) — Accessibility auditing, reporting, and documentation
 - [pf-code-review](#pf-code-review) — Code review and quality — adversarial review, security patterns
 - [pf-design-audit](#pf-design-audit) — Design audit — validate existing code and designs against PatternFly standards
@@ -39,6 +39,7 @@ UX prototyping pipeline — create, evaluate, and publish prototypes
 <tr><td nowrap><code>uxd-prototype-create</code></td><td>Create or refine a UX prototype from a Jira ticket, Figma design, feature description, or rough idea.</td><td>stable</td></tr>
 <tr><td nowrap><code>uxd-prototype-evaluate</code></td><td>Evaluate a running prototype against a Jira ticket's acceptance criteria, automatically fix what fails, then run persona-based usability walkthroughs.</td><td>stable</td></tr>
 <tr><td nowrap><code>uxd-prototype-export</code></td><td>Export a prototype page or journey step as static HTML, a React component tree, or a PatternFly implementation spec, and install the Prototype Bar (Sources, Prototype|Eval, Scenario, Export).</td><td>stable</td></tr>
+<tr><td nowrap><code>uxd-prototype-publish</code></td><td>Publish a prototype to a git merge request, GitHub Pages, GitLab Pages, or Vercel.</td><td>stable</td></tr>
 </table>
 
 
@@ -46,7 +47,7 @@ UX prototyping pipeline — create, evaluate, and publish prototypes
 
 ### uxd-workshop
 
-UXD team tools and skill incubator — prototyping, research, design review, team workflows
+UXD team tools and skill incubator — research, design review, team workflows
 
 <table>
 <tr><th>Skill</th><th>Description</th><th>Eval</th></tr>
@@ -54,7 +55,6 @@ UXD team tools and skill incubator — prototyping, research, design review, tea
 <tr><td nowrap><code>uxd-discovery</code></td><td>Produce a structured UX discovery brief from a feature request, Jira issue, or problem statement.</td><td>stable</td></tr>
 <tr><td nowrap><code>uxd-evaluate-design-heuristics</code></td><td>Score a design against accessibility, visual hierarchy, content, and state coverage heuristics.</td><td>—</td></tr>
 <tr><td nowrap><code>uxd-figma-read</code></td><td>Retrieve design context from a Figma file.</td><td>—</td></tr>
-<tr><td nowrap><code>uxd-prototype-publish</code></td><td>Publish a prototype to a git merge request, GitHub Pages, GitLab Pages, or Vercel.</td><td>stable</td></tr>
 <tr><td nowrap><code>uxd-research-heuristic-eval</code></td><td>Conduct a heuristic evaluation of a prototype or interface using three independent expert evaluators.</td><td>stable</td></tr>
 </table>
 
@@ -212,5 +212,5 @@ PatternFly team tools and skill incubation — issue triage, release management,
 
 **Eval coverage**
 
-- Consumer: 28/28 (100%)
-- Workshop: 4/23 (17%)
+- Consumer: 29/29 (100%)
+- Workshop: 3/22 (13%)

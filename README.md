@@ -79,7 +79,7 @@ For MCP server access (component docs and design tokens), also install `pf-mcp`.
 <tr><th>Plugin</th><th>Description</th></tr>
 <tr><td nowrap><b>patternfly</b></td><td>Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs</td></tr>
 <tr><td nowrap><b>uxd-prototype</b></td><td>UX prototyping pipeline — create, evaluate, and publish prototypes</td></tr>
-<tr><td nowrap><b>uxd-workshop</b></td><td>UXD team tools and skill incubator — prototyping, research, design review, team workflows</td></tr>
+<tr><td nowrap><b>uxd-workshop</b></td><td>UXD team tools and skill incubator — research, design review, team workflows</td></tr>
 <tr><td nowrap><b>pf-a11y</b></td><td>Accessibility auditing, reporting, and documentation</td></tr>
 <tr><td nowrap><b>pf-code-review</b></td><td>Code review and quality — adversarial review, security patterns</td></tr>
 <tr><td nowrap><b>pf-design-audit</b></td><td>Design audit — validate existing code and designs against PatternFly standards</td></tr>
