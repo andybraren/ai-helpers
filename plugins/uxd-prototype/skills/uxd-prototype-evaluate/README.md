@@ -18,7 +18,7 @@ bash scripts/preflight-check.sh
 ```
 
 ```bash
-cd plugins/uxd-workshop/skills/uxd-prototype-evaluate
+cd plugins/uxd-prototype/skills/uxd-prototype-evaluate
 npm install
 npx playwright install chromium
 ```

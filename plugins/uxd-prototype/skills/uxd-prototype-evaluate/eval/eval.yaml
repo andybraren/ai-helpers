@@ -1,7 +1,7 @@
 name: uxd-prototype-evaluate-eval
 description: Evaluate uxd-prototype-evaluate's input gating, review mode, flag behavior, exit conditions, artifact paths, and two-phase orchestration contract
 
-skill: uxd-workshop:uxd-prototype-evaluate
+skill: uxd-prototype:uxd-prototype-evaluate
 
 execution:
   mode: case
@@ -10,7 +10,7 @@ execution:
 runner:
   type: claude-code
   plugin_dirs:
-    - ../../..
+    - plugins/uxd-prototype
 
 models:
   skill: claude-opus-4-6

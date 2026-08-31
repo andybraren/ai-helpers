@@ -11,15 +11,15 @@ Usage:
   eval "$(make mlflow-env)"
 
   # Full pipeline run with Sonnet 5:
-  uv run python3 plugins/uxd-workshop/skills/uxd-prototype-evaluate/scripts/mlflow-trace-pipeline.py \
+  uv run python3 plugins/uxd-prototype/skills/uxd-prototype-evaluate/scripts/mlflow-trace-pipeline.py \
     --key PROJ-298 --url http://127.0.0.1:9204 --model claude-sonnet-5
 
   # Full pipeline run with Opus 4.6:
-  uv run python3 plugins/uxd-workshop/skills/uxd-prototype-evaluate/scripts/mlflow-trace-pipeline.py \
+  uv run python3 plugins/uxd-prototype/skills/uxd-prototype-evaluate/scripts/mlflow-trace-pipeline.py \
     --key PROJ-298 --url http://127.0.0.1:9204 --model claude-opus-4-6
 
   # With extra eval-iterate flags:
-  uv run python3 plugins/uxd-workshop/skills/uxd-prototype-evaluate/scripts/mlflow-trace-pipeline.py \
+  uv run python3 plugins/uxd-prototype/skills/uxd-prototype-evaluate/scripts/mlflow-trace-pipeline.py \
     --key PROJ-298 --url http://127.0.0.1:9204 --model claude-opus-4-6 \
     --iterate-flags="--no-fix --fresh"
 """

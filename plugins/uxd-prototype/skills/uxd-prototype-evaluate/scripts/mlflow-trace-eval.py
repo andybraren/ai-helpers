@@ -10,7 +10,7 @@ Each run gets:
 
 Usage:
   eval "$(make mlflow-env)"
-  uv run python3 plugins/uxd-workshop/skills/uxd-prototype-evaluate/scripts/mlflow-trace-eval.py \
+  uv run python3 plugins/uxd-prototype/skills/uxd-prototype-evaluate/scripts/mlflow-trace-eval.py \
     .artifacts/PROJ-298/ --model claude-opus-4-6 --prototype-key PROJ-298
 
   # Smoke test shortcut:

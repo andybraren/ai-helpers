@@ -1,6 +1,6 @@
 ---
 name: uxd-prototype-evaluate
-version: 0.1.0
+version: 1.0.0
 description: >-
   Evaluate a running prototype against a Jira ticket's acceptance criteria,
   automatically fix what fails, then run persona-based usability walkthroughs.

@@ -8,17 +8,17 @@ MLflow experiments.
 
 Usage:
   eval "$(make mlflow-env)"
-  uv run python3 plugins/uxd-workshop/skills/uxd-prototype-evaluate/scripts/mlflow-compare-models.py \
+  uv run python3 plugins/uxd-prototype/skills/uxd-prototype-evaluate/scripts/mlflow-compare-models.py \
     --key PROJ-298 \
     --skills eval-extract eval-classify eval-consistency eval-report \
     --models claude-sonnet-5 claude-opus-4-6
 
   # Run all skills (requires prototype server at --url):
-  uv run python3 plugins/uxd-workshop/skills/uxd-prototype-evaluate/scripts/mlflow-compare-models.py \
+  uv run python3 plugins/uxd-prototype/skills/uxd-prototype-evaluate/scripts/mlflow-compare-models.py \
     --key PROJ-298 --url http://127.0.0.1:9204 --skills all
 
   # Dry-run (show prompts without executing):
-  uv run python3 plugins/uxd-workshop/skills/uxd-prototype-evaluate/scripts/mlflow-compare-models.py --dry-run --skills all
+  uv run python3 plugins/uxd-prototype/skills/uxd-prototype-evaluate/scripts/mlflow-compare-models.py --dry-run --skills all
 """
 
 import argparse
