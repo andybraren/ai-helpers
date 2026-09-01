@@ -31,7 +31,7 @@ Not sure what to build? Look for issues labeled [`good first issue`](../../label
 
 ### UXD contributions
 
-UXD skills start in `plugins/uxd-workshop/` and use the `uxd-` prefix. Consumer prototyping skills live in `plugins/uxd-prototype/` once they graduate. UXD PRs are reviewed by UXD maintainers.
+UXD skills live at `plugins/uxd-workshop/` and use the `uxd-` prefix. UXD PRs are reviewed by UXD maintainers.
 
 **Quick start:**
 

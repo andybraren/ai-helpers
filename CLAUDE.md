@@ -13,7 +13,7 @@ AI marketplace for UXD teams and the products they support. This repo contains p
 - Plugin manifests (`plugin.json`) must be identical in `.claude-plugin/` and `.cursor-plugin/` — always update both. Marketplace configs (`marketplace.json`) may differ between platforms.
 - Do not add `mcpServers` to plugin.json files — the PatternFly MCP is a separate user install
 - All PF plugins use the `pf-` prefix (e.g., `pf-react`, `pf-design-audit`)
-- All UXD plugins use the `uxd-` prefix (e.g., `uxd-workshop`, `uxd-prototype`)
+- All UXD plugins use the `uxd-` prefix (e.g., `uxd-workshop`)
 - All skills and agents follow the same prefix convention (`pf-test-gen`, `uxd-prototype-create`)
 
 ## Context Routing
