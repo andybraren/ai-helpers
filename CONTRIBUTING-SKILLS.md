@@ -70,7 +70,6 @@ Every skill or agent must live in a plugin. Pick the one that matches your skill
 <table>
 <tr><th>Plugin</th><th>What it does</th><th>Example skills</th></tr>
 <tr><td nowrap><b>patternfly</b></td><td>Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs</td><td></td></tr>
-<tr><td nowrap><b>uxd-prototype</b></td><td>UX prototyping pipeline — create, evaluate, and publish prototypes</td><td>`uxd-prototype-create`</td></tr>
 <tr><td nowrap><b>uxd-workshop</b></td><td>UXD team tools and skill incubator — prototyping, research, design review, team workflows</td><td>`uxd-design-handoff`, `uxd-discovery`, `uxd-evaluate-design-heuristics`</td></tr>
 <tr><td nowrap><b>pf-a11y</b></td><td>Accessibility auditing, reporting, and documentation</td><td>`pf-a11y-audit`, `pf-a11y-keyboard`</td></tr>
 <tr><td nowrap><b>pf-code-review</b></td><td>Code review and quality — adversarial review, security patterns</td><td>`pf-review`, `pf-security-scan`</td></tr>
@@ -94,7 +93,6 @@ Plugin names must tell a user exactly what the plugin helps them do. A user brow
 <!-- BEGIN GOOD NAMES -->
 **Good names** describe the capability:
 - `patternfly` — Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs
-- `uxd-prototype` — UX prototyping pipeline — create, evaluate, and publish prototypes
 - `pf-a11y` — Accessibility auditing, reporting, and documentation
 - `pf-code-review` — Code review and quality — adversarial review, security patterns
 - `pf-design-audit` — Design audit — validate existing code and designs against PatternFly standards
