@@ -2,7 +2,7 @@
 
 # UXD Prototype Plugin
 
-UX prototyping pipeline — create, evaluate, and publish prototypes.
+Create UX prototypes from Jira tickets, Figma designs, or feature descriptions.
 
 ## What's Included
 
