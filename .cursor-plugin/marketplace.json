@@ -20,6 +20,11 @@
       "description": "UXD team tools — prototyping, research, design review"
     },
     {
+      "name": "uxd-canvas",
+      "source": "./plugins/uxd-canvas",
+      "description": "Canvas creation, export, and publishing — JSON Canvas journey maps, diagrams, and interactive viewers"
+    },
+    {
       "name": "pf-react",
       "source": "./plugins/patternfly/pf-react",
       "description": "React component development — coding standards, testing, and structure"

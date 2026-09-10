@@ -7,6 +7,7 @@ Quick reference of all plugins and what they contain. This file is auto-generate
 - [patternfly](#patternfly) — Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs
 - [pf-assist](#pf-assist) — PatternFly skill routing — maps project signals to the right PF sub-skills for compliance, migration, and design audits
 - [uxd-assist](#uxd-assist) — UXD skill routing — discover the right skills for research, design review, and prototyping workflows
+- [uxd-canvas](#uxd-canvas) — Canvas creation, export, and publishing — JSON Canvas journey maps, diagrams, and interactive viewers
 - [uxd-workshop](#uxd-workshop) — UXD team tools and skill incubator — prototyping, research, design review, team workflows
 - [pf-a11y](#pf-a11y) — Accessibility auditing, reporting, and documentation
 - [pf-code-review](#pf-code-review) — Code review and quality — adversarial review, security patterns
@@ -47,6 +48,20 @@ UXD skill routing — discover the right skills for research, design review, and
 <table>
 <tr><th>Agent</th><th>Description</th><th>Eval</th></tr>
 <tr><td nowrap><code>uxd-assist</code></td><td>UXD skill routing — maps task context to the right UXD sub-skills for research, design review, and prototyping.</td><td>stable</td></tr>
+</table>
+
+
+<br>
+
+### uxd-canvas
+
+Canvas creation, export, and publishing — JSON Canvas journey maps, diagrams, and interactive viewers
+
+<table>
+<tr><th>Skill</th><th>Description</th><th>Eval</th></tr>
+<tr><td nowrap><code>uxd-canvas-create</code></td><td>Create or refine JSON Canvas artifacts, including journey maps, service blueprints, architecture diagrams, user flows, affinity maps, mind maps, and freeform canvases.</td><td>—</td></tr>
+<tr><td nowrap><code>uxd-canvas-export</code></td><td>Export a JSON Canvas as a portable local artifact — a single HTML viewer by default, or canvas.json and assets.</td><td>—</td></tr>
+<tr><td nowrap><code>uxd-canvas-publish</code></td><td>Publish an exported canvas to a git repository, GitHub Pages, GitLab Pages, or Vercel.</td><td>—</td></tr>
 </table>
 
 
@@ -218,5 +233,5 @@ PatternFly team tools and skill incubation — issue triage, release management,
 
 **Eval coverage**
 
-- Consumer: 25/25 (100%)
+- Consumer: 25/28 (89%)
 - Workshop: 6/26 (23%)
