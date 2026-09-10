@@ -35,6 +35,11 @@
       "description": "UXD team tools — prototyping, research, design review"
     },
     {
+      "name": "uxd-canvas",
+      "source": "./plugins/uxd-canvas",
+      "description": "Canvas creation, export, and publishing — JSON Canvas journey maps, diagrams, and interactive viewers"
+    },
+    {
       "name": "uxd-prototype",
       "source": "./plugins/uxd-prototype",
       "description": "Create UX prototypes from Jira tickets, Figma designs, or feature descriptions"

@@ -72,6 +72,7 @@ Every skill or agent must live in a plugin. Pick the one that matches your skill
 <tr><td nowrap><b>patternfly</b></td><td>Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs</td><td></td></tr>
 <tr><td nowrap><b>pf-assist</b></td><td>PatternFly skill routing — maps project signals to the right PF sub-skills for compliance, migration, and design audits</td><td></td></tr>
 <tr><td nowrap><b>uxd-assist</b></td><td>UXD skill routing — discover the right skills for research, design review, and prototyping workflows</td><td></td></tr>
+<tr><td nowrap><b>uxd-canvas</b></td><td>Canvas creation, export, and publishing — JSON Canvas journey maps, diagrams, and interactive viewers</td><td>`uxd-canvas-create`, `uxd-canvas-export`, `uxd-canvas-publish`</td></tr>
 <tr><td nowrap><b>uxd-design</b></td><td>UX design workflow — Figma context, design evaluation, and implementation handoff</td><td>`uxd-design-handoff`, `uxd-figma-read`</td></tr>
 <tr><td nowrap><b>uxd-prototype</b></td><td>Create UX prototypes from Jira tickets, Figma designs, or feature descriptions</td><td>`uxd-prototype-create`, `uxd-prototype-evaluate`, `uxd-prototype-export`</td></tr>
 <tr><td nowrap><b>uxd-research</b></td><td>UX research pipeline — heuristic evaluation, usability testing, research methodology</td><td>`uxd-discovery`, `uxd-evaluate-design-heuristics`, `uxd-research-heuristic-eval`</td></tr>
@@ -100,6 +101,7 @@ Plugin names must tell a user exactly what the plugin helps them do. A user brow
 - `patternfly` — Everything you need for PatternFly development — React components, design guidance, migration, and MCP docs
 - `pf-assist` — PatternFly skill routing — maps project signals to the right PF sub-skills for compliance, migration, and design audits
 - `uxd-assist` — UXD skill routing — discover the right skills for research, design review, and prototyping workflows
+- `uxd-canvas` — Canvas creation, export, and publishing — JSON Canvas journey maps, diagrams, and interactive viewers
 - `uxd-design` — UX design workflow — Figma context, design evaluation, and implementation handoff
 - `uxd-prototype` — Create UX prototypes from Jira tickets, Figma designs, or feature descriptions
 - `uxd-research` — UX research pipeline — heuristic evaluation, usability testing, research methodology
