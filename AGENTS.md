@@ -25,6 +25,14 @@ scripts/                           — Automation and validation
 
 The `patternfly` directory is a meta-plugin for Claude Code. It installs the PatternFly sub-plugins through dependencies; Cursor users install the sub-plugins individually.
 
+## Meta-plugin Architecture
+
+The `patternfly` plugin at `plugins/patternfly/` is a **meta-plugin** — it uses a `dependencies` array to auto-install all PF sub-plugins (`pf-react`, `pf-design-guide`, `pf-design-audit`, `pf-migration`, `pf-mcp`). It has no skills of its own, only the `pf-assist` routing agent. **Claude Code only** — Cursor does not support `dependencies`, so Cursor users install sub-plugins individually.
+
+## Versioning
+
+No `version` field in plugin.json — Claude Code falls back to git commit SHA, so every merge to main automatically invalidates the cache. No manual bumping needed.
+
 ## Code style
 
 - Skills must be tool-agnostic and work across supported agent tools.
