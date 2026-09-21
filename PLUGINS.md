@@ -217,6 +217,7 @@ React component development — coding standards, testing, and structure
 <tr><td nowrap><code>pf-form-gen</code></td><td>Generate PatternFly form components with validation, layout, and accessibility.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-import-check</code></td><td>Audit and fix invalid PatternFly import paths across packages.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-project-gen</code></td><td>Scaffolds PatternFly React projects with PF6-safe dependencies, imports, and starter layout.</td><td>stable</td></tr>
+<tr><td nowrap><code>pf-reproduce-issue</code></td><td>Reproduce a PatternFly bug from a GitHub issue description.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-table-gen</code></td><td>Generate PatternFly table components with sorting, filtering, pagination, and expandable rows.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-test-gen</code></td><td>Generate a unit test file for a React component using Testing Library.</td><td>stable</td></tr>
 </table>
@@ -265,5 +266,5 @@ PatternFly team tools and skill incubation — issue triage, release management,
 
 **Eval coverage**
 
-- Consumer: 34/34 (100%)
+- Consumer: 35/35 (100%)
 - Workshop: 4/23 (17%)
