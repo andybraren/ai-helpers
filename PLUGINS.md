@@ -128,6 +128,7 @@ Code review and quality — adversarial review, security patterns
 
 <table>
 <tr><th>Skill</th><th>Description</th><th>Eval</th></tr>
+<tr><td nowrap><code>pf-adversarial-review</code></td><td>Review PatternFly React components for unhandled edge cases and missing defensive code.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-i18n-audit</code></td><td>Audit PatternFly React code for i18n readiness — hardcoded user-facing strings, concatenation anti-patterns, locale-dependent formatting, and RTL-unsafe CSS.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-review</code></td><td>Run all PatternFly compliance checks on a project — imports, components, colors, legacy CSS, and security.</td><td>stable</td></tr>
 <tr><td nowrap><code>pf-security-scan</code></td><td>Scan PatternFly React code for security anti-patterns — XSS via dangerouslySetInnerHTML, unsanitized user input in tooltips/labels, and insecure href patterns.</td><td>stable</td></tr>
@@ -264,5 +265,5 @@ PatternFly team tools and skill incubation — issue triage, release management,
 
 **Eval coverage**
 
-- Consumer: 33/33 (100%)
+- Consumer: 34/34 (100%)
 - Workshop: 4/23 (17%)

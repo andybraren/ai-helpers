@@ -77,7 +77,7 @@ Every skill or agent must live in a plugin. Pick the one that matches your skill
 <tr><td nowrap><b>uxd-research</b></td><td>UX research pipeline — heuristic evaluation, usability testing, research methodology</td><td>`uxd-discovery`</td></tr>
 <tr><td nowrap><b>uxd-workshop</b></td><td>UXD team tools and skill incubator — prototyping, research, design review, team workflows</td><td>`uxd-evaluate-design-heuristics`, `uxd-figma-read`, `uxd-prototype-evaluate`</td></tr>
 <tr><td nowrap><b>pf-a11y</b></td><td>Accessibility auditing, reporting, and documentation</td><td>`pf-a11y-audit`, `pf-a11y-keyboard`, `pf-a11y-test-gen`</td></tr>
-<tr><td nowrap><b>pf-code-review</b></td><td>Code review and quality — adversarial review, security patterns</td><td>`pf-i18n-audit`, `pf-review`, `pf-security-scan`</td></tr>
+<tr><td nowrap><b>pf-code-review</b></td><td>Code review and quality — adversarial review, security patterns</td><td>`pf-adversarial-review`, `pf-i18n-audit`, `pf-review`</td></tr>
 <tr><td nowrap><b>pf-design-audit</b></td><td>Design audit — validate existing code and designs against PatternFly standards</td><td>`pf-ai-audit`, `pf-color-scan`, `pf-css-token-check`</td></tr>
 <tr><td nowrap><b>pf-design-guide</b></td><td>Design guide — component selection, interaction patterns, AI experience patterns, Figma design creation</td><td>`pf-catalog-interaction-patterns`, `pf-figma-design-mode`, `pf-screenshot-mapping`</td></tr>
 <tr><td nowrap><b>pf-migration</b></td><td>PF version migration — breaking change detection, class scanning, upgrade planning</td><td>`pf-css-migration-scan`, `pf-react-migration-scan`, `pf-release-candidate-update`</td></tr>
