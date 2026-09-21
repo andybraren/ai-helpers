@@ -321,6 +321,14 @@
     ]
   },
   {
+    "name": "rhpds/rhdp-flow",
+    "url": "https://github.com/rhpds/rhdp-flow",
+    "description": "RHDP-Flow Workshop Automation - OpenShift workshop deployment from CSV files",
+    "files": [
+      ".mcp.json"
+    ]
+  },
+  {
     "name": "syntara-orchestration/syntara",
     "url": "https://github.com/syntara-orchestration/syntara",
     "description": "",
