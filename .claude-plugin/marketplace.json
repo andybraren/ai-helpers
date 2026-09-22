@@ -37,7 +37,7 @@
     {
       "name": "uxd-prototype",
       "source": "./plugins/uxd-prototype",
-      "description": "Create UX prototypes from Jira tickets, Figma designs, or feature descriptions"
+      "description": "Create, export, and publish UX prototypes from Jira tickets, Figma designs, or feature descriptions"
     },
     {
       "name": "pf-react",

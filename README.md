@@ -106,6 +106,8 @@ Start with the skill that matches the artifact or decision in front of you:
 | Explore a design, screenshot, or mockup | `uxd-evaluate-design-heuristics` | A structured critique of accessibility, hierarchy, content, and state coverage. |
 | Build an interactive concept | `uxd-prototype-create` | A runnable prototype with user journeys, scenarios, and reusable artifacts. |
 | Validate a prototype against a ticket | `uxd-prototype-evaluate` | Acceptance-criteria results and persona-based usability evidence. |
+| Export screens or install the Prototype Bar | `uxd-prototype-export` | Static HTML, component-tree, or PatternFly spec captures, plus Prototype Bar wiring. |
+| Share a finished prototype | `uxd-prototype-publish` | A merge request, GitHub/GitLab Pages, or Vercel preview with optional Jira updates. |
 | Prepare a design for implementation | `uxd-design-handoff` | Components, interaction states, decisions, and testable acceptance criteria. |
 | Review PatternFly code before merging | `pf-review` | A consolidated check for PatternFly structure, imports, tokens, migration, and security issues. |
 | Check accessibility in a PatternFly interface | `pf-a11y-audit` | WCAG and ARIA findings with evidence and remediation guidance. |
@@ -124,9 +126,11 @@ Use the [skill discovery matrix](PLUGINS.md#skill-discovery-matrix) to compare a
 ├── .claude-plugin/         # Claude Code marketplace config
 ├── .cursor-plugin/         # Cursor marketplace config
 ├── plugins/
-│   ├── uxd-prototype/      # Create UX prototypes from Jira, Figma, or feature descriptions
+│   ├── uxd-prototype/      # Create, export, and publish UX prototypes
 │   │   └── skills/
-│   │       └── uxd-prototype-create/  # Create or refine a prototype from a ticket, design, or idea
+│   │       ├── uxd-prototype-create/   # Create or refine a prototype from a ticket, design, or idea
+│   │       ├── uxd-prototype-export/   # Capture screens and install the Prototype Bar
+│   │       └── uxd-prototype-publish/  # Share via MR, GitHub/GitLab Pages, or Vercel
 │   ├── uxd-workshop/       # UXD incubator — research, design review, remaining prototype skills + uxd-assist
 │   └── patternfly/         # PatternFly meta-plugin + sub-plugins
 │       ├── agents/            # pf-assist routing agent

@@ -15,6 +15,7 @@ This repository is an AI marketplace for UXD teams and the products they support
 
 ```text
 plugins/uxd-workshop/              — UXD tools and skill incubator
+plugins/uxd-prototype/             — Create, export, and publish UX prototypes
 plugins/patternfly/                — PatternFly meta-plugin and sub-plugins
   ├── .claude-plugin/plugin.json   — Meta-plugin manifest
   └── pf-*/                        — PatternFly sub-plugins
