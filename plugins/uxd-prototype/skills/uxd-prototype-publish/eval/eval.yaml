@@ -1,7 +1,7 @@
 name: uxd-prototype-publish-eval
 description: Evaluate uxd-prototype-publish's target prompting, AC gating, validation, and sensitive-file handling
 
-skill: uxd-workshop:uxd-prototype-publish
+skill: uxd-prototype:uxd-prototype-publish
 
 execution:
   mode: case
@@ -9,6 +9,8 @@ execution:
 
 runner:
   type: claude-code
+  plugin_dirs:
+    - plugins/uxd-prototype
 
 models:
   skill: claude-sonnet-5
