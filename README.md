@@ -83,7 +83,7 @@ After installing, skills work the same way — slash commands in any project:
 <tr><td nowrap><b>uxd-design</b></td><td>UX design workflow — Figma context, design evaluation, and implementation handoff</td></tr>
 <tr><td nowrap><b>uxd-prototype</b></td><td>Create UX prototypes from Jira tickets, Figma designs, or feature descriptions</td></tr>
 <tr><td nowrap><b>uxd-research</b></td><td>UX research pipeline — heuristic evaluation, usability testing, research methodology</td></tr>
-<tr><td nowrap><b>uxd-workshop</b></td><td>UXD team tools and skill incubator — prototyping, research, design review, team workflows</td></tr>
+<tr><td nowrap><b>uxd-workshop</b></td><td>UXD skill incubator — new skills start here before graduating to consumer plugins</td></tr>
 <tr><td nowrap><b>pf-a11y</b></td><td>Accessibility auditing, reporting, and documentation</td></tr>
 <tr><td nowrap><b>pf-code-review</b></td><td>Code review and quality — adversarial review, security patterns</td></tr>
 <tr><td nowrap><b>pf-design-audit</b></td><td>Design audit — validate existing code and designs against PatternFly standards</td></tr>
@@ -127,7 +127,7 @@ Use the [skill discovery matrix](PLUGINS.md#skill-discovery-matrix) to compare a
 │   ├── uxd-prototype/      # Create UX prototypes from Jira, Figma, or feature descriptions
 │   │   └── skills/
 │   │       └── uxd-prototype-create/  # Create or refine a prototype from a ticket, design, or idea
-│   ├── uxd-workshop/       # UXD incubator — research, design review, remaining prototype skills + uxd-assist
+│   ├── uxd-workshop/       # UXD incubator — new and experimental UXD skills
 │   └── patternfly/         # PatternFly meta-plugin + sub-plugins
 │       ├── agents/            # pf-assist routing agent
 │       ├── pf-react/          # React development — testing, structure, coding standards
