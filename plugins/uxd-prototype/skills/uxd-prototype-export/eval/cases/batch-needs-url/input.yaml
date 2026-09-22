@@ -1,0 +1,5 @@
+prompt: >-
+  Using the uxd-prototype-export skill: batch-export every journey step and
+  scenario for prototype DEMO. I have .artifacts/DEMO/journeys.json and
+  scenarios.json, but I have not given you a live prototype URL. Ask for what
+  you still need — do not run Playwright or write export files.

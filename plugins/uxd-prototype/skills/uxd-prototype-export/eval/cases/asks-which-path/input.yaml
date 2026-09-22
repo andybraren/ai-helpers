@@ -1,0 +1,5 @@
+prompt: >-
+  Using the uxd-prototype-export skill: export my prototype.
+  I have not said whether I want the current page, a journey batch, or the
+  Prototype Bar. Ask only which path to take — do not capture pages, install
+  the bar, or run Playwright.
