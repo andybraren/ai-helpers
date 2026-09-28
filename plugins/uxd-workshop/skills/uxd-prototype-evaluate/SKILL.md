@@ -42,6 +42,9 @@ Per-key eval files under `${UXD_PROJECT_ROOT}/.artifacts/<KEY>/eval/` (`ARTIFACT
 | `actions.json` | Fix proposals and explicit human/publish handoffs |
 | `state.json` | Lifecycle, cache identity, routing, tokens, and cost |
 | `evaluation-report.html` | Final HTML report (both phases) |
+| `heuristic-evaluation.json` | Structured Nielsen heuristic findings from three AI-simulated evaluator lenses |
+| `heuristic-evaluation.md` | Unreviewed heuristic draft for researcher review |
+| `heuristic-evaluation.html` | Self-contained heuristic report with embedded evidence |
 | `report-url.txt` | Hosted eval URL after `publish-report.sh` |
 
 Cross-key (`.artifacts/eval/`, not deleted by `--fresh`): `runs/run-log.csv`, `pain-leaderboard.html`.
@@ -142,6 +145,37 @@ python3 "${EVALUATOR_SKILL_DIR}/scripts/langfuse-trace-pipeline.py" \
   --iterate-flags="--no-fix --max-iterations=1"
 ```
 
+For a direct-API personal run without a full OpenCode session trace, use the
+personal wrapper instead of the benchmark entrypoint. It uses the managed
+`.venv` Langfuse dependency, skips benchmark canonical-state requirements, keeps
+the `$25` evaluator cap,
+and still requires explicit approval before paid phases:
+
+```bash
+scripts/run-personal-eval.sh \
+  RHAISTRAT-1745 \
+  http://127.0.0.1:8080 \
+  /absolute/path/to/prototype \
+  --estimate-only
+
+scripts/run-personal-eval.sh \
+  RHAISTRAT-1745 \
+  http://127.0.0.1:8080 \
+  /absolute/path/to/prototype \
+  --approve-estimate
+```
+
+Run the first command, inspect its estimate, and run the second command only
+after approving that estimate. This direct-API path runs the evaluator
+pipeline; full-session OpenCode tracing is maintained separately. Trace
+consent and paid-phase approval remain distinct.
+
+The wrapper defaults to sanitized Langfuse tracing, fix enabled, and one
+Phase A iteration. Stage Jira context at
+`tmp/personal-runs/<KEY>/jira-context.json` before running it. Add
+`--qwen-quality-judge` only after the selected Langfuse project has a matching
+Qwen evaluator rule; cost tracing does not require Qwen.
+
 That entrypoint always runs source consistency, Jira extraction, AC
 classification, and baseline screenshot capture locally. It invokes models only
 for journey, visual consistency, and usability; then it validates and renders
@@ -168,7 +202,10 @@ tool-free Responses API calls whose `text.format` uses strict `json_schema`
 Structured Outputs. Their image inputs prefer bounded component/region paths
 from `evidence.json.items`; the viewport image remains a
 local/report fallback and is sent only when no valid crop exists.
-Visual rules are loaded from the sibling bundled consistency skill. Usability
+Visual rules are loaded from the sibling bundled consistency skill. The sibling
+`uxd-research-heuristic-eval` skill runs afterward in explicit unattended mode
+(`--assume-defaults` semantics), so its suggested severities remain labeled as
+an unreviewed draft. Usability
 remains a live persona walkthrough, but its model can use only packaged browser
 observe/click/type/navigate/keyboard functions; it cannot search files, run a
 shell, inspect source, or call Jira. Fresh DOM and screenshot evidence follows
@@ -204,7 +241,7 @@ PHASE A (X-Ray — Informed AC Validation Loop):
     no_fix/no_iterate — user flag or single-run mode
 
 POST-PHASE-A:
-  eval-consistency (--mode=visual) → eval-extract (--phase=enrichment) → eval-hint
+  eval-consistency (--mode=visual) → eval-heuristic (--assume-defaults) → eval-extract (--phase=enrichment) → eval-hint
 
 PHASE B (Discovery — Per-Persona Usability Walkthroughs) — ALWAYS FIRES:
   eval-usability → eval-report

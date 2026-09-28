@@ -33,7 +33,7 @@ for cell in "${cells[@]}"; do
   label="${cell##*|}"
   echo "" | tee -a "$LOG"
   echo "==> Cell $label: $flags" | tee -a "$LOG"
-  if make langfuse-pipeline KEY="$KEY" URL="$URL" MODEL=gpt-5.6-sol \
+  if make langfuse-pipeline KEY="$KEY" URL="$URL" MODEL=gpt-6-sol \
     ITERATE_FLAGS="$flags" EXPERIMENT="$label" 2>&1 | tee -a "$LOG"; then
     echo "OK: $label" >> "$LOG"
   else

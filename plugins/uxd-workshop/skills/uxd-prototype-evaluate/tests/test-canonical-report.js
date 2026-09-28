@@ -31,6 +31,15 @@ try {
   const staleJourney = '{"marker":"must-not-change"}\n';
   fs.writeFileSync(path.join(evalDir, 'evaluation-report.csv'), staleCsv);
   fs.writeFileSync(path.join(evalDir, 'journey-log.json'), staleJourney);
+  fs.writeFileSync(path.join(evalDir, 'heuristic-evaluation.json'), JSON.stringify({
+    findings: [{ id: 'V-01', title: 'Export status is unclear', location: 'View code', agreement: 'majority', suggested_severity: 'major', observation: 'No completion status is visible.' }]
+  }));
+  fs.writeFileSync(path.join(evalDir, 'evaluation-cost.json'), JSON.stringify({
+    total_estimated_usd: 0.1831944, total_tokens: 76569, billing_source: 'provider_usage_price_card_estimate',
+    pricing_reference: 'https://developers.openai.com/api/docs/pricing',
+    excluded_costs: ['OpenCode session model billing', 'Langfuse Qwen judge billing when not provider-reported'],
+    phases: [{ phase: 'eval-journey', model: 'gpt-6-sol', input_tokens: 100, cache_read_tokens: 20, cache_write_tokens: 30, output_tokens: 10, llm_cost_usd: 0.001 }],
+  }));
 
   const inputs = loadReportInputs(evalDir);
   assert.equal(inputs.mode, 'canonical-v1');
@@ -44,6 +53,12 @@ try {
   assert(html.includes('PatternFly Consistency'));
   assert(html.includes('No Custom CSS'));
   assert(html.includes('Use a PatternFly Button and design tokens.'));
+  assert(html.includes('Heuristic Evaluation'));
+  assert(html.includes('Evaluation cost estimate'));
+  assert(html.includes('gpt-6-sol'));
+  assert(html.includes('price-card estimate, not an invoice'));
+  assert(html.includes('$0.183194'));
+  assert(html.includes('Export status is unclear'));
   assert(html.includes('data:image/png;base64,'));
   assert.equal(summary.counts.total, 1);
   assert.equal(summary.counts.flagged, 1);

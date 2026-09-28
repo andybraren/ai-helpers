@@ -1,0 +1,189 @@
+version: 1.0.0
+connection: Qwen3.8
+model: Qwen3.8-27B
+purpose: >-
+  Score whether one evaluator run preserves clear, validated artifact lineage
+  from phase producers through cache restores to report consumers.
+scope:
+  include:
+    - artifact producers, consumers, and authoritative copies
+    - phase input/output handoffs and validation gates
+    - cache identity, cache completeness, and restore behavior
+    - report input compatibility and derived projections
+  exclude:
+    - product or design quality
+    - correctness of Jira acceptance criteria
+    - source-code quality beyond its effect on artifact flow
+    - model answer quality unrelated to artifact lineage
+input_contract:
+  description: >-
+    Sanitized JSON manifest for one pipeline run. Judge only claims supported
+    by manifest fields and evidence references. Missing required fields count
+    as missing evidence, not proof of success.
+  required_fields:
+    - run_id
+    - pipeline_revision
+    - phases
+    - artifact_edges
+    - validations
+    - cache
+    - report
+  phase_fields:
+    - name
+    - status
+    - input_artifacts
+    - output_artifacts
+    - validation_status
+  artifact_edge_fields:
+    - artifact
+    - producer
+    - consumers
+    - authority
+    - schema_validation
+    - content_hash
+    - evidence_ref
+  validation_fields:
+    - artifact
+    - validator
+    - status
+    - issue_count
+    - evidence_ref
+  cache_fields:
+    - decision
+    - identity_components
+    - restored_artifacts
+    - downstream_required_artifacts
+    - restored_set_validated
+  report_fields:
+    - status
+    - input_mode
+    - required_artifacts
+    - resolved_artifacts
+    - evidence_ref
+  privacy:
+    allow:
+      - artifact names and relative repository paths
+      - phase names, status, counts, hashes, and validation summaries
+      - cache decision and identity hashes
+      - report input mode and required artifact names
+    deny:
+      - Jira issue text or user identifiers
+      - prototype source contents
+      - screenshots, image bytes, or DOM text
+      - prompts, model reasoning, or credentials
+scoring:
+  scale: 0_to_4_per_dimension
+  dimensions:
+    - id: lineage_completeness
+      weight: 15
+      criterion: >-
+        Every consumed artifact has a traceable producer, consumers, and
+        evidence reference; phase order is explicit.
+    - id: authority_and_write_direction
+      weight: 20
+      criterion: >-
+        Each artifact has one authoritative owner. Compatibility projections
+        are explicitly derived and are never read back as competing truth.
+    - id: contract_compatibility
+      weight: 20
+      criterion: >-
+        Producer outputs satisfy consumer inputs and schemas. Report and phase
+        requirements agree with artifacts actually produced or projected.
+    - id: cache_completeness
+      weight: 15
+      criterion: >-
+        Cache identity covers every material input, and a hit restores a
+        validated set sufficient for every downstream consumer.
+    - id: phase_handoff_integrity
+      weight: 15
+      criterion: >-
+        Phase outputs are fresh, validated before use, and failures stop or
+        degrade the pipeline explicitly; stale prior-run artifacts cannot mask
+        missing current outputs.
+    - id: verification_and_observability
+      weight: 15
+      criterion: >-
+        Validation results, run identity, cache outcome, and terminal report
+        status are recorded consistently enough to audit the run.
+  anchors:
+    4: Complete, internally consistent evidence; no material gap.
+    3: Strong evidence; only minor non-blocking omissions.
+    2: Partial evidence or a meaningful gap that limits confidence.
+    1: Major contract mismatch, missing handoff, or unverified critical path.
+    0: Direct evidence of broken flow, data loss, or contradictory authority.
+  calculation: >-
+    data_flow_integrity_score = round(sum(weight * dimension_score / 4)).
+  verdicts:
+    pass_min: 80
+    review_min: 40
+    fail_min: 0
+critical_rules:
+  - >-
+    A required report or phase input absent after a cache hit is a critical
+    failure; score contract_compatibility and cache_completeness at 0 or 1.
+  - >-
+    Two writers treated as authoritative for the same artifact without an
+    explicit merge owner is a critical authority risk; score
+    authority_and_write_direction at 0 or 1.
+  - >-
+    A claimed validation or cache hit without a recorded result is unverified;
+    do not infer success from status labels alone.
+  - >-
+    If the manifest is incomplete, cap the overall score at 79 and list each
+    missing field. If run identity or artifact edges are missing, cap at 39.
+  - >-
+    Do not penalize an intentional legacy adapter when it is one-way, named,
+    validated, and its output is not used to overwrite canonical data.
+known_baseline_watchpoints:
+  - >-
+    Phase A currently builds canonical files from legacy extraction,
+    classification, consistency, and evidence artifacts.
+  - >-
+    Phase B currently merges legacy journey, CSV, consistency, and persona
+    outputs into canonical files.
+  - >-
+    Full cache stores five canonical files; report runner also requires legacy
+    extraction, CSV, journey, and persona files.
+  - >-
+    Renderer can project canonical files to legacy-shaped inputs in memory,
+    while report runner still applies a legacy-file precheck.
+  - >-
+    Treat these as risks only when current run evidence confirms the mismatch;
+    do not assume this baseline remains current after pipeline changes.
+judge_instructions: |
+  You are an evidence-based evaluator data-flow auditor. Inspect the sanitized
+  JSON manifest provided as the observation output. Determine whether artifacts
+  move through the evaluator pipeline with clear ownership, compatible
+  contracts, complete cache restores, fresh phase handoffs, and recorded
+  validation.
+
+  Use only facts present in the manifest. Treat repository paths and hashes as
+  evidence references, not as access to file contents. Never infer that a
+  validation passed because an artifact exists or a phase says completed. If a
+  required manifest field or evidence reference is absent, report it as missing
+  evidence and apply the score caps in this rubric.
+
+  Score each of the six dimensions from 0 to 4 using the anchors below. Compute
+  the overall 0-100 score as the rounded weighted sum of each dimension score
+  divided by 4. Apply critical rules and caps after calculating the raw score.
+  Derive verdict: pass at 80+, review at 40-79, fail below 40.
+
+  The Langfuse numeric evaluator must return only the integer score. Use its
+  score-reasoning channel for six dimension ratings, highest-impact evidence
+  references, missing evidence, caps, and verdict. Do not assess product UX,
+  Jira correctness, or model quality.
+output:
+  score_name: uxd-evaluator-data-flow-qwen-v1
+  range: 0_to_100
+  reasoning_max_chars: 1000
+  required_reasoning:
+    - weighted dimension scores
+    - up to three highest-impact evidence-backed findings
+    - missing evidence and any score cap applied
+  confidence_available: true
+cache_key:
+  - phase
+  - rubric_version
+  - judge_model
+  - sanitized_manifest_sha256
+  - pipeline_revision

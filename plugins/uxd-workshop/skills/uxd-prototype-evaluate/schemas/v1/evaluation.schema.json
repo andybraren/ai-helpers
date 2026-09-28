@@ -127,7 +127,7 @@
             "visual_checked": { "type": "boolean" },
             "findings": {
               "type": "array",
-              "maxItems": 500,
+              "maxItems": 1000,
               "items": {
                 "type": "object",
                 "properties": {

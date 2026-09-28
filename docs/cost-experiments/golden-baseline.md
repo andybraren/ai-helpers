@@ -1,5 +1,8 @@
 # Golden baseline — Opus (CP2)
 
+> Historical, **pre-calibration** reference only. Re-anchor after calibration
+> with current provider usage and targeted-crop `detail: auto` measurements.
+
 **Reviewers:** You + Andy (both sign-off required before Phase 3)
 
 **Success threshold for later experiments:** ≥40% `llm_cost_usd` reduction, no new AC failures, ≤1 usability-point drop.

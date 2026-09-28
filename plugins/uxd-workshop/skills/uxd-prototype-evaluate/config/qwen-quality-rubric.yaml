@@ -1,0 +1,34 @@
+version: 1.0.0
+connection: Qwen3.8
+model: Qwen3.8-27B
+privacy:
+  input: sanitized_output_content_only
+  screenshots: false
+  binary_data: false
+output:
+  score_names:
+    quality_score: uxd-prototype-quality-qwen-v1  # Langfuse ties the score name to the evaluator name
+  score_metadata:
+    qwen_cost_usd: provider_billing_when_available
+  quality_score: 0_to_100
+  verdict:
+    semantics: derived_from_score
+    pass_min: 80
+    review_min: 40
+    fail_min: 0
+  reasoning_max_chars: 500
+  confidence_available: true
+evaluation_policy:
+  supported_no_op:
+    applies_when: applied_false_with_rationale_evidence_suggestion_context
+    verdict: valid_conclusion
+    scoring: do_not_penalize_for_zero_workspace_edits
+  unsupported_no_op:
+    applies_when: missing_rationale_evidence_or_recommended_next_step
+    verdict: insufficient_evidence
+    scoring: penalize_for_unactionable_or_ungrounded_conclusion
+cache_key:
+  - phase
+  - rubric_version
+  - judge_model
+  - sanitized_output_sha256

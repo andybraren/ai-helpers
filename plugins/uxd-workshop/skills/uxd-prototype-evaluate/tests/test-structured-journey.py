@@ -74,6 +74,7 @@ def fixture(root: Path) -> dict:
     )
     return {
         "phase": "eval-journey",
+        "artifact_mode": "legacy-csv",
         "prototype_url": "http://localhost:9000/",
         "workspace": str(root / "workspace"),
         "artifacts_dir": str(artifacts),
@@ -185,7 +186,15 @@ def main() -> int:
         assert result["prompt_cache"]["dynamic_input_bytes"] > 0
         assert request["input"][0]["content"] == journey.build_journey_static_prefix()
         artifacts = Path(packet["artifacts_dir"])
-        assert json.loads((artifacts / "journey-log.json").read_text()) == expected
+        journey_artifact = json.loads((artifacts / "journey-log.json").read_text())
+        assert journey_artifact == {
+            **expected,
+            "persona_scope": {
+                "selected_for_phase_b": ["ml-engineer+junior"],
+                "evaluated_in_phase_a": ["ml-engineer+junior"],
+                "phase_a_coverage": "complete",
+            },
+        }
         csv_text = (artifacts / "evaluation-report.csv").read_text()
         assert "AC-1,jira,T1,Tool calls are visible,PASS" in csv_text
         assert "AC-2,jira,T4,Engineering reviewed the design,FLAGGED" in csv_text
@@ -211,6 +220,15 @@ def main() -> int:
         })
         journey.validate_journey_output(t4_extra, packet)
 
+        wrong_persona = output_payload()
+        wrong_persona["journeys"][0]["persona"] = "not-selected"
+        try:
+            journey.validate_journey_output(wrong_persona, packet)
+        except ValueError as error:
+            assert "persona" in str(error)
+        else:
+            raise AssertionError("Journey accepted persona broader than deterministic scope")
+
     with tempfile.TemporaryDirectory() as temp_dir:
         root = Path(temp_dir)
         artifacts = root / "workspace" / ".artifacts" / "PROJ-123" / "eval"
@@ -223,14 +241,17 @@ def main() -> int:
         crop.write_bytes(PNG_1X1)
         packet = {
             "phase": "eval-journey",
+            "artifact_mode": "canonical-json-v1",
             "prototype_url": "https://example.test/experiments/create",
             "workspace": str(root / "workspace"),
             "artifacts_dir": str(artifacts),
         }
         loaded = journey._load_inputs(packet)
         assert loaded["canonical_mode"] is True
+        assert loaded["artifact_mode"] == "canonical-json-v1"
         assert loaded["criterion_ids"] == ["AC-1"]
         assert not (artifacts / "evaluation-report.csv").exists()
+
         expected = {
             "depth": "quick",
             "prototype_url": packet["prototype_url"],
@@ -248,8 +269,39 @@ def main() -> int:
         }
         response = {"status": "completed", "output_text": json.dumps(expected), "usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2}}
         journey.run_structured_journey(packet, model="gpt-5.6-luna", request_fn=lambda _request: response)
-        assert json.loads((artifacts / "journey-log.json").read_text()) == expected
+        canonical_artifact = json.loads((artifacts / "journey-log.json").read_text())
+        assert canonical_artifact["persona_scope"] == {
+            "selected_for_phase_b": loaded["extract"]["persona_selection"]["selected"],
+            "evaluated_in_phase_a": ["persona-data-scientist-junior"],
+            "phase_a_coverage": "complete",
+        }
+        assert journey.persona_scope({
+            "persona_selection": {"selected": ["ml-engineer+junior", "ml-engineer+senior"]},
+            "journeys": [{"persona": "ml-engineer+junior"}],
+        }) == {
+            "selected_for_phase_b": ["ml-engineer+junior", "ml-engineer+senior"],
+            "evaluated_in_phase_a": ["ml-engineer+junior"],
+            "phase_a_coverage": "partial",
+        }
         assert not (artifacts / "evaluation-report.csv").exists()
+
+        legacy_source = fixture(root / "legacy-source")
+        legacy_source_artifacts = Path(legacy_source["artifacts_dir"])
+        for name in ("extract-state.json", "prototype-evidence.json", "evaluation-report.csv"):
+            shutil.copy2(legacy_source_artifacts / name, artifacts / name)
+        shutil.copytree(
+            legacy_source_artifacts / "screenshots",
+            artifacts / "screenshots",
+            dirs_exist_ok=True,
+        )
+        shutil.copytree(
+            legacy_source_artifacts / "evidence" / "crops",
+            artifacts / "evidence" / "crops",
+            dirs_exist_ok=True,
+        )
+        legacy_loaded = journey._load_inputs({**packet, "artifact_mode": "legacy-csv"})
+        assert legacy_loaded["canonical_mode"] is False
+        assert legacy_loaded["artifact_mode"] == "legacy-csv"
 
     print("PASS")
     return 0

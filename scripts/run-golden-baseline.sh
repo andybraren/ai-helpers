@@ -13,7 +13,7 @@ if [ -n "$KEY" ]; then MRS=("$KEY"); fi
 run_one() {
   local key="$1" flags="$2" label="$3"
   echo "==> $label: $key ($flags)"
-  make langfuse-pipeline KEY="$key" URL="$URL" MODEL=gpt-5.6-sol \
+  make langfuse-pipeline KEY="$key" URL="$URL" MODEL=gpt-6-sol \
     ITERATE_FLAGS="$flags" EXPERIMENT="$label" || echo "WARN: $label failed for $key"
 }
 

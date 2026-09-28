@@ -1,13 +1,10 @@
 .PHONY: validate lint security scaffold help docs cluster-env \
-	mlflow-poc7 mlflow-smoke mlflow-smoke-all mlflow-compare mlflow-pipeline \
-	mlflow-standby mlflow-resume \
 	langfuse-env langfuse-local-env langfuse-local-up langfuse-local-down langfuse-smoke \
-	langfuse-deps langfuse-eval langfuse-compare langfuse-pipeline langfuse-benchmark \
-	eval-onboard \
-	langfuse-verify \
-	test-subskills test-subskills-mlflow \
-	run-phase0 run-phase1-verify run-golden-baseline run-run-mode-matrix run-model-experiments \
-	run-foundation-batch run-foundation-continue
+	langfuse-deps langfuse-eval langfuse-pipeline langfuse-benchmark \
+	langfuse-judge-scores langfuse-benchmark-report eval-onboard \
+	langfuse-verify langfuse-preflight langfuse-cost-estimate \
+	test-subskills \
+	run-phase0 run-phase1-verify run-golden-baseline run-run-mode-matrix
 
 cluster-env: ## Print export PATH for oc/node (eval "$(make cluster-env)")
 	@echo 'export PATH="$(CURDIR)/.local/node/bin:$$PATH"'
@@ -56,8 +53,6 @@ endif
 	@bash scripts/scaffold-skill.sh $(PLUGIN) $(SKILL)
 
 # ── Eval Pipeline ───────────────────────────────────────────────────
-# MLflow scripts/config remain for research reference, but are not active.
-
 EVAL_SKILL = plugins/uxd-workshop/skills/uxd-prototype-evaluate
 EVAL_SCRIPTS = $(EVAL_SKILL)/scripts
 EVAL_TESTS = $(EVAL_SKILL)/tests
@@ -67,9 +62,6 @@ LANGFUSE_LOCAL_URI = http://localhost:$(LANGFUSE_LOCAL_PORT)
 LANGFUSE_LOCAL_ENV = docker/langfuse/.env
 PYTHON_RUN = $(if $(wildcard .venv/bin/python),.venv/bin/python,$(if $(shell command -v uv 2>/dev/null),uv run python3,python3))
 EVAL_RUN = bash scripts/eval-run.sh
-
-mlflow-poc7: ## Deprecated compatibility target; MLflow is not used
-	@echo 'MLflow is retained for research only and is not used by the active pipeline.'
 
 KEY ?=
 URL ?=
@@ -92,22 +84,17 @@ langfuse-eval: ## Score eval artifacts locally and log quality to Langfuse
 		--prototype-key $(KEY) \
 		--scorers $(SCORERS)
 
-mlflow-smoke: ## Deprecated compatibility alias for langfuse-eval
-	@$(MAKE) langfuse-eval KEY=$(KEY) MODEL=$(MODEL) SCORERS=$(SCORERS) SKILLS="$(SKILLS)"
+langfuse-judge-scores: ## Read Qwen scores through public API; exports are fallback only
+	@if [ -z "$(BENCHMARK_DIR)" ] || [ -z "$(CONDITION)" ] || [ -z "$(BENCHMARK_NAME)" ]; then \
+		echo "Usage: make langfuse-judge-scores BENCHMARK_DIR=tmp/benchmarks/KEY CONDITION=legacy BENCHMARK_NAME=designer-phase-costs"; exit 1; fi
+	$(EVAL_RUN) $(PYTHON_RUN) $(EVAL_SCRIPTS)/read-langfuse-judge-scores.py \
+		--benchmark-dir $(BENCHMARK_DIR) --condition $(CONDITION) --benchmark-name $(BENCHMARK_NAME) \
+		$(if $(DATA_MCP_EXPORT),--data-mcp-export $(DATA_MCP_EXPORT),) \
+		$(if $(LOCAL_SCORE_CAPTURE),--local-score-capture $(LOCAL_SCORE_CAPTURE),)
 
-mlflow-smoke-all: ## All scorers: make mlflow-smoke-all KEY=RHAISTRAT-1492
-	@$(MAKE) mlflow-smoke KEY=$(KEY) SCORERS=all MODEL=$(MODEL) SKILLS="$(SKILLS)"
-
-langfuse-compare: ## Compare direct-API models on subskills
-	@if [ -z "$(KEY)" ]; then echo "Usage: make langfuse-compare KEY=RHAISTRAT-1492 URL=<prototype-url>"; exit 1; fi
-	$(EVAL_RUN) $(PYTHON_RUN) $(EVAL_SCRIPTS)/langfuse-compare-models.py \
-		--key $(KEY) \
-		--url $(URL) \
-		--skills $(if $(SKILLS),$(SKILLS),eval-extract eval-classify eval-consistency eval-report) \
-		--models $(if $(MODELS),$(MODELS),gpt-5.6-luna gpt-5.6-terra gpt-5.6-sol)
-
-mlflow-compare: ## Deprecated compatibility alias for langfuse-compare
-	@$(MAKE) langfuse-compare KEY=$(KEY) URL=$(URL) MODEL=$(MODEL)
+langfuse-benchmark-report: ## Render benchmark reports from public-API score reports
+	@if [ -z "$(BENCHMARK_DIR)" ]; then echo "Usage: make langfuse-benchmark-report BENCHMARK_DIR=tmp/benchmarks/KEY"; exit 1; fi
+	$(EVAL_RUN) $(PYTHON_RUN) $(EVAL_SCRIPTS)/render-benchmark-reports.py --benchmark-dir $(BENCHMARK_DIR)
 
 langfuse-pipeline: ## MCP-staged direct API pipeline with Langfuse
 	@if [ -z "$(KEY)" ] || [ -z "$(URL)" ] || [ -z "$(WORKSPACE)" ] || [ -z "$(JIRA_CONTEXT)" ]; then \
@@ -125,10 +112,24 @@ langfuse-pipeline: ## MCP-staged direct API pipeline with Langfuse
 		$(if $(EVAL_PLATFORM),--platform $(EVAL_PLATFORM),) \
 		$(if $(MAX_TURNS),--max-turns $(MAX_TURNS),) \
 		$(if $(ITERATE_FLAGS),--iterate-flags="$(ITERATE_FLAGS)",) \
-		$(if $(EXPERIMENT),--experiment-label="$(EXPERIMENT)",)
-
-mlflow-pipeline: ## Deprecated compatibility alias for langfuse-pipeline
-	@$(MAKE) langfuse-pipeline KEY=$(KEY) URL=$(URL) WORKSPACE=$(WORKSPACE) JIRA_CONTEXT=$(JIRA_CONTEXT) MODEL=$(MODEL) EVAL_PROVIDER=$(EVAL_PROVIDER) EVAL_PLATFORM=$(EVAL_PLATFORM) ITERATE_FLAGS="$(ITERATE_FLAGS)" EXPERIMENT=$(EXPERIMENT)
+		$(if $(EXPERIMENT),--experiment-label="$(EXPERIMENT)",) \
+		$(if $(BENCHMARK_NAME),--benchmark-name "$(BENCHMARK_NAME)",) \
+		$(if $(CONDITION),--condition $(CONDITION),) \
+		$(if $(SCREENSHOT_MODE),--screenshot-mode $(SCREENSHOT_MODE),) \
+		$(if $(ARTIFACT_MODE),--artifact-mode $(ARTIFACT_MODE),) \
+		$(if $(CSV_USED),--csv-used $(CSV_USED),) \
+		$(if $(REASONING_EFFORT),--reasoning-effort $(REASONING_EFFORT),) \
+		$(if $(ESTIMATE_ONLY),--estimate-only,) \
+		$(if $(APPROVE_ESTIMATE),--approve-estimate,) \
+		$(if $(SOURCE_REVISION),--source-revision $(SOURCE_REVISION),) \
+		$(if $(PERSONAS),--personas $(PERSONAS),) \
+		$(foreach state,$(CANONICAL_STATES),--canonical-state $(state)) \
+		$(foreach workspace,$(CONDITION_WORKSPACES),--condition-workspace $(workspace)) \
+		$(if $(WARM_CACHE_ROOT),--warm-cache-root $(WARM_CACHE_ROOT),) \
+		$(if $(PAIRED_COLD_STATE),--paired-cold-state $(PAIRED_COLD_STATE),) \
+		$(if $(ENV_FILE),--env-file $(ENV_FILE),) \
+		$(if $(TRACE_SANITIZED_ARTIFACTS),--trace-sanitized-artifacts,) \
+		$(if $(QWEN_QUALITY_JUDGE),--qwen-quality-judge,)
 
 langfuse-env: ## Export Langfuse env for UXDPOC7 (eval "$(make langfuse-env)")
 	@echo 'export LANGFUSE_HOST=$(LANGFUSE_POC7_URI)'
@@ -168,17 +169,28 @@ eval-onboard: ## Read-only first-run setup check for prototype evaluation
 langfuse-benchmark: ## Phase 3 Langfuse matrix benchmark (4 cells → local Langfuse UI)
 	@bash scripts/run-langfuse-benchmark.sh $(URL)
 
-mlflow-standby: ## Scale cluster MLflow+Postgres to 0 (free capacity for Langfuse)
-	@bash scripts/mlflow-standby.sh
-
-mlflow-resume: ## Restore cluster MLflow+Postgres after standby
-	@bash scripts/mlflow-resume.sh
-
 langfuse-smoke: ## Langfuse SDK smoke trace (dry-run if keys unset)
 	$(EVAL_RUN) $(PYTHON_RUN) $(EVAL_SCRIPTS)/langfuse_trace.py smoke
 
 langfuse-verify: ## Verify Langfuse health/auth and emit a metadata-only smoke trace
 	$(EVAL_RUN) $(PYTHON_RUN) $(EVAL_SCRIPTS)/verify-langfuse.py
+
+langfuse-preflight: ## Zero-spend benchmark preflight; requires BENCHMARK_PREFLIGHT_ARGS
+	@if [ -z "$(BENCHMARK_PREFLIGHT_ARGS)" ]; then echo "Usage: make langfuse-preflight BENCHMARK_PREFLIGHT_ARGS='--key ... --url ... --workspace ... --jira-context ... --source-revision ... --personas ... --canonical-state legacy=... --canonical-state optimized-cold=... --canonical-state optimized-warm=... --condition-workspace legacy=... --condition-workspace optimized-cold=... --condition-workspace optimized-warm=...'"; exit 1; fi
+	$(EVAL_RUN) $(PYTHON_RUN) $(EVAL_SCRIPTS)/verify-langfuse.py --preflight $(BENCHMARK_PREFLIGHT_ARGS)
+
+langfuse-cost-estimate: ## Zero-spend pre-run cost estimate from Langfuse trace history (KEY required)
+	@if [ -z "$(KEY)" ]; then echo "Usage: make langfuse-cost-estimate KEY=RHAISTRAT-1492 [RUN_MODE=fresh] [FIX_MODE=no_fix] [MODEL_TIER=premium] [ITERATIONS=1] [LIMIT_DAYS=90] [CONFIG=...] [BUDGET_USD=...] [JSON=1]"; exit 1; fi
+	$(EVAL_RUN) $(PYTHON_RUN) $(EVAL_SCRIPTS)/langfuse-cost-estimate.py \
+		--key $(KEY) \
+		$(if $(RUN_MODE),--run-mode $(RUN_MODE),) \
+		$(if $(FIX_MODE),--fix-mode $(FIX_MODE),) \
+		$(if $(MODEL_TIER),--model-tier $(MODEL_TIER),) \
+		$(if $(ITERATIONS),--iterations $(ITERATIONS),) \
+		$(if $(LIMIT_DAYS),--limit-days $(LIMIT_DAYS),) \
+		$(if $(CONFIG),--config $(CONFIG),) \
+		$(if $(BUDGET_USD),--budget-usd $(BUDGET_USD),) \
+		$(if $(JSON),--json,)
 
 ledger-smoke: ## Append test row to cost ledger from existing artifacts
 	@if [ -z "$(KEY)" ]; then echo "Usage: make ledger-smoke KEY=RHAISTRAT-1492"; exit 1; fi
@@ -198,26 +210,12 @@ backfill-ledger: ## Backfill cost ledger from existing artifacts
 run-golden-baseline: ## Phase 2: run golden Opus baselines (requires URL)
 	@bash scripts/run-golden-baseline.sh $(KEY) $(URL)
 
-run-foundation-batch: ## Foundation: fixtures + tiered probes + 2 pipeline runs
-	@bash scripts/run-foundation-batch.sh
-
-run-foundation-continue: ## Continue foundation (tiered probes + golden-a; SKIP_MATRIX=1 default)
-	@bash scripts/run-foundation-continue.sh
-
 run-run-mode-matrix: ## Phase 3: 4-cell run-mode matrix on RHAISTRAT-1492
 	@bash scripts/run-run-mode-matrix.sh $(URL)
-
-run-model-experiments: ## Phase 4: cheaper model compare matrix
-	@bash scripts/run-model-experiments.sh $(KEY) $(URL)
 
 run-file-diet-experiments: ## Phase 5: file diet and tier experiments
 	@bash scripts/run-file-diet-experiments.sh $(KEY) $(URL)
 
-fix-mlflow-pods: ## Restart MLflow deployments in ux-eval
-	@bash scripts/fix-mlflow-ux-eval.sh
-
 test-subskills: ## Run subskill validation tests against fixtures
 	bash $(EVAL_TESTS)/run-script-tests.sh
-
-test-subskills-mlflow: ## Subskill tests + MLflow: make test-subskills-mlflow KEY=RHAISTRAT-1492
-	@$(MAKE) mlflow-smoke KEY=$(KEY) SCORERS="pipeline-output report-rendering script-tests" MODEL=$(MODEL)
+	bash plugins/uxd-prototype/skills/uxd-prototype-create/tests/run-tests.sh

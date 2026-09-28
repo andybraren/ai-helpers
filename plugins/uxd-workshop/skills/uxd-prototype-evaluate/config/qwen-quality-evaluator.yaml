@@ -1,0 +1,34 @@
+name: uxd-prototype-quality-qwen-v1
+version: 1.0.0
+connection: Qwen3.8
+model: Qwen3.8-27B
+target:
+  observations:
+    - eval-journey
+    - eval-fix
+    - eval-consistency-visual
+    - eval-heuristic
+    - eval-usability
+  required_tag_prefix: benchmark_name=
+  metadata:
+    privacy_mode: sanitized_artifact_output
+    quality_judge_eligible: true
+    # Required remote rule change, intentionally not applied by this repository:
+    # completed generation AND quality_judge_eligible=true AND
+    # privacy_mode=sanitized_artifact_output AND benchmark_name=<run name>.
+    # Keep the five observation names above as a second guard. Do not target
+    # deterministic observations, even though they retain benchmark metadata.
+input_mapping:
+  output: "{{output}}"
+rubric_file: qwen-quality-rubric.yaml
+score_names:
+  quality_score: uxd-prototype-quality-qwen-v1  # Langfuse ties the score name to the evaluator name
+budget:
+  declared_expectation_usd: 10
+  max_output_tokens: 500
+privacy:
+  screenshots: false
+  binary_data: false
+  source_inputs: false
+reporting:
+  qwen_cost_usd: provider_billing_when_available

@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from openai_api_agent import _cost, _request, _usage
+from openai_api_agent import _cost, _request, _usage, request_with_capture
 from prompt_cache import prefix_metrics
 
 
@@ -156,10 +156,14 @@ def _acceptance_rows(csv_text: str) -> tuple[list[str], list[dict[str, str]]]:
 
 def _load_inputs(packet: dict[str, Any]) -> dict[str, Any]:
     artifacts_dir = Path(packet["artifacts_dir"]).resolve()
-    canonical_mode = all(
+    requested_mode = packet.get("artifact_mode")
+    canonical_available = all(
         (artifacts_dir / name).is_file()
         for name in ("brief.json", "evaluation.json", "evidence.json", "actions.json", "state.json")
     )
+    if requested_mode == "canonical-json-v1" and not canonical_available:
+        raise ValueError("canonical-json-v1 mode requires all five canonical artifacts")
+    canonical_mode = canonical_available and requested_mode != "legacy-csv"
     if canonical_mode:
         brief = json.loads((artifacts_dir / "brief.json").read_text())
         canonical_evidence = json.loads((artifacts_dir / "evidence.json").read_text())
@@ -252,6 +256,7 @@ def _load_inputs(packet: dict[str, Any]) -> dict[str, Any]:
         "criterion_ids": criterion_ids,
         "persona_ids": persona_ids,
         "canonical_mode": canonical_mode,
+        "artifact_mode": "canonical-json-v1" if canonical_mode else "legacy-csv",
     }
 
 
@@ -311,7 +316,7 @@ def _image_content(artifacts_dir: Path, relative: str) -> dict[str, str]:
     return {
         "type": "input_image",
         "image_url": f"data:{mime_type};base64,{encoded}",
-        "detail": "high",
+        "detail": "auto",
     }
 
 
@@ -350,7 +355,7 @@ def build_journey_request(
             },
             "verbosity": "low",
         },
-        "max_output_tokens": 6000,
+        "max_output_tokens": 4000,
         "store": False,
     }
 
@@ -393,6 +398,8 @@ def _validate(value: Any, schema: dict[str, Any], path: str = "$") -> None:
             raise ValueError(f"{path} must be an array")
         if len(value) < int(schema.get("minItems", 0)):
             raise ValueError(f"{path} has too few items")
+        if "maxItems" in schema and len(value) > int(schema["maxItems"]):
+            raise ValueError(f"{path} has too many items")
         if schema.get("uniqueItems") and len({json.dumps(item, sort_keys=True) for item in value}) != len(value):
             raise ValueError(f"{path} must contain unique items")
         for index, item in enumerate(value):
@@ -495,7 +502,17 @@ def validate_journey_output(output: dict[str, Any], packet: dict[str, Any]) -> N
             "journeys must exactly cover extracted journey definitions; "
             f"expected {sorted(expected_journey_ids)}, received {sorted(received_journey_ids)}"
         )
+    expected_persona_by_journey = {
+        item["id"]: item.get("persona")
+        for item in inputs["extract"].get("journey_definitions") or []
+        if item.get("id")
+    }
     for journey in output["journeys"]:
+        expected_persona = expected_persona_by_journey.get(journey["id"])
+        if expected_persona and journey["persona"].split("+", 1)[0] != expected_persona.split("+", 1)[0]:
+            raise ValueError(
+                f"{journey['id']} persona does not match deterministic journey definition"
+            )
         if not set(journey["ac_ids"]).issubset(known_ids):
             raise ValueError(f"{journey['id']} contains an unknown criterion ID")
         if len(set(journey["ac_ids"])) != len(journey["ac_ids"]):
@@ -506,26 +523,47 @@ def validate_journey_output(output: dict[str, Any], packet: dict[str, Any]) -> N
         _render_updated_csv(inputs["csv_text"], output)
 
 
+def persona_scope(output: dict[str, Any]) -> dict[str, Any]:
+    """Make Phase A coverage explicit without claiming all Phase B personas ran."""
+    selected = list(output["persona_selection"]["selected"])
+    evaluated = list(dict.fromkeys(journey["persona"] for journey in output["journeys"]))
+    return {
+        "selected_for_phase_b": selected,
+        "evaluated_in_phase_a": evaluated,
+        "phase_a_coverage": "complete" if set(evaluated) == set(selected) else "partial",
+    }
+
+
 def run_structured_journey(
     packet: dict[str, Any],
     *,
     model: str,
     reasoning_effort: str = "low",
+    max_turns: int = 4,
     trace_path: str | None = None,
+    usage_journal_path: str | None = None,
+    run_id: str | None = None,
+    attempt_id: str | None = None,
     request_fn: Callable[[dict[str, Any]], dict[str, Any]] = _request,
 ) -> dict[str, Any]:
     """Execute one structured request and atomically write validated artifacts."""
+    if max_turns < 1:
+        raise ValueError("max_turns must be at least 1")
     started = time.monotonic()
     request = build_journey_request(packet, model=model, reasoning_effort=reasoning_effort)
-    response = request_fn(request)
-    if trace_path:
-        trace_file = Path(trace_path)
-        trace_file.parent.mkdir(parents=True, exist_ok=True)
-        trace_file.write_text(json.dumps(response) + "\n")
+    response = request_with_capture(
+        request, request_fn=request_fn, usage_journal_path=usage_journal_path,
+        trace_path=trace_path, run_id=run_id, attempt_id=attempt_id,
+        phase="eval-journey", model=model,
+    )
     if response.get("status") not in {None, "completed"}:
         raise ValueError(f"OpenAI journey response status was {response.get('status')}")
     output_text = _output_text(response)
     usage = _usage(response)
+    usage_known = isinstance(response.get("usage"), dict) and all(
+        isinstance(response["usage"].get(field), int)
+        for field in ("input_tokens", "output_tokens")
+    )
     cost = _cost(model, usage)
     try:
         output = json.loads(output_text)
@@ -545,6 +583,7 @@ def run_structured_journey(
     }
     artifact_output = {
         **output,
+        "persona_scope": persona_scope(output),
         "criterion_results": [
             result
             for result in output["criterion_results"]
@@ -566,8 +605,9 @@ def run_structured_journey(
         "status": "completed",
         "output_text": output_text,
         "token_usage": usage,
-        "cost_usd": cost,
-        "billing_source": "provider_estimate" if cost is not None else "unavailable",
+        "usage_known": usage_known,
+        "cost_usd": cost if usage_known else None,
+        "billing_source": "provider_estimate" if cost is not None and usage_known else "unavailable",
         "turns_used": 1,
         "turn_limit_reached": False,
         "prompt_cache": prefix_metrics(build_journey_static_prefix(), build_journey_prompt(packet)),

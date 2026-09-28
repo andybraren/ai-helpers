@@ -80,8 +80,8 @@ fetch Jira with the Atlassian MCP and stage a normalized JSON file with
 `source: "atlassian-mcp"` under `tmp/benchmarks/<KEY>/jira-context.json`.
 No shell, credential-file, or Keychain fallback is allowed.
 
-First validate the local skill, workspace, and staged Jira data without making
-an API request:
+First validate local skill, workspace, and staged Jira data without making an
+API request:
 
 ```bash
 make langfuse-pipeline KEY=PROJ-298 URL=http://localhost:3000 \
@@ -109,25 +109,83 @@ To inspect the three model-phase packets without calling a model, replace
 `DETERMINISTIC_ONLY=1` with `PHASE_PLAN_ONLY=1`. The editable JSON packets are
 written under `tmp/benchmarks/<KEY>/phase-packets/`.
 
-Omit `DETERMINISTIC_ONLY=1` only for an explicitly approved paid run. The
-bounded OpenAI runner currently supports no-fix evaluation runs:
+For controlled cost benchmarks, run zero-spend preflight first. It loads
+`.env.local` without displaying values; validates OpenAI through `GET /models`,
+Langfuse project/Qwen configuration reads, live prototype, staged Jira, exact
+source revision, two personas, and three matching canonical states produced by
+disposable condition workspaces. It never invokes OpenAI or Qwen. Warm cache
+verification is a separate $0 gate before each optimized-warm repetition:
+
+```bash
+make langfuse-preflight BENCHMARK_PREFLIGHT_ARGS='\
+  --key PROJ-298 --url http://localhost:3000 \
+  --workspace /path/to/prototype \
+  --jira-context tmp/benchmarks/PROJ-298/jira-context.json \
+  --source-revision <exact-git-sha> \
+  --personas persona-one,persona-two \
+  --canonical-state legacy=/path/legacy/state.json \
+  --canonical-state optimized-cold=/path/cold/state.json \
+  --canonical-state optimized-warm=/path/warm/state.json \
+  --condition-workspace legacy=/path/legacy \
+  --condition-workspace optimized-cold=/path/cold \
+  --condition-workspace optimized-warm=/path/warm'
+```
+
+`--estimate-only` repeats Step 0 and prints phase/condition OpenAI bounds. Paid
+OpenAI execution is blocked unless `--approve-estimate` is passed with same Step
+0 inputs. Get explicit user approval before setting `APPROVE_ESTIMATE=1`.
 
 ```bash
 make langfuse-pipeline KEY=PROJ-298 URL=http://localhost:3000 \
   WORKSPACE=/path/to/prototype \
   JIRA_CONTEXT=tmp/benchmarks/PROJ-298/jira-context.json \
-  ITERATE_FLAGS="--no-fix --max-iterations=1"
+  ESTIMATE_ONLY=1 SOURCE_REVISION=<exact-git-sha> PERSONAS=persona-one,persona-two \
+  CANONICAL_STATES='legacy=/path/legacy/state.json optimized-cold=/path/cold/state.json optimized-warm=/path/warm/state.json' \
+  CONDITION_WORKSPACES='legacy=/path/legacy optimized-cold=/path/cold optimized-warm=/path/warm'
 ```
 
+The bounded OpenAI runner currently supports no-fix evaluation runs. After
+explicit approval, repeat exact command with `APPROVE_ESTIMATE=1` and
+`ITERATE_FLAGS="--no-fix --max-iterations=1"`.
+
+Qwen quality judging is disabled by default and runs only as a Langfuse-side
+LLM-as-a-Judge evaluator; this repository never invokes Qwen. Provision it in
+the POC7 Langfuse project from `config/qwen-quality-evaluator.yaml`:
+
+1. In **LLM connections**, verify `Qwen3.8`; in **Models**, verify `Qwen3.8-27B`.
+2. In **Evaluators**, create an LLM-as-a-Judge evaluator named
+   `uxd-prototype-quality-qwen-v1`, version `1.0.0`, using that connection/model,
+   `{{output}}` as input, and the rubric fields in `qwen-quality-rubric.yaml`.
+3. Enable one observation-level rule for exactly `eval-journey`, `eval-fix`,
+   `eval-consistency-visual`, `eval-heuristic`, and `eval-usability`; require metadata
+   `benchmark_name=<benchmark name>`, `qwen_quality_judge=asserted`, and
+   `privacy_mode=sanitized_artifact_output`.
+4. Enable the evaluator and rule. `QWEN_QUALITY_JUDGE=1` plus
+   `TRACE_SANITIZED_ARTIFACTS=1` makes preflight assert the setup and probe the
+   authenticated public Scores API. It does not execute Qwen; the first judged
+   paid phase is the end-to-end validation.
+
+Each phase receives only its scrubbed structured artifact output—never prompts,
+screenshots, binary data, or source inputs. Qwen's $10 is a declared expectation,
+not a repository reservation. After every condition, run
+`make langfuse-judge-scores BENCHMARK_DIR=<dir> CONDITION=<condition>
+BENCHMARK_NAME=<name>`; it reads named Qwen scores through authenticated
+`/api/public/v3/scores`, verifies their attached observation has the benchmark
+tag, records provider cost or `unavailable`, and flags cost above $10 with trace
+links. `--data-mcp-export` and Python exporter score capture are labelled
+fallbacks only. A user-side Data MCP/UI `events_only` check is optional and never
+blocks this repository's preflight. Warm cache hits create no paid-phase
+observations, so the side evaluator cannot run and Qwen spend is $0 by
+construction.
+
 Jira extraction, AC classification, and baseline screenshot/DOM capture are
-deterministic local steps. The runner then invokes three isolated model phases:
-journey, visual consistency, and usability. Journey uses one tool-free Responses
+deterministic local steps. The runner then invokes bounded model phases for
+journey, visual consistency, the sibling heuristic evaluation, and usability. Journey uses one tool-free Responses
 API request with strict `text.format.type: json_schema` Structured Outputs and
 portable image inputs resolved from relative paths in `prototype-evidence.json`.
-Visual consistency and usability retain two-turn limits. Existing phase
-validators must pass before the next phase starts. The report is
-schema-validated and rendered by bundled local scripts. Model work uses at most
-5 turns under the shared 12-turn ceiling.
+Visual consistency and heuristic evaluation each have one turn, and usability has up to ten under the shared
+turn ceiling. Existing phase validators must pass before the next phase starts. The report is
+schema-validated and rendered by bundled local scripts.
 Inspectable packets and provider responses stay under the gitignored benchmark
 directory. The runner never discovers global marketplace caches.
 
@@ -143,8 +201,8 @@ make langfuse-verify
 Platform/model selection uses `AI_HELPERS_PLATFORM=codex|cursor|anthropic`.
 OpenAI is the default; set `EVAL_PROVIDER=anthropic` to preserve the Claude
 workflow. If the host cannot be detected, ask the designer which platform they
-are using before selecting a phase model. MLflow files remain in the repository
-for research comparison only and are not used by active targets.
+are using before selecting a phase model. MLflow observability was retired in
+favor of Langfuse.
 
 ## Quick start
 
@@ -190,7 +248,6 @@ The eval pipeline shells out to bundled Node/bash scripts and Playwright. To aut
       "Bash(node:*append-iteration-log*)",
       "Bash(node:*build-leaderboard*)",
       "Bash(node:*generate-dashboard*)",
-      "Bash(node:*log-run*)",
       "Bash(bash:*pipeline-setup*)",
       "Bash(bash:*publish-report*)",
       "Bash(bash:*bootstrap-usability-testing*)",

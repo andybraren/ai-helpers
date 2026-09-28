@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from openai_api_agent import _cost
+from usage_journal import UsageJournal
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -48,22 +49,60 @@ def build_live_usability_prompt(packet: dict[str, Any]) -> str:
     return f"{procedure}\n\nLIVE PERSONA INPUT\n{json.dumps(context, indent=2)}"
 
 
-def run_live_usability(packet: dict[str, Any], *, model: str, reasoning_effort: str = "low", max_turns: int = 12, trace_path: str | None = None) -> dict[str, Any]:
+def run_live_usability(
+    packet: dict[str, Any], *, model: str, reasoning_effort: str = "low",
+    max_turns: int = 12, max_output_tokens: int = 4000,
+    trace_path: str | None = None, usage_journal_path: str | None = None,
+    run_id: str | None = None, attempt_id: str | None = None,
+    timeout_seconds: int = 1200,
+) -> dict[str, Any]:
     command = [
         "node", str(SCRIPT_DIR / "openai-browser-persona.js"),
         "--artifacts-dir", packet["artifacts_dir"], "--url", packet["prototype_url"],
         "--model", model, "--reasoning-effort", reasoning_effort,
         "--max-turns", str(max_turns),
+        "--max-output-tokens", str(max_output_tokens),
     ]
     if trace_path:
         command.extend(["--trace", trace_path])
-    completed = subprocess.run(command, cwd=packet["artifacts_dir"], capture_output=True, text=True, check=False)
+    if usage_journal_path:
+        command.extend(["--usage-journal", usage_journal_path])
+    if run_id:
+        command.extend(["--run-id", run_id])
+    if attempt_id:
+        command.extend(["--attempt-id", attempt_id])
+    try:
+        completed = subprocess.run(
+            command, cwd=packet["artifacts_dir"], capture_output=True,
+            text=True, check=False, timeout=max(1, int(timeout_seconds)),
+        )
+    except subprocess.TimeoutExpired as error:
+        raise TimeoutError("Live browser persona child exceeded its wall-time bound") from error
     try:
         result = json.loads(completed.stdout)
     except json.JSONDecodeError as error:
         detail = (completed.stdout + completed.stderr)[-2000:]
         raise ValueError(f"Live browser persona runner returned invalid JSON: {error}; {detail}") from error
     result["cost_usd"] = _cost(model, result.get("token_usage") or {})
+    usage_summary = (
+        UsageJournal(
+            usage_journal_path, run_id=run_id, attempt_id=attempt_id,
+            phase="eval-usability", model=model,
+        ).summary()
+        if usage_journal_path else None
+    )
+    if usage_summary:
+        result["token_usage"] = usage_summary["token_usage"]
+        result["usage_known"] = usage_summary["usage_known"]
+        result["usage_unknown"] = usage_summary["usage_unknown"]
+        result["unknown_request_ids"] = usage_summary["unknown_request_ids"]
+        result["known_usage_cost_usd"] = usage_summary["known_usage_cost_usd"]
+        result["cost_usd"] = (
+            usage_summary["cost_usd"]
+            if usage_summary["usage_known"] and usage_summary["cost_known"] else None
+        )
+    else:
+        result["usage_known"] = result.get("usage_known", True)
     result["billing_source"] = "provider_estimate" if result["cost_usd"] is not None else "unavailable"
     if completed.returncode != 0 and result.get("status") != "failed":
         raise ValueError(f"Live browser persona runner failed: {(completed.stdout + completed.stderr)[-2000:]}")

@@ -36,9 +36,9 @@ the local compound-key cache controls whole-phase reuse.
 `config/phase-routing.json` is authoritative:
 
 - extract, classify, source consistency, and report: local;
-- journey and visual consistency: economical tier (`gpt-5.6-luna` or Haiku);
-- usability: balanced tier (`gpt-5.6-terra` or Sonnet);
-- code fixes: highest reasoning tier (`gpt-5.6-sol` or Opus).
+- journey and visual consistency: `gpt-6-sol` or Haiku;
+- usability: `gpt-6-sol` or Sonnet;
+- code fixes: highest reasoning tier (`gpt-6-sol` or Opus).
 
 OpenAI is the default. Anthropic-compatible routing is explicit and optional.
 Never route deterministic work to a model merely because a global override was

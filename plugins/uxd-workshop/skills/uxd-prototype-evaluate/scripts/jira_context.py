@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Jira context staged by the host Atlassian MCP."""
+"""Validate Jira context staged by an authenticated Jira reader."""
 
 from __future__ import annotations
 
@@ -7,6 +7,9 @@ import argparse
 import json
 from pathlib import Path
 from typing import Any
+
+
+ALLOWED_SOURCES = {"atlassian-mcp", "jira-authenticated-browser"}
 
 
 def load_jira_context(path: str | Path, expected_key: str) -> dict[str, Any]:
@@ -21,8 +24,19 @@ def load_jira_context(path: str | Path, expected_key: str) -> dict[str, Any]:
 
     if not isinstance(data, dict):
         raise ValueError("Jira context must be a JSON object")
-    if data.get("source") != "atlassian-mcp":
-        raise ValueError("Jira context source must be 'atlassian-mcp'")
+    source = data.get("source")
+    if source not in ALLOWED_SOURCES:
+        raise ValueError(
+            "Jira context source must be 'atlassian-mcp' or "
+            "'jira-authenticated-browser'"
+        )
+    if source == "jira-authenticated-browser":
+        expected_url = f"https://redhat.atlassian.net/browse/{expected_key}"
+        if data.get("source_url") != expected_url or not str(data.get("staged_by") or "").strip():
+            raise ValueError(
+                "Authenticated-browser Jira context requires the exact Red Hat Jira URL "
+                "and staged_by provenance"
+            )
 
     ticket = data.get("ticket")
     if not isinstance(ticket, dict):

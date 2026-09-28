@@ -1,0 +1,26 @@
+name: uxd-evaluator-report-quality-qwen-v1
+version: 1.0.0
+connection: Qwen3.8
+model: Qwen3.8-27B
+target:
+  observations: [eval-report-quality-audit]
+  metadata:
+    audit_type: evaluator-report-quality
+    privacy_mode: sanitized_artifact_output
+    report_quality_judge_eligible: true
+input_mapping:
+  output: "{{output}}"
+prompt_output_contract: Return only one integer from 0 to 100; put evidence and dimension rationale in the score-reasoning channel.
+rubric_file: report-quality-judge-rubric.yaml
+score_names:
+  report_quality_score: uxd-evaluator-report-quality-qwen-v1
+budget:
+  max_output_tokens: 1200
+privacy:
+  screenshots: false
+  binary_data: false
+  jira_content: false
+  raw_html: false
+run_state:
+  required_observation: eval-report-quality-audit
+  current_pipeline_support: sanitized_manifest_observation_emitted

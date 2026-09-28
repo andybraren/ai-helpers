@@ -1,0 +1,56 @@
+version: 1.0.0
+connection: Qwen3.8
+model: Qwen3.8-27B
+purpose: Score a rendered evaluator report against verified canonical data and real captured prototype evidence.
+input_contract:
+  description: Sanitized eval-report-quality-audit manifest, never the raw HTML or image bytes.
+  required_fields:
+    - run_id
+    - report
+    - canonical_parity
+    - screenshots
+    - validation
+  privacy:
+    allow: [artifact names, hashes, counts, dimensions, canonical verdict totals, generic section names]
+    deny: [raw HTML, screenshots, Jira text, prototype source, credentials, personal identifiers]
+scoring:
+  scale: 0_to_4_per_dimension
+  dimensions:
+    - id: factual_parity
+      weight: 30
+      criterion: Report counts, persona scores, findings and displayed phase-cost total agree with canonical JSON and evaluation-cost.json.
+    - id: screenshot_provenance
+      weight: 25
+      criterion: Embedded images match nonempty captured prototype screenshots by digest; missing or unrelated images fail.
+    - id: completeness
+      weight: 20
+      criterion: Report contains AC, journey, usability, consistency, heuristic and coverage sections when data exists.
+    - id: clarity_and_structure
+      weight: 15
+      criterion: Sections, disclosure, readable hierarchy and accessible image labels are present.
+    - id: verification
+      weight: 10
+      criterion: Local render validation completed; final output is nonempty and its price-card estimate clearly discloses excluded invoice/judge/session costs.
+  calculation: round(sum(weight * dimension_score / 4))
+  verdicts: {pass_min: 80, review_min: 40, fail_min: 0}
+  caps:
+    - No rendered report or failed validation caps score at 39.
+    - Missing prototype screenshots or mismatched embedded screenshot digests caps score at 39.
+    - Missing canonical parity evidence caps score at 79.
+  limitation: >-
+    Hash equality proves report images derive from captured prototype evidence;
+    this text-only judge cannot independently inspect their visual content or judge
+    prose semantics beyond the supplied verified facts. Never claim visual review.
+  prompt_output_contract: Return only one integer from 0 to 100; put evidence and dimension rationale in the score-reasoning channel.
+judge_instructions: |
+  Judge only the sanitized manifest in the observation output. Score all five
+  dimensions 0-4 and compute the weighted score and pass/review/fail verdict.
+  Explain any discrepancy using evidence references. Do not infer screenshot
+  appearance, factual correctness of source Jira text, or UI accessibility
+  conformance from hashes or counts. If visual/content evidence is missing,
+  explicitly say so and apply the documented caps. Return one integer 0-100
+  for Langfuse numeric scoring; put reasoning in the score explanation if supported.
+output:
+  score_name: uxd-evaluator-report-quality-qwen-v1
+  range: 0_to_100
+  reasoning_max_chars: 1000

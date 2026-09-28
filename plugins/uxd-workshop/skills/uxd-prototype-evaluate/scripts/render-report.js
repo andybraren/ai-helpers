@@ -168,6 +168,7 @@ function normalizePersonaResults(raw) {
     const personaName = entry.persona_name || null;
     const taskIndex = entry.task_index ?? entry.task_idx ?? 1;
     const abandoned = entry.abandoned ?? (entry.outcome === 'abandoned') ?? false;
+    const outcome = entry.outcome || (abandoned ? 'abandoned' : 'completed');
 
     const rawTrace = entry.trace || [];
 
@@ -208,8 +209,10 @@ function normalizePersonaResults(raw) {
       patience_start: entry.patience_start ?? 100,
       patience_end: entry.patience_end ?? 100,
       abandoned,
-      outcome: entry.outcome || (abandoned ? 'abandoned' : 'completed'),
-      would_complete: entry.would_complete ?? !abandoned,
+      outcome,
+      // A blocked walkthrough cannot be a completed workflow even if an older
+      // producer emitted the contradictory would_complete=true combination.
+      would_complete: outcome === 'blocked' ? false : (entry.would_complete ?? !abandoned),
       confusion_events: confusionEvents,
       dimension_scores: entry.dimension_scores || {},
     };
@@ -337,7 +340,6 @@ function readProductOverlay() {
     },
     git: loaded.git || {},
     known_mrs: known,
-    mlflow: loaded.mlflow || {},
     context_repos: loaded.context_repos || {},
     publish: loaded.publish || {},
   };
@@ -416,6 +418,15 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function evaluationCostSection(artifactsDir) {
+  const file = path.join(artifactsDir, 'evaluation-cost.json');
+  if (!fs.existsSync(file)) return '';
+  let cost;
+  try { cost = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return ''; }
+  const rows = (cost.phases || []).map(phase => `<tr><td>${escapeHtml(phase.phase)}</td><td>${escapeHtml(phase.model || 'Local (no model)')}</td><td>${Number(phase.input_tokens || 0).toLocaleString()}</td><td>${Number(phase.cache_read_tokens || 0).toLocaleString()}</td><td>${Number(phase.cache_write_tokens || 0).toLocaleString()}</td><td>${Number(phase.output_tokens || 0).toLocaleString()}</td><td>$${Number(phase.llm_cost_usd || 0).toFixed(6)}</td></tr>`).join('');
+  return `<section class="card" data-section="evaluation-cost"><h2>Evaluation cost estimate</h2><p><strong>Total: $${Number(cost.total_estimated_usd || 0).toFixed(6)}</strong> · ${Number(cost.total_tokens || 0).toLocaleString()} tokens. This is a provider-usage price-card estimate, not an invoice. Cached input reads and cache writes use separate rates.</p><table><thead><tr><th>Phase</th><th>Model</th><th>Input tokens</th><th>Cache reads</th><th>Cache writes</th><th>Output tokens</th><th>Estimated cost</th></tr></thead><tbody>${rows}</tbody></table><p class="small">${escapeHtml((cost.excluded_costs || []).join('; '))} excluded; reconcile with provider billing for invoiced total.</p><a href="${escapeHtml(cost.pricing_reference || 'https://developers.openai.com/api/docs/pricing')}">Pricing source</a></section>`;
 }
 
 function renderInlineMarkdown(escaped) {
@@ -1092,10 +1103,28 @@ function loadPersonaData(absArtifacts, screenshotsDir) {
   let ud = journeyLog ? normalizeUsabilityDimensions(journeyLog.usability_dimensions) : null;
   if (!ud) ud = {};
 
+  // Canonical artifacts use persona-<slug>; the richer live persona results
+  // retain <role>+<level>. Rejoin them before rendering traces and names.
+  if (ud.personas_evaluated && personaResults.length > 0) {
+    ud.personas_evaluated = ud.personas_evaluated.map(pid => {
+      const match = personaResults.find(result =>
+        result.persona === pid || `persona-${result.persona.replace(/\+/g, '-')}` === pid
+      );
+      return match ? match.persona : pid;
+    });
+  }
+
   const personaNameMap = buildPersonaNameMap(personaResults, journeyLog);
 
-  if (!ud.personas_evaluated && personaResults.length > 0) {
-    ud.personas_evaluated = [...new Set(personaResults.map(r => r.persona).filter(Boolean))];
+  // Partial usability failures can leave valid persona-results.json while the
+  // journey log has no usable persona list. Merge both sources so the report
+  // still renders the evidence that was captured before the failure.
+  const personaIds = [
+    ...(Array.isArray(ud.personas_evaluated) ? ud.personas_evaluated : []),
+    ...personaResults.map(result => result.persona).filter(Boolean),
+  ];
+  if (personaIds.length > 0) {
+    ud.personas_evaluated = [...new Set(personaIds)];
   }
   if (!ud.personas_evaluated && fs.existsSync(screenshotsDir)) {
     const ssFiles = fs.readdirSync(screenshotsDir).filter(f => f.startsWith('persona-') && f.endsWith('.png'));
@@ -1130,7 +1159,7 @@ function buildPersonaWalkthroughData() {
   const { personaResults, ud, tasksDefined, screenshotsByPersona, journeyLog, personaNameMap } = loadPersonaData(absArtifacts, screenshotsDir);
   const consistencyReport = readJsonOr(path.join(absArtifacts, 'consistency-report.json'), null);
 
-  if (!ud || !ud.personas_evaluated) return '{}';
+  if (!ud || !Array.isArray(ud.personas_evaluated) || ud.personas_evaluated.length === 0) return '{}';
 
   const overlays = ud.persona_overlays || [];
   const traces = (ud.think_aloud || {}).traces || [];
@@ -1209,6 +1238,24 @@ function buildPersonaWalkthroughData() {
               confusionEvents: []
             });
           }
+        }
+
+        // Browser capture records every observed step, while the model result
+        // may select only its final evidence image. Keep the full capture set
+        // visible in the report instead of silently dropping those screenshots.
+        let referencedCount = steps.filter(step => step.screenshot).length;
+        for (const screenshot of screenshots.slice(referencedCount)) {
+          steps.push({
+            step: steps.length + 1,
+            see: '',
+            thinking: '',
+            trying: 'Captured browser evidence',
+            confidence: '',
+            patience: '100',
+            screenshot: screenshotSrc(screenshot.file),
+            confusionEvents: [],
+          });
+          referencedCount += 1;
         }
 
         const taskDef = tasksDefined[taskIdx - 1] || {};
@@ -2520,6 +2567,23 @@ function buildConsistencyHtml() {
     html += `</details>`;
   }
 
+  return html;
+}
+
+function buildHeuristicHtml() {
+  const report = readJsonOr(path.join(absArtifacts, 'heuristic-evaluation.json'), null);
+  if (!report) return '';
+  const findings = Array.isArray(report.findings) ? report.findings : [];
+  let html = `<hr style="margin:2rem 0;border:0;border-top:1px solid var(--border)"><h2>Heuristic Evaluation</h2>`;
+  html += `<p class="small muted">Unreviewed draft from three AI-simulated evaluator lenses using Nielsen's 10. Suggested severities require researcher review. Accessibility was not evaluated.</p>`;
+  html += `<p class="small"><a href="heuristic-evaluation.html">Open the self-contained heuristic report &rarr;</a></p>`;
+  if (!findings.length) return html + `<p class="small muted">No heuristic violations were identified in the supplied evidence.</p>`;
+  for (const finding of findings) {
+    html += `<div class="consistency-finding consistency-finding-warning">`;
+    html += `<div class="consistency-finding-head"><strong style="font-size:0.8125rem">${escapeHtml(finding.id)}. ${escapeHtml(finding.title)}</strong><span class="delta-tag delta-tag-high">${escapeHtml(finding.suggested_severity || 'unrated')}</span></div>`;
+    html += `<p class="consistency-guideline">${escapeHtml(finding.location || '')} · ${escapeHtml(finding.agreement || '')}</p>`;
+    html += `<p class="small">${escapeHtml(finding.observation || '')}</p></div>`;
+  }
   return html;
 }
 
@@ -4124,6 +4188,7 @@ function buildTokens(opts = {}) {
     '{{EVIDENCE_VIEWER_DATA}}': JSON.stringify(buildEvidenceViewerData()),
     '{{FIXES_APPLIED_HTML}}': buildFixesAppliedHtml(),
     '{{CONSISTENCY_HTML}}': buildConsistencyHtml(),
+    '{{HEURISTIC_HTML}}': buildHeuristicHtml(),
     '{{CHANGES_TAB_HTML}}': buildChangesTabHtml(),
     '{{FIX_HISTORY_NARRATIVE}}': buildFixHistoryNarrative(),
     '{{COMPLIANCE_NARRATIVE}}': buildComplianceNarrative(),
@@ -4317,7 +4382,9 @@ function main() {
   }
 
   const tokens = buildTokens();
-  const template = renderTemplate(tokens);
+  let template = renderTemplate(tokens);
+  const costSection = evaluationCostSection(absArtifacts);
+  if (costSection && template.includes('</body>')) template = template.replace('</body>', `${costSection}</body>`);
 
   const outPath = path.join(absArtifacts, 'evaluation-report.html');
   const outputBytes = Buffer.byteLength(template, 'utf8');

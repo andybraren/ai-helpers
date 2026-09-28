@@ -25,6 +25,12 @@ try {
     journeys: [{ id: 'journey-1', persona: 'persona-data-scientist-junior', source: 'Jira ACs', verdict: 'PASS', ac_ids: ['AC-1'], steps: [{ step: 1, action: 'Click Save', result: 'success', screenshot: 'screenshots/journey-final.png', narration: 'Saved' }] }],
     usability_dimensions: { dimensions: [{ id: 'workflow-continuity', name: 'Workflow continuity', composite_score: 2.5, confidence: 'high', scores: { 'persona-data-scientist-junior': { score: 3 } } }], overall_score: 2.5, max_score: 3, personas_evaluated: ['persona-data-scientist-junior'], persona_overlays: [] },
   }, null, 2));
+  fs.writeFileSync(path.join(directory, 'evaluation-report.csv'), [
+    '# ACCEPTANCE CRITERIA',
+    'criterion_id,source,tier,criterion_text,verdict,rationale,evidence,fix_action,fix_file,human_action',
+    'AC-1,Jira,T1,Stale projection,,,,,,',
+    '',
+  ].join('\n'));
   fs.writeFileSync(path.join(directory, 'persona-results.json'), JSON.stringify([{ persona: 'persona-data-scientist-junior', screenshots: ['screenshots/journey-final.png'] }]));
   fs.writeFileSync(path.join(directory, 'consistency-report.json'), JSON.stringify({
     guidelines_version: 'test-version', degraded: false, checked_at: '2026-09-11T17:00:00Z',

@@ -2,6 +2,10 @@
 
 **MR:** RHAISTRAT-1492 | **Model:** Opus only (no model changes)
 
+> Historical, **pre-calibration** results. Do not use these costs to select a
+> model or claim a cost reduction. Re-anchor the baseline after the calibration
+> run with current provider usage and crop-detail `auto` measurements.
+
 ```bash
 make run-run-mode-matrix URL=http://localhost:9000
 ```

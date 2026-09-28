@@ -60,8 +60,22 @@ function sync(directory, { provider, model }) {
   const journey = readJson(path.join(directory, 'journey-log.json'));
   const resultBySource = new Map((journey.criterion_results || []).map(result => [result.criterion_id, result]));
   const csvPath = path.join(directory, 'evaluation-report.csv');
-  const rows = fs.existsSync(csvPath)
-    ? parseAcceptanceRows(csvPath)
+  const csvRows = fs.existsSync(csvPath) ? parseAcceptanceRows(csvPath) : null;
+  const rows = csvRows
+    ? csvRows.map(row => {
+      const update = resultBySource.get(row.criterion_id) || {};
+      return {
+        ...row,
+        // The current journey JSON is authoritative. The CSV is a legacy
+        // projection and may still contain blank/stale verdicts.
+        verdict: update.verdict || row.verdict,
+        rationale: update.rationale || row.rationale,
+        evidence: update.evidence || row.evidence,
+        fix_action: update.fix_action || row.fix_action,
+        fix_file: update.fix_file || row.fix_file,
+        human_action: update.human_action || row.human_action,
+      };
+    })
     : brief.intent.acceptance_criteria.map(ac => {
       const existing = evaluation.ac_results.find(result => result.ac_id === ac.id);
       const update = resultBySource.get(ac.source_id) || {};
@@ -194,11 +208,11 @@ function sync(directory, { provider, model }) {
     evaluation.usability.max_score = evaluation.usability.dimensions.reduce((sum, item) => sum + item.max_score, 0);
   }
 
-  function consistencyFinding(item, origin) {
+  function consistencyFinding(item, origin, index) {
     const paths = origin === 'visual' ? [...new Set([item.screenshot, ...(item.seen_on || [])].filter(Boolean))] : [];
     const evidenceIds = paths.map(image => ensureEvidence(image, 'consistency')).filter(Boolean);
     const candidate = origin === 'visual' && item.verdict === 'FLAGGED' || Boolean(item.review_candidate);
-    const digest = sha256(JSON.stringify([origin, item.guideline_id, item.file, item.line, paths])).slice(7, 31);
+    const digest = sha256(JSON.stringify([origin, item.guideline_id, item.file, item.line, paths, index])).slice(7, 31);
     return {
       id: `finding-${digest}`, origin, guideline_id: identifier(item.guideline_id || 'unknown-guideline', 'guideline'),
       guideline_title: bounded(item.guideline_title, 280, 'PatternFly guideline'), category: bounded(item.category, 80, 'foundations'),
@@ -211,8 +225,8 @@ function sync(directory, { provider, model }) {
       pf_doc_url: /^https?:\/\//.test(String(item.pf_doc_url || '')) ? item.pf_doc_url : 'https://www.patternfly.org/', review_candidate: candidate,
     };
   }
-  const sourceFindings = (consistency.source_mode?.violations || []).map(item => consistencyFinding(item, 'source'));
-  const visualFindings = (consistency.visual_mode?.findings || []).map(item => consistencyFinding(item, 'visual'));
+  const sourceFindings = (consistency.source_mode?.violations || []).map((item, index) => consistencyFinding(item, 'source', index));
+  const visualFindings = (consistency.visual_mode?.findings || []).map((item, index) => consistencyFinding(item, 'visual', index));
   evaluation.consistency.findings = [...sourceFindings, ...visualFindings];
   const findingIds = new Set(evaluation.consistency.findings.map(finding => finding.id));
   actions.actions = actions.actions.filter(action => !action.source.finding_id || findingIds.has(action.source.finding_id));

@@ -99,10 +99,10 @@ function localPhase(name, createdAt, inputFiles, inputBytes, outputBytes = 0) {
   };
 }
 
-function canonicalFinding(finding) {
+function canonicalFinding(finding, index) {
   const digest = jsonHash({
     guideline_id: finding.guideline_id, file: finding.file, line: finding.line,
-    property: finding.property, value: finding.value,
+    property: finding.property, value: finding.value, source_index: index,
   }).slice(7, 31);
   const candidate = Boolean(finding.review_candidate);
   return {
@@ -393,17 +393,34 @@ function install(stage, artifactsDir) {
   }
 }
 
+function installLegacyActionArtifacts(artifactsDir, documents) {
+  // eval-fix consumes the legacy suggestions during the same pipeline run.
+  // Materialize them from canonical actions after every cache path so the
+  // static phase graph has a deterministic producer rather than relying on a
+  // stale artifact from a prior run.
+  const projected = materializeTargets(documents, ['actions']);
+  for (const [filename, value] of projected) {
+    const destination = path.join(artifactsDir, filename);
+    const temporary = path.join(artifactsDir, `.${filename}.phase-a-${process.pid}`);
+    fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`);
+    fs.renameSync(temporary, destination);
+  }
+}
+
 function main() {
   const args = process.argv.slice(2);
   const jsonMode = args.includes('--json');
+  const bypassCache = args.includes('--no-cache');
   const artifactsArg = args.find(arg => !arg.startsWith('--'));
-  if (!artifactsArg) throw new Error('Usage: assemble-phase-a-canonical.js <artifacts-dir> [--json]');
+  if (!artifactsArg) throw new Error('Usage: assemble-phase-a-canonical.js <artifacts-dir> [--json] [--no-cache]');
   const artifactsDir = path.resolve(artifactsArg);
   const cacheRoot = path.join(path.dirname(artifactsDir), 'cache', 'phase-a-v1');
   const previousState = fs.existsSync(path.join(artifactsDir, 'state.json')) ? readJson(path.join(artifactsDir, 'state.json')) : null;
   const preliminary = buildDocuments(artifactsDir, { decision: 'miss', invalidated_by: ['intent', 'build', 'evaluator'] });
   const fullCacheRoot = path.join(path.dirname(artifactsDir), 'cache', 'full-v1');
-  const fullLookup = lookup(fullCacheRoot, preliminary.identity, previousState?.identity || null);
+  const fullLookup = bypassCache
+    ? { decision: 'miss', invalidated_by: ['cache_bypassed'] }
+    : lookup(fullCacheRoot, preliminary.identity, previousState?.identity || null);
   if (fullLookup.decision === 'hit') {
     const fullStage = fs.mkdtempSync(path.join(path.dirname(artifactsDir), '.full-cache-stage-'));
     try {
@@ -418,6 +435,7 @@ function main() {
       const validation = validateDirectory(fullStage);
       if (!validation.valid) throw new Error(`Full cache restore failed validation: ${JSON.stringify(validation.errors)}`);
       install(fullStage, artifactsDir);
+      installLegacyActionArtifacts(artifactsDir, documents);
       const result = {
         status: 'completed', model_invoked: false, implementation: path.basename(__filename),
         cache: 'full-hit', skip_paid_phases: true,
@@ -427,7 +445,9 @@ function main() {
       return;
     } finally { fs.rmSync(fullStage, { recursive: true, force: true }); }
   }
-  const cacheLookup = lookup(cacheRoot, preliminary.identity, previousState?.identity || null);
+  const cacheLookup = bypassCache
+    ? { decision: 'miss', invalidated_by: ['cache_bypassed'] }
+    : lookup(cacheRoot, preliminary.identity, previousState?.identity || null);
   const stage = fs.mkdtempSync(path.join(path.dirname(artifactsDir), '.phase-a-stage-'));
   try {
     let documents;
@@ -449,9 +469,11 @@ function main() {
     const parity = compareLegacyParity(artifactsDir, documents);
     if (cacheLookup.decision !== 'hit') store(cacheRoot, stage);
     install(stage, artifactsDir);
+    installLegacyActionArtifacts(artifactsDir, documents);
     const result = {
       status: 'completed', model_invoked: false, implementation: path.basename(__filename),
-      cache: cacheLookup.decision, compound_key: preliminary.identity.compound_key,
+      cache: bypassCache ? 'bypassed' : cacheLookup.decision,
+      cache_bypassed: bypassCache, compound_key: preliminary.identity.compound_key,
       canonical_files: [...CANONICAL_FILES], parity,
     };
     process.stdout.write(jsonMode ? `${JSON.stringify(result)}\n` : `Assembled ${CANONICAL_FILES.length} canonical Phase A files (${cacheLookup.decision}).\n`);

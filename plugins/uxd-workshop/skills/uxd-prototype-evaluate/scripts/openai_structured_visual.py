@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from openai_api_agent import _cost, _request, _usage
+from openai_api_agent import _cost, _request, _usage, request_with_capture
 from openai_structured_journey import _image_content, _object, _output_text, _validate
 from prompt_cache import prefix_metrics
 
@@ -136,7 +136,7 @@ def build_visual_request(packet: dict[str, Any], *, model: str, reasoning_effort
         ],
         "reasoning": {"effort": reasoning_effort},
         "text": {"format": {"type": "json_schema", "name": "uxd_visual_consistency", "strict": True, "schema": visual_schema(screenshots=inputs["screenshots"], specs=inputs["specs"])}, "verbosity": "low"},
-        "max_output_tokens": 5000,
+        "max_output_tokens": 4000,
         "store": False,
     }
 
@@ -185,11 +185,22 @@ def _merge_report(inputs: dict[str, Any], output: dict[str, Any]) -> dict[str, A
     return report
 
 
-def run_structured_visual(packet: dict[str, Any], *, model: str, reasoning_effort: str = "low", trace_path: str | None = None, request_fn: Callable[[dict[str, Any]], dict[str, Any]] = _request) -> dict[str, Any]:
+def run_structured_visual(
+    packet: dict[str, Any], *, model: str, reasoning_effort: str = "low",
+    max_turns: int = 4, trace_path: str | None = None,
+    usage_journal_path: str | None = None, run_id: str | None = None,
+    attempt_id: str | None = None,
+    request_fn: Callable[[dict[str, Any]], dict[str, Any]] = _request,
+) -> dict[str, Any]:
+    if max_turns < 1:
+        raise ValueError("max_turns must be at least 1")
     started = time.monotonic()
-    response = request_fn(build_visual_request(packet, model=model, reasoning_effort=reasoning_effort))
-    if trace_path:
-        trace = Path(trace_path); trace.parent.mkdir(parents=True, exist_ok=True); trace.write_text(json.dumps(response) + "\n")
+    request = build_visual_request(packet, model=model, reasoning_effort=reasoning_effort)
+    response = request_with_capture(
+        request, request_fn=request_fn, usage_journal_path=usage_journal_path,
+        trace_path=trace_path, run_id=run_id, attempt_id=attempt_id,
+        phase="eval-consistency-visual", model=model,
+    )
     if response.get("status") not in {None, "completed"}:
         raise ValueError(f"OpenAI visual response status was {response.get('status')}")
     output_text = _output_text(response)
@@ -203,4 +214,8 @@ def run_structured_visual(packet: dict[str, Any], *, model: str, reasoning_effor
     target = inputs["artifacts"] / "consistency-report.json"
     temp = target.with_suffix(".json.tmp"); temp.write_text(json.dumps(report, indent=2) + "\n"); temp.replace(target)
     usage = _usage(response); cost = _cost(model, usage)
-    return {"provider": "openai", "model": model, "agent": "responses-api-structured-visual", "duration_s": round(time.monotonic() - started, 3), "exit_code": 0, "status": "completed", "output_text": output_text, "token_usage": usage, "cost_usd": cost, "billing_source": "provider_estimate" if cost is not None else "unavailable", "turns_used": 1, "turn_limit_reached": False, "prompt_cache": prefix_metrics(build_visual_static_prefix(), build_visual_prompt(packet))}
+    usage_known = isinstance(response.get("usage"), dict) and all(
+        isinstance(response["usage"].get(field), int)
+        for field in ("input_tokens", "output_tokens")
+    )
+    return {"provider": "openai", "model": model, "agent": "responses-api-structured-visual", "duration_s": round(time.monotonic() - started, 3), "exit_code": 0, "status": "completed", "output_text": output_text, "token_usage": usage, "usage_known": usage_known, "cost_usd": cost if usage_known else None, "billing_source": "provider_estimate" if cost is not None and usage_known else "unavailable", "turns_used": 1, "turn_limit_reached": False, "prompt_cache": prefix_metrics(build_visual_static_prefix(), build_visual_prompt(packet))}

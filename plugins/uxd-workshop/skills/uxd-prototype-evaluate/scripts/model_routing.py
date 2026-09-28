@@ -18,7 +18,13 @@ def load_routes() -> dict[str, Any]:
     return payload
 
 
-def route_for(phase: str, platform: str | None = None, model_override: str | None = None) -> dict[str, Any]:
+def route_for(
+    phase: str,
+    platform: str | None = None,
+    model_override: str | None = None,
+    *,
+    study: bool = False,
+) -> dict[str, Any]:
     config = load_routes()
     selected_platform = platform or config["default_platform"]
     provider = config["platform_providers"].get(selected_platform)
@@ -38,7 +44,8 @@ def route_for(phase: str, platform: str | None = None, model_override: str | Non
             "model": "",
             "reasoning_effort": "none",
         }
-    model = model_override or phase_config["models"].get(provider)
+    study_model = (phase_config.get("study_models") or {}).get(provider) if study else None
+    model = model_override or study_model or phase_config["models"].get(provider)
     if not model:
         raise ValueError(f"No {provider} model route for {phase}")
     return {
@@ -48,6 +55,7 @@ def route_for(phase: str, platform: str | None = None, model_override: str | Non
         "provider": provider,
         "model": model,
         "reasoning_effort": phase_config["reasoning_effort"],
+        "study_routing": study,
     }
 
 

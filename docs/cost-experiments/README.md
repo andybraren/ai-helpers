@@ -33,21 +33,17 @@ make run-phase1-verify KEY=RHAISTRAT-1492
 
 # Cluster (after local validation)
 eval "$(make langfuse-env)"
-eval "$(make mlflow-poc7)"
-make mlflow-resume   # if MLflow was in standby
 ```
 
 # Golden baseline (no-fix)
-make mlflow-pipeline KEY=RHAISTRAT-1492 URL=http://localhost:9000 \
+make langfuse-pipeline KEY=RHAISTRAT-1492 URL=http://localhost:9000 \
   ITERATE_FLAGS="--fresh --no-fix --max-iterations=1" EXPERIMENT=golden-a-opus
 
 # Run-mode matrix cell F-NF
-make mlflow-pipeline KEY=RHAISTRAT-1492 URL=http://localhost:9000 \
+make langfuse-pipeline KEY=RHAISTRAT-1492 URL=http://localhost:9000 \
   ITERATE_FLAGS="--fresh --no-fix" EXPERIMENT=matrix-f-nf
 
-# Model compare (Sonnet + Haiku)
-make mlflow-compare KEY=RHAISTRAT-1492 URL=http://localhost:9000 \
-  MODELS="claude-sonnet-5 claude-haiku-4-5" LANGFUSE=1
+# Model comparison comes through controlled benchmark preflight and execution.
 ```
 
 ## Ledger

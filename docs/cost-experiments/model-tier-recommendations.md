@@ -1,8 +1,9 @@
 # Model tier recommendations (CP4)
 
-```bash
-make run-model-experiments KEY=RHAISTRAT-1492 URL=http://localhost:9000
-```
+The former `make run-model-experiments` / per-skill comparison harness has been
+retired. Its implementation called the removed `langfuse-compare-models.py`
+script and did not use the canonical bounded direct-API runner. The tables
+below are historical planning notes and are not active routing authority.
 
 ## Anthropic CLI results
 

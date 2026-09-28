@@ -1,0 +1,28 @@
+name: uxd-prototype-create-quality-qwen-v1
+version: 1.0.0
+connection: Qwen3.8
+model: Qwen3.8-27B
+target:
+  observations:
+    - create-serve
+  metadata:
+    component: creator
+    privacy_mode: metadata_only
+    model_invoked: false
+    status: completed
+input_mapping:
+  output: "{{output}}"
+rubric_file: qwen-quality-rubric.yaml
+score_names:
+  quality_score: uxd-prototype-create-quality-qwen-v1
+privacy:
+  screenshots: false
+  prototype_content: false
+  source_inputs: false
+reporting:
+  qwen_cost_usd: provider_billing_when_available
+deployment:
+  evaluator_id: cmuamzkgc00211i022hip25sz
+  rule_id: cmuamzkja00261i02fy2mwb4e
+  evaluator_status: paused_pending_connection
+  rule_enabled: false

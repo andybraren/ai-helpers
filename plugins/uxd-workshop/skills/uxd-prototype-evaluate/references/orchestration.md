@@ -22,11 +22,11 @@ designer which platform they are using before selecting a model.
 |-------|--------------|-----------|
 | eval-extract | Local script | Deterministic MCP payload extraction. |
 | eval-classify | Local script | Deterministic tier assignment. |
-| eval-journey | `gpt-5.6-luna` | Bounded crops and strict structured verdicts. |
-| eval-fix | `gpt-5.6-sol` | Highest-reasoning phase; code changes. |
-| eval-usability | `gpt-5.6-terra` | Persona walkthroughs and synthesis. |
+| eval-journey | `gpt-6-sol` | Bounded crops and strict structured verdicts. |
+| eval-fix | `gpt-6-sol` | Highest-reasoning phase; code changes. |
+| eval-usability | `gpt-6-sol` | Persona walkthroughs and synthesis. |
 | eval-consistency-source | Local script | Deterministic PatternFly source policy. |
-| eval-consistency-visual | `gpt-5.6-luna` | Bounded crop audit against a static rule prefix. |
+| eval-consistency-visual | `gpt-6-sol` | Bounded crop audit against a static rule prefix. |
 | eval-report | Local script | Schema validation and template rendering. |
 
 When `--model` is set, ALL phases use that model (useful for comparison runs).

@@ -23,6 +23,27 @@ Set in `eval-state.yaml` at pipeline start. Same value for:
 | Artifact event | `render-report.js`, `playwright-run` |
 | Generation | model name under phase span |
 
+### Cross-skill extension (planned)
+
+Use one namespace per workflow so standalone activity cannot pollute evaluator
+queries:
+
+| Component | Root trace | Phase names |
+|---|---|---|
+| Prototype creator | `create/{ID}` | `create-intake`, `create-plan`, `create-workspace`, `create-analyze`, `create-decisions`, `create-generate`, `create-repair`, `create-verify`, `create-serve`, `create-export`, `create-report` |
+| Prototype evaluator | `eval-iterate/{ID}` | Existing `eval-*` names |
+| Standalone consistency | `consistency-check/{ID}` | `uxd-consistency-check` for source mode; `consistency-visual` for paid visual mode |
+
+When consistency runs inside the evaluator, retain `eval-consistency-source`
+and `eval-consistency-visual` and set `component=consistency`. Standalone paid
+visual checks use `consistency-visual`, not `eval-consistency-visual`.
+
+Cross-skill orchestration adds `program_run_id`, `component`, and `phase` to
+the required metadata. One shared atomic program ledger owns the combined cap;
+component subcaps keep creator spend separate from the evaluator's unchanged
+`$25` cap. Each paid phase reserves immediately before inference and settles
+provider usage immediately after.
+
 ## Metadata (required)
 
 | Field | Example |
@@ -33,7 +54,7 @@ Set in `eval-state.yaml` at pipeline start. Same value for:
 | `fix_mode` | `no_fix` \| `iterate` |
 | `model_tier` | `premium` \| `standard` \| `budget` \| `cursor_grok` |
 | `invocation` | `api` \| `anthropic` \| `cli` \| `codex` \| `cursor` |
-| `privacy_mode` | `metadata_only` |
+| `privacy_mode` | `metadata_only` \| `sanitized_artifact_output` |
 | `depth_tier` | `quick` \| `standard` \| `deep` |
 
 The consistency-check event stores counts only: guideline version, guideline
@@ -50,6 +71,7 @@ Tags: `team:uxd`, `pipeline:prototype-evaluator`
 - **Screenshots:** filename + dimensions + hash; never upload image bytes
 - **Report HTML:** `output_bytes` only
 - **Text summaries:** max 500 chars, redact keys and emails
+- **Default trace I/O:** no prompt or model output; opt-in permits only a scrubbed `evaluation.json` projection
 - **Retention:** 30 days
 
 ## Cost fields
@@ -58,6 +80,7 @@ Tags: `team:uxd`, `pipeline:prototype-evaluator`
 |-------|---------|
 | `llm_cost_usd` | Provider-reported model usage |
 | `observability_cost_usd` | Langfuse infra allocation per run |
+| `qwen_cost_usd` | Qwen provider billing when available; otherwise `null` |
 
 `render-report.js` always logs `llm_cost_usd: 0` with `duration_ms` and `output_bytes`.
 
@@ -118,6 +141,5 @@ make langfuse-pipeline KEY=RHAISTRAT-1492 URL=http://localhost:9000 \
 ```
 
 The direct runner opens its root span and generation before model execution,
-ends them afterward, then calls `flush()` and `shutdown()`. Root/generation
-input, output, status, and latency therefore reflect the actual run rather than
-a post-run summary span.
+ends them afterward, then calls `flush()` and `shutdown()`. It records status,
+latency, and allowlisted metadata only; raw prompt and provider output stay local.

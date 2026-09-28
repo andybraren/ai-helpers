@@ -140,6 +140,9 @@ async function main() {
   const dims = parseIterateFlags(iterateFlags);
   const invocation = payload.invocation || 'cli';
   const model = payload.model || null;
+  const privacyMode = payload.privacy_mode === 'sanitized_artifact_output'
+    ? 'sanitized_artifact_output'
+    : 'metadata_only';
 
   const row = {
     date: payload.date || new Date().toISOString().slice(0, 10),
@@ -157,13 +160,13 @@ async function main() {
     phases: payload.phases || [],
     totals: {
       llm_cost_usd: payload.totals?.llm_cost_usd ?? payload.llm_cost_usd ?? 0,
+      qwen_cost_usd: payload.totals?.qwen_cost_usd ?? payload.qwen_cost_usd ?? null,
       observability_cost_usd: payload.totals?.observability_cost_usd ?? 0,
       total_tokens: payload.totals?.total_tokens ?? 0,
     },
     quality: payload.quality || readQualityFromArtifacts(artifactsDir),
     langfuse_trace_url: payload.langfuse_trace_url || '',
-    mlflow_run_id: payload.mlflow_run_id || '',
-    privacy_mode: 'metadata_only',
+    privacy_mode: privacyMode,
     retention_days: 30,
     designer_id_hash: hashUser(payload.designer || process.env.USER || process.env.USERNAME),
     notes: payload.notes || '',

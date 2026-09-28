@@ -90,10 +90,6 @@ This script:
 
 ### Step 3: Log the run
 
-```bash
-node ${CLAUDE_SKILL_DIR}/scripts/log-run.js .artifacts/$KEY/eval/ --note="<note>"
-```
-
 If `--note` was not provided, use a default: `"Evaluation run"`. On iterations, use `"Iteration <N>"`.
 
 ### Step 4: Confirm output

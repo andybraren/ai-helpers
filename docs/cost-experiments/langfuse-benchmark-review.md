@@ -4,6 +4,9 @@
 **UI:** http://localhost:3000/project/uxd-eval-local/traces  
 **Login:** `admin@local.dev` / `langfuse-local-dev`
 
+> All recorded values below are historical, **pre-calibration** baselines. They
+> cannot support new model-selection decisions; recalibrate and re-anchor first.
+
 ## What the benchmark runs
 
 Phase 3 **run-mode matrix** (4 cells, Opus only) — each cell is a full `/uxd-prototype-evaluate` run with dual-write to Langfuse + cost ledger:
@@ -71,7 +74,7 @@ npx langfuse-cli api traces get --trace-id <id> --json
 
 | Path | Langfuse data | Cost authority |
 |------|---------------|----------------|
-| `make mlflow-pipeline` / benchmark | Full trace + generations + ledger | CLI (`llm_cost_usd`) |
+| `make langfuse-pipeline` / benchmark | Full trace + generations + ledger | CLI (`llm_cost_usd`) |
 | Cursor `/eval-iterate` | Phase spans via `langfuse_trace.py phase` | Subscription (no per-token $) |
 
 Use **CLI benchmark traces** for cost dashboards; use **Cursor plugin** for exploratory analysis, scores, and annotation queues on those traces.

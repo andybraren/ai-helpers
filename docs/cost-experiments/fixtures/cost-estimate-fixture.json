@@ -1,0 +1,33 @@
+{
+  "traces": [
+    {
+      "id": "trace-fresh-nofix-a",
+      "timestamp": "2026-09-18T12:00:00.000Z",
+      "metadata": { "prototype_key": "RHAISTRAT-1492", "run_mode": "fresh", "fix_mode": "no_fix", "model_tier": "premium" },
+      "observations": [
+        { "name": "eval-journey", "type": "GENERATION", "model": "gpt-5.6-terra", "usageDetails": { "input": 8022, "output": 1291, "cache_read_input_tokens": 0 }, "costDetails": { "total": 0.31 } },
+        { "name": "eval-consistency-visual", "type": "GENERATION", "model": "gpt-5.6-terra", "usageDetails": { "input": 900000, "output": 380, "cache_read_input_tokens": 0 }, "costDetails": { "total": 1.85 } },
+        { "name": "eval-usability", "type": "GENERATION", "model": "gpt-5.6-terra", "usageDetails": { "input": 41000, "output": 1800, "cache_read_input_tokens": 0 }, "costDetails": { "total": 0.12 } }
+      ]
+    },
+    {
+      "id": "trace-fresh-nofix-b",
+      "timestamp": "2026-09-20T09:30:00.000Z",
+      "metadata": { "prototype_key": "RHAISTRAT-1492", "run_mode": "fresh", "fix_mode": "no_fix", "model_tier": "premium" },
+      "observations": [
+        { "name": "eval-journey", "type": "GENERATION", "model": "gpt-5.6-terra", "usageDetails": { "input": 7500, "output": 1100, "cache_read_input_tokens": 500 }, "costDetails": { "total": 0.28 } },
+        { "name": "eval-consistency-visual", "type": "GENERATION", "model": "gpt-5.6-terra", "usageDetails": { "input": 850000, "output": 350, "cache_read_input_tokens": 0 }, "costDetails": { "total": 1.72 } },
+        { "name": "eval-usability", "type": "GENERATION", "model": "gpt-5.6-terra", "usageDetails": { "input": 39000, "output": 1700, "cache_read_input_tokens": 0 }, "costDetails": { "total": 0.11 } }
+      ]
+    },
+    {
+      "id": "trace-incremental-fix-a",
+      "timestamp": "2026-09-21T14:15:00.000Z",
+      "metadata": { "prototype_key": "RHAISTRAT-1492", "run_mode": "incremental", "fix_mode": "iterate", "model_tier": "premium" },
+      "observations": [
+        { "name": "eval-journey", "type": "GENERATION", "model": "gpt-5.6-terra", "usageDetails": { "input": 2200, "output": 400, "cache_read_input_tokens": 1000 }, "costDetails": { "total": 0.09 } },
+        { "name": "eval-fix", "type": "GENERATION", "model": "gpt-5.6-terra", "usageDetails": { "input": 45000, "output": 6200, "cache_read_input_tokens": 0 }, "costDetails": { "total": 0.51 } }
+      ]
+    }
+  ]
+}

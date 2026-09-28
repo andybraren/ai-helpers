@@ -18,7 +18,34 @@
 | **Cheaper models** without breaking AC/usability | Subskill probes → full pipeline only after per-phase sign-off |
 | **Cursor thought process** for review | Phase spans + optional transcript link (metadata only) |
 
-**Privacy:** metadata-only — no Jira body, screenshots, or report HTML in Langfuse.
+**Trace content:** controlled runs that set a benchmark name, comparison ID, or
+condition default to `trace_content=full`. Langfuse receives complete model
+inputs and outputs, tool requests/results, generated artifacts, screenshots,
+and usability evidence after credential redaction. Full mode stops before model
+invocation if Langfuse is unavailable; it does not fall back to metadata-only.
+Use `--trace-content metadata` for unrelated runs that should not upload content.
+The creator and evaluator keep separate Langfuse projects. Each has one
+project-local trace tree, correlated by the same stable `eval_run_id` / trace ID;
+Langfuse does not provide one cross-project trace object.
+
+### Prototype creator pricing
+
+The canonical creator lives at
+`plugins/uxd-prototype/skills/uxd-prototype-create`. Its measured OpenAI path
+uses `scripts/creator-phase-runner.py` and `config/model-routing.json`:
+
+| Phase | Default model | Bound | Trace data |
+|-------|---------------|-------|------------|
+| `create-plan` | `gpt-6-sol` | 500K input / 20K output tokens; 48 tool calls; 1.5 MB output | usage, cache buckets, estimated cost, full phase inputs/outputs, artifact validation |
+| `create-generate` | `gpt-6-sol` | 1.6M input / 64K output tokens; 120 tool calls; 8 MB output | same, plus source artifacts and consistency results |
+| `create-refine` | `gpt-6-sol` | 500K input / 24K output tokens; 64 tool calls; 4 MB output | same, plus refreshed changeset and validation results |
+
+Creator phases use the separate `$15` ledger and require estimate-only followed
+by explicit approval. `gpt-6-luna` is the configured judge. These estimates use
+the pinned OpenAI price card, not an invoice. The deterministic create-serve
+bridge is zero LLM cost. OpenCode orchestration generations are separate from
+the direct phase ledger and must be counted separately when pricing a manual
+session.
 
 ---
 
@@ -43,7 +70,11 @@
 
 ### 2.2 Phase layer (orchestrator steps)
 
-Each row is a **child span** under root `eval-iterate/{KEY}`:
+Each phase is a **generation observation** under the run's pipeline span. The
+trace stores complete phase input/output and request/response/tool exchanges in
+full benchmark mode. Tool functions are scoped per phase; the evaluator fix
+runner can write only the fix log and suggestion-target files. Deterministic
+steps remain events under the same run tree.
 
 | Phase | Default model | Track |
 |-------|---------------|-------|
@@ -59,12 +90,13 @@ Each row is a **child span** under root `eval-iterate/{KEY}`:
 | `validate-artifact-schemas` | — | **event:** pass/fail counts |
 | `playwright-run` | — | **event:** duration, screenshot count |
 
-**Gap today:** CLI `mlflow-trace-pipeline` logs one `generation/claude-opus-4-6` blob + `render-report.js`. Per-phase breakdown requires orchestrator hooks (see §4).
+**Historical note:** MLflow observability was retired in favor of Langfuse. The
+current pipeline records per-phase Langfuse observations.
 
 ### 2.3 Quality layer (for cost/quality tradeoffs)
 
-| Metric | Langfuse | MLflow scorers |
-|--------|----------|----------------|
+| Metric | Langfuse | Evaluator source |
+|--------|----------|------------------|
 | `ac_pass_rate` | score on trace | eval-journey |
 | `ac_fail` / `ac_flagged` | metadata | ledger from artifacts |
 | `usability_score` | score | eval-usability |
@@ -72,14 +104,15 @@ Each row is a **child span** under root `eval-iterate/{KEY}`:
 
 ### 2.4 Cursor “thought process” (what we can and cannot store)
 
-| Capturable in Langfuse | Not stored (privacy / volume) |
-|------------------------|-------------------------------|
-| Phase start/end timestamps | Full agent reasoning text |
-| Phase name + `eval_run_id` | Screenshot bytes |
-| Link to local transcript path | Raw Jira content |
-| Tool call **counts** per phase (optional) | Full tool I/O |
+| Capturable in Langfuse | Not stored |
+|------------------------|------------|
+| Phase timestamps, prompts, model outputs, and tool exchanges in a consented full benchmark | Hidden model reasoning |
+| Jira criteria, prototype source/output, screenshots, and usability evidence after credential redaction | API keys, bearer tokens, cookies, and other detected credentials |
+| Run/attempt IDs, phase order, status, usage, cost estimate, and artifact hashes | Direct provider credentials or request authorization headers |
 
-**Recommendation:** Store `cursor_transcript_ref` in metadata (path or session id hash), not the transcript body. Review thought process in Cursor UI; use Langfuse for **when** and **how much** each phase cost.
+Non-benchmark sessions stay metadata-only unless their trace-content policy is
+explicitly changed. Full benchmark mode records product and evaluation content,
+not hidden model reasoning or credential headers.
 
 ---
 
@@ -96,7 +129,6 @@ flowchart TB
     ROOT --> E2[playwright-run event]
   end
   ROOT --> LEDGER[cost-ledger.jsonl]
-  ROOT --> MLFLOW[MLflow trace + scorers]
   CURSOR[Cursor /eval-iterate] -->|phase start/end| ROOT
   CLI[claude --print pipeline] -->|stream-json + dual-write| ROOT
 ```
@@ -105,15 +137,13 @@ flowchart TB
 
 ```bash
 eval "$(make langfuse-local-env)"
-eval "$(make mlflow-poc7)"
-make mlflow-pipeline KEY=RHAISTRAT-1492 URL=http://localhost:9000 \
+make langfuse-pipeline KEY=RHAISTRAT-1492 URL=http://localhost:9000 \
   ITERATE_FLAGS="--fresh --no-fix --max-iterations=1" EXPERIMENT=golden-a-opus-nofix
 ```
 
 - **Cost authority:** `claude --print` stream-json → `llm_cost_usd`
-- **Langfuse:** `mlflow-trace-pipeline.py` → `langfuse_trace.log_pipeline_run`
+- **Langfuse:** `langfuse-trace-pipeline.py` → `langfuse_trace.log_pipeline_run`
 - **Ledger:** `log-cost-ledger.js` appended per run
-- **MLflow:** orchestrator trace + `mlflow-trace-eval.py` scorers
 
 ### Path B — Cursor (authoritative workflow, coarse $)
 
@@ -153,7 +183,7 @@ In Cursor chat: *"Use Langfuse skill — compare matrix-f-it vs matrix-i-it by m
 **Fix:**
 
 1. After each Task/subskill in orchestrator, parse subskill `run_result` or stream capture → `langfuse_trace.py log-pipeline` phase entry
-2. Or: wrap each subskill CLI with `mlflow-compare-models.py --langfuse` pattern (one skill at a time)
+2. Run controlled Langfuse benchmark conditions one phase at a time.
 3. Extend `_build_phases_from_usage` to read per-phase token files if subskills write them
 
 **Verify:** Langfuse trace shows ≥8 named children for a full no-fix run.
@@ -192,7 +222,7 @@ Build saved views / filters:
 | Approach | Command | Purpose |
 |----------|---------|---------|
 | **Fixture tests** | `make test-subskills KEY=RHAISTRAT-1492` | Schema/contract, no $ |
-| **Single-skill LLM probe** | `make mlflow-compare KEY=… URL=… LANGFUSE=1 SKILLS=eval-extract MODELS=claude-haiku-4-5` | Cost + quality for one phase |
+| **Single-skill LLM probe** | Controlled Langfuse benchmark phase | Cost + quality for one phase |
 | **Recommended matrix** | extract, classify → Haiku/Sonnet; journey, usability → Sonnet/Opus | Find downgrade candidates |
 
 **Order:**
@@ -213,7 +243,7 @@ After each corpus key:
 - [ ] Ledger row matches trace URL
 - [ ] Per-phase costs visible (or documented gap)
 - [ ] `render-report.js` shows `output_bytes` (artifact size trend)
-- [ ] MLflow scorers ≥ golden quality bar
+- [ ] Langfuse quality scores ≥ golden quality bar
 - [ ] Cursor run: phase spans present if invoked from IDE
 
 **Local UI:** http://localhost:3000/project/uxd-eval-local/traces  
@@ -225,6 +255,6 @@ After each corpus key:
 
 1. **You:** Review benchmark traces in Langfuse (4 matrix + 2 golden)
 2. **Implement CP-E2E-1:** per-phase Langfuse children from orchestrator
-3. **Run subskill matrix** on RHAISTRAT-1492 (`mlflow-compare` + `LANGFUSE=1`, one skill per invocation)
+3. **Run subskill matrix** after zero-spend Langfuse preflight and explicit approval.
 4. **Golden on RHAISTRAT-1527** once artifacts exist
 5. **Defer cluster Langfuse** until local E2E model is stable

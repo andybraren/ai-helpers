@@ -17,8 +17,9 @@ function writeJson(directory, name, value) {
   fs.writeFileSync(path.join(directory, name), `${JSON.stringify(value, null, 2)}\n`);
 }
 
-function run(directory) {
-  const result = spawnSync('node', [SCRIPT, directory, '--json'], { cwd: os.tmpdir(), encoding: 'utf8' });
+function run(directory, cold = false) {
+  const args = [SCRIPT, directory, ...(cold ? ['--no-cache'] : []), '--json'];
+  const result = spawnSync('node', args, { cwd: os.tmpdir(), encoding: 'utf8' });
   assert.strictEqual(result.status, 0, result.stdout + result.stderr);
   return JSON.parse(result.stdout);
 }
@@ -84,6 +85,8 @@ try {
   assert.strictEqual(JSON.parse(fs.readFileSync(path.join(directory, 'evaluation.json'))).ac_results[0].verdict, 'NOT_RUN');
   assert.strictEqual(JSON.parse(fs.readFileSync(path.join(directory, 'evaluation.json'))).ac_results[1].verdict, 'PASS');
   assert.strictEqual(JSON.parse(fs.readFileSync(path.join(directory, 'actions.json'))).actions[0].kind, 'human-followup');
+  assert.ok(Array.isArray(JSON.parse(fs.readFileSync(path.join(directory, 'refinement-suggestions.json')))));
+  assert.ok(Array.isArray(JSON.parse(fs.readFileSync(path.join(directory, 'fix-log.json')))));
 
   const second = run(directory);
   assert.strictEqual(second.cache, 'hit');
@@ -96,6 +99,12 @@ try {
   const full = run(directory);
   assert.strictEqual(full.cache, 'full-hit');
   assert.strictEqual(full.skip_paid_phases, true);
+  assert.ok(fs.existsSync(path.join(directory, 'refinement-suggestions.json')));
+
+  const cold = run(directory, true);
+  assert.strictEqual(cold.cache, 'bypassed');
+  assert.strictEqual(cold.cache_bypassed, true);
+  assert.notStrictEqual(cold.skip_paid_phases, true);
 
   const before = fs.readFileSync(path.join(directory, 'brief.json'), 'utf8');
   const badEvidence = JSON.parse(fs.readFileSync(path.join(directory, 'prototype-evidence.json')));

@@ -55,11 +55,10 @@ SDK keys are pre-seeded via `LANGFUSE_INIT_*` in `.env`:
 
 ## Cluster note
 
-Before deploying Langfuse on UXDPOC7, put MLflow in standby to free node 82:
+MLflow observability was retired in favor of Langfuse. Deploy Langfuse only
+after cluster capacity is available:
 
 ```bash
 source scripts/cluster-setup-env.sh   # or: eval "$(make cluster-env)"
-bash scripts/mlflow-standby.sh
-# deploy when ready: bash scripts/deploy-langfuse-ux-eval.sh
-# restore MLflow: bash scripts/mlflow-resume.sh
+bash scripts/deploy-langfuse-ux-eval.sh
 ```

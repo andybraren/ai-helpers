@@ -66,7 +66,7 @@
           "properties": {
             "decision": { "type": "string", "enum": ["hit", "miss", "bypass", "invalid"] },
             "entry_key": { "$ref": "shared.schema.json#/$defs/sha256" },
-            "invalidated_by": { "type": "array", "items": { "type": "string", "enum": ["intent", "build", "evaluator", "schema", "none"] }, "uniqueItems": true, "minItems": 1, "maxItems": 4 },
+            "invalidated_by": { "type": "array", "items": { "type": "string", "enum": ["intent", "build", "evaluator", "schema", "cache_bypassed", "none"] }, "uniqueItems": true, "minItems": 1, "maxItems": 4 },
             "restored_artifacts": { "type": "array", "items": { "type": "string", "enum": ["brief.json", "evaluation.json", "evidence.json", "actions.json", "state.json"] }, "uniqueItems": true, "maxItems": 5 },
             "validated_at": { "$ref": "shared.schema.json#/$defs/timestamp" }
           },

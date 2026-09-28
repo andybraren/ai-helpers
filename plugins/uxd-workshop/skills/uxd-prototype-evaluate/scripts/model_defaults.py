@@ -11,7 +11,7 @@ from pathlib import Path
 import sys
 
 CONFIG = Path(__file__).resolve().parent.parent / "config" / "model-defaults.yaml"
-FALLBACK = "gpt-5.6-terra"
+FALLBACK = "gpt-6-sol"
 PLATFORMS = {"api", "codex", "cursor", "anthropic"}
 
 

@@ -16,7 +16,7 @@
   ],
   "properties": {
     "date": { "type": "string", "format": "date" },
-    "eval_run_id": { "type": "string", "pattern": "^eval-" },
+    "eval_run_id": { "type": "string", "pattern": "^(eval|evaluator)-" },
     "prototype_key": { "type": "string" },
     "experiment": { "type": "string" },
     "hypothesis": { "type": "string" },
@@ -25,7 +25,7 @@
     "fix_mode": { "enum": ["no_fix", "iterate"] },
     "model_tier": { "enum": ["premium", "standard", "budget", "cursor_grok"] },
     "model_overrides": { "type": "object", "additionalProperties": { "type": "string" } },
-    "invocation": { "enum": ["cli", "cursor"] },
+    "invocation": { "enum": ["cli", "cursor", "api"] },
     "iterate_flags": { "type": "string" },
     "phases": {
       "type": "array",
@@ -35,9 +35,13 @@
         "properties": {
           "phase": { "type": "string" },
           "model": { "type": ["string", "null"] },
+          "provider": { "type": ["string", "null"] },
+          "status": { "type": ["string", "null"] },
+          "model_invoked": { "type": "boolean" },
           "input_tokens": { "type": "integer", "minimum": 0 },
           "output_tokens": { "type": "integer", "minimum": 0 },
           "cache_read_tokens": { "type": "integer", "minimum": 0 },
+          "cache_write_tokens": { "type": "integer", "minimum": 0 },
           "llm_cost_usd": { "type": "number", "minimum": 0 },
           "duration_s": { "type": "number", "minimum": 0 },
           "duration_ms": { "type": "number", "minimum": 0 },
@@ -50,6 +54,7 @@
       "required": ["llm_cost_usd", "observability_cost_usd", "total_tokens"],
       "properties": {
         "llm_cost_usd": { "type": "number", "minimum": 0 },
+        "qwen_cost_usd": { "type": ["number", "null"], "minimum": 0 },
         "observability_cost_usd": { "type": "number", "minimum": 0 },
         "total_tokens": { "type": "integer", "minimum": 0 }
       }
@@ -65,8 +70,7 @@
       }
     },
     "langfuse_trace_url": { "type": "string" },
-    "mlflow_run_id": { "type": "string" },
-    "privacy_mode": { "const": "metadata_only" },
+    "privacy_mode": { "enum": ["metadata_only", "sanitized_artifact_output"] },
     "retention_days": { "type": "integer", "const": 30 },
     "designer_id_hash": { "type": "string" },
     "notes": { "type": "string" }

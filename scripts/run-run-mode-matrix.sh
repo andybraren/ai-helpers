@@ -18,7 +18,7 @@ for cell in "${cells[@]}"; do
   flags="${cell%%|*}"
   label="${cell##*|}"
   echo "==> Cell $label: $flags"
-  make langfuse-pipeline KEY="$KEY" URL="$URL" MODEL=gpt-5.6-sol \
+  make langfuse-pipeline KEY="$KEY" URL="$URL" MODEL=gpt-6-sol \
     ITERATE_FLAGS="$flags" EXPERIMENT="$label" || echo "WARN: $label failed"
 done
 

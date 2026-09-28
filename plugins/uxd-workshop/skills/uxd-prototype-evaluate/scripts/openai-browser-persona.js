@@ -106,7 +106,7 @@ function validateSchema(value, schema, at = '$') {
 
 function usage(response) {
   const u = response.usage || {}, input = Number(u.input_tokens || 0), output = Number(u.output_tokens || 0);
-  return { input_tokens: input, output_tokens: output, total_tokens: Number(u.total_tokens || input + output), cached_input_tokens: Number((u.input_tokens_details || {}).cached_tokens || 0), reasoning_tokens: Number((u.output_tokens_details || {}).reasoning_tokens || 0) };
+  return { input_tokens: input, output_tokens: output, total_tokens: Number(u.total_tokens || input + output), cached_input_tokens: Number((u.input_tokens_details || {}).cached_tokens || 0), cache_write_tokens: Number((u.input_tokens_details || {}).cache_write_tokens || 0), reasoning_tokens: Number((u.output_tokens_details || {}).reasoning_tokens || 0) };
 }
 
 function addUsage(total, next) { for (const key of Object.keys(total)) total[key] += next[key] || 0; }
@@ -119,12 +119,32 @@ async function requestOpenAI(payload) {
   if (process.env.OPENAI_ORG_ID) headers['OpenAI-Organization'] = process.env.OPENAI_ORG_ID;
   if (process.env.OPENAI_PROJECT_ID) headers['OpenAI-Project'] = process.env.OPENAI_PROJECT_ID;
   const response = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(payload) });
-  if (!response.ok) throw new Error(`OpenAI Responses API error ${response.status}: ${(await response.text()).slice(0, 1200)}`);
+  if (!response.ok) {
+    const error = new Error(`OpenAI Responses API error ${response.status}: ${(await response.text()).slice(0, 1200)}`);
+    error.statusCode = response.status;
+    throw error;
+  }
   return response.json();
 }
 
+function appendDurableJsonl(target, value) {
+  if (!target) return;
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  const fd = fs.openSync(target, 'a', 0o600);
+  try {
+    fs.writeSync(fd, `${JSON.stringify(value)}\n`);
+    fs.fsyncSync(fd);
+  } finally { fs.closeSync(fd); }
+}
+
+function usageIsKnown(response) {
+  const u = response && response.usage;
+  return !!u && Number.isInteger(u.input_tokens) && u.input_tokens >= 0
+    && Number.isInteger(u.output_tokens) && u.output_tokens >= 0;
+}
+
 function imageContent(file) {
-  return { type: 'input_image', image_url: `data:image/png;base64,${fs.readFileSync(file).toString('base64')}`, detail: 'high' };
+  return { type: 'input_image', image_url: `data:image/png;base64,${fs.readFileSync(file).toString('base64')}`, detail: 'auto' };
 }
 
 async function pageState(page) {
@@ -175,9 +195,61 @@ function validatePersonaResult(result, { personaId, taskIndex, acIds, screenshot
   if ((result.screenshots || []).some(file => !screenshots.has(file))) throw new Error('Persona result references an uncaptured screenshot');
 }
 
-async function runPersonaSession({ page, artifactsDir, prototypeUrl, persona, task, taskIndex, acIds, model, reasoningEffort, maxTurns, requestFn = requestOpenAI, traceStream }) {
+const GROUNDING_STOPWORDS = new Set([
+  'and', 'are', 'can', 'click', 'clicked', 'for', 'from', 'into', 'open', 'opened', 'select', 'selected',
+  'show', 'shown', 'that', 'the', 'this', 'use', 'used', 'visible', 'with', 'your', 'after', 'before',
+  'result', 'results', 'screen', 'page', 'control', 'controls', 'button', 'field', 'details',
+]);
+
+function groundingTokens(value) {
+  return [...new Set(String(value || '').toLowerCase().match(/[a-z0-9]+/g) || [])]
+    .map(token => token.length > 4 && token.endsWith('s') ? token.slice(0, -1) : token)
+    .filter(token => token.length > 2 && !GROUNDING_STOPWORDS.has(token));
+}
+
+function validateEvidenceGrounding(result, observedStates) {
+  if (!observedStates || !observedStates.size) return;
+  const observed = new Set();
+  for (const state of observedStates.values()) {
+    groundingTokens([
+      state && state.title,
+      state && state.text,
+      ...((state && state.headings) || []).map(item => item.text),
+      ...((state && state.controls) || []).map(item => item.name),
+    ].join(' ')).forEach(token => observed.add(token));
+  }
+  const assertions = [
+    // A trace step with a captured screenshot is grounded in rendered UI even
+    // when the participant describes the action with words absent from the DOM.
+    ...(result.screenshots?.length ? [] : result.trace || [])
+      .filter(step => !Array.isArray(step.screenshots) || step.screenshots.length === 0)
+      .map(step => ({ kind: 'action', text: step.action })),
+    ...(result.dimension_scores || []).map(score => ({ kind: `capability claim (${score.id})`, text: score.evidence })),
+  ];
+  for (const assertion of assertions) {
+    // A bounded absence observation is grounded by the captured interaction:
+    // the DOM cannot contain words for a control the persona did not encounter.
+    // Keep unscoped absence claims and positive capability claims on the
+    // ordinary token-overlap path so fabricated features still fail.
+    const scopedAbsence = /\b(?:no|not|never|without|does not|did not|was not|is not|cannot|can't|didn't|doesn't|wasn't)\b/i.test(assertion.text)
+      && (/\b(?:in|during|on|within)\s+(?:this|the|a)\s+(?:captured\s+)?(?:interaction|walkthrough|screen|view|flow|question)\b/i.test(assertion.text)
+        || /\bfor this question\b/i.test(assertion.text)
+        || /\bthis interaction\b/i.test(assertion.text)
+        || /\bI did not test\b/i.test(assertion.text));
+    if (scopedAbsence) continue;
+    const tokens = groundingTokens(assertion.text);
+    if (tokens.length < 2) continue;
+    const matched = tokens.filter(token => observed.has(token)).length;
+    const minimum = Math.min(2, Math.ceil(tokens.length / 2));
+    if (matched < minimum) {
+      throw new Error(`Persona ${assertion.kind} is not grounded in captured rendered evidence`);
+    }
+  }
+}
+
+async function runPersonaSession({ page, artifactsDir, prototypeUrl, persona, task, taskIndex, acIds, model, reasoningEffort, maxTurns, maxOutputTokens = 4000, requestFn = requestOpenAI, traceStream, usageJournalPath, runId, attemptId }) {
   const slug = persona.id.replace(/[^a-z0-9_-]/gi, '-');
-  const screenshots = new Set(); let shot = 0; let actions = 0;
+  const screenshots = new Set(); const observedStates = new Map(); let shot = 0; let actions = 0;
   const capture = async (focus = '') => {
     shot += 1; const relative = `screenshots/persona-${slug}-task-${taskIndex}-step-${shot}.png`;
     const targeted = await captureTargetedEvidence(page, {
@@ -191,16 +263,18 @@ async function runPersonaSession({ page, artifactsDir, prototypeUrl, persona, ta
     });
     screenshots.add(relative);
     targeted.model_screenshots.forEach(item => screenshots.add(item));
+    const state = await pageState(page);
+    [relative, ...targeted.model_screenshots].forEach(item => observedStates.set(item, state));
     return {
       relative,
       target: path.join(artifactsDir, targeted.model_screenshots[0]),
       modelTargets: targeted.model_screenshots.map(item => path.join(artifactsDir, item)),
-      state: await pageState(page),
+      state,
     };
   };
   await page.goto(prototypeUrl, { waitUntil: 'networkidle' });
   const origin = new URL(prototypeUrl).origin; let current = await capture();
-  const system = `Act as this usability-test participant, not as a developer or evaluator.\n\nPERSONA\n${persona.profile}\n\nGOAL\n${task}\n\nUse only the browser functions. Judge only what the rendered interface reveals. Do not infer or request source code, files, shell access, Jira, or implementation details. Think and act from the persona's experience level. Use at most ${Math.max(1, maxTurns - 1)} browser actions. After the last allowed browser action, return the strict result immediately. If the UI still does not expose needed information after inspecting the most relevant control, record the task as blocked or abandoned with rendered evidence; do not repeat toggles or keep searching.`;
+  const system = `Act as this usability-test participant, not as a developer or evaluator.\n\nPERSONA\n${persona.profile}\n\nGOAL\n${task}\n\nUse only the browser functions. Judge only what the rendered interface reveals. Do not infer or request source code, files, shell access, Jira, or implementation details. For each dimension score, cite visible UI wording or describe an absence limited to this interaction; do not invent a product capability. Think and act from the persona's experience level. Use at most ${Math.max(1, maxTurns - 1)} browser actions. After the last allowed browser action, return the strict result immediately. If the UI still does not expose needed information after inspecting the most relevant control, record the task as blocked or abandoned with rendered evidence; do not repeat toggles or keep searching.`;
   let dynamicInputBytes = Buffer.byteLength(JSON.stringify(current.state));
   const promptCache = {
     static_prefix_sha256: `sha256:${crypto.createHash('sha256').update(system).digest('hex')}`,
@@ -213,19 +287,62 @@ async function runPersonaSession({ page, artifactsDir, prototypeUrl, persona, ta
     input: [{ role: 'user', content: [{ type: 'input_text', text: `Acceptance criteria relevant to this task: ${JSON.stringify(acIds)}\nInitial rendered UI: ${JSON.stringify(current.state)}` }, ...current.modelTargets.map(imageContent)] }],
     tools: browserTools(), tool_choice: 'required', parallel_tool_calls: false,
     reasoning: { effort: reasoningEffort }, text: { format: { type: 'json_schema', name: 'uxd_live_persona_result', strict: true, schema }, verbosity: 'low' },
-    max_output_tokens: 5000, store: false, include: ['reasoning.encrypted_content'],
+    max_output_tokens: maxOutputTokens, store: false,
   };
-  const total = { input_tokens: 0, output_tokens: 0, total_tokens: 0, cached_input_tokens: 0, reasoning_tokens: 0 };
+  const total = { input_tokens: 0, output_tokens: 0, total_tokens: 0, cached_input_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0 };
   for (let turn = 1; turn <= maxTurns; turn += 1) {
+    const requestId = crypto.randomUUID();
+    appendDurableJsonl(usageJournalPath, {
+      event: 'request_started', request_id: requestId, run_id: runId,
+      attempt_id: attemptId, phase: 'eval-usability', model,
+    });
+    appendDurableJsonl(traceStream, {
+      event: 'request', request_id: requestId, phase: 'eval-usability', model,
+      payload,
+    });
     try {
-      const response = await requestFn(payload); addUsage(total, usage(response));
+      let response;
+      try {
+        response = await requestFn(payload);
+      } catch (error) {
+        const rejected = Number(error.statusCode) >= 400 && Number(error.statusCode) < 500;
+        appendDurableJsonl(usageJournalPath, {
+          event: 'request_failed', request_id: requestId, run_id: runId,
+          attempt_id: attemptId, phase: 'eval-usability', model,
+          error_category: rejected ? 'provider_request_rejected' : 'provider_transport',
+          usage_unknown: !rejected,
+        });
+        appendDurableJsonl(traceStream, {
+          event: 'request_failed', request_id: requestId,
+          status_code: error.statusCode || null,
+          error_category: rejected ? 'provider_request_rejected' : 'provider_transport',
+          usage_unknown: !rejected,
+        });
+        throw error;
+      }
+      const responseUsage = usage(response);
+      addUsage(total, responseUsage);
+      appendDurableJsonl(usageJournalPath, {
+        event: 'response_usage', request_id: requestId, response_id: response.id || null,
+        run_id: runId, attempt_id: attemptId, phase: 'eval-usability', model,
+        response_status: response.status || 'completed',
+        usage_known: usageIsKnown(response),
+        usage: usageIsKnown(response) ? responseUsage : null,
+        estimated_cost_usd: null,
+        billing_source: usageIsKnown(response) ? 'pinned-price-card-estimate-derived-by-host' : null,
+      });
+      appendDurableJsonl(traceStream, {
+        event: 'response', request_id: requestId, phase: 'eval-usability', model,
+        response, usage: responseUsage, usage_known: usageIsKnown(response),
+      });
       if (response.status && response.status !== 'completed') throw new Error(`OpenAI persona response status was ${response.status}`);
-      if (traceStream) fs.appendFileSync(traceStream, JSON.stringify(response) + '\n');
+      if (!usageIsKnown(response)) throw new Error('OpenAI persona response usage is unavailable');
       const calls = (response.output || []).filter(item => item.type === 'function_call');
       if (!calls.length) {
         if (!actions) throw new Error('Persona returned a result without interacting with the browser');
         const text = outputText(response); if (!text) throw new Error('Persona response contained neither browser calls nor structured output');
         const result = JSON.parse(text); validatePersonaResult(result, { personaId: persona.id, taskIndex, acIds, screenshots });
+        validateEvidenceGrounding(result, observedStates);
         return { result, usage: total, turns: turn, outputText: text, promptCache: { ...promptCache, dynamic_input_bytes: dynamicInputBytes } };
       }
       if (turn >= maxTurns) throw new Error('Persona used reserved final-result turn for browser actions');
@@ -234,12 +351,27 @@ async function runPersonaSession({ page, artifactsDir, prototypeUrl, persona, ta
         let result;
         let focus = '';
         try { focus = String(JSON.parse(call.arguments || '{}').target || ''); } catch { focus = ''; }
-        try { await executeBrowserTool(page, call, origin); actions += 1; await page.waitForTimeout(150); current = await capture(focus); dynamicInputBytes += Buffer.byteLength(JSON.stringify(current.state)); result = { ok: true, screenshot: current.relative, page: current.state }; }
+        try {
+          await executeBrowserTool(page, call, origin);
+          actions += 1;
+          const args = JSON.parse(call.arguments || '{}');
+          // Submitting a message often starts an asynchronous reply. Capturing
+          // immediately records only the user's message and can make a later,
+          // real reply appear ungrounded to the persona evidence validator.
+          await page.waitForTimeout(call.name === 'browser_press' && args.key === 'Enter' ? 2400 : 150);
+          current = await capture(focus);
+          dynamicInputBytes += Buffer.byteLength(JSON.stringify(current.state));
+          result = { ok: true, screenshot: current.relative, page: current.state };
+        }
         catch (error) { current = await capture(focus); dynamicInputBytes += Buffer.byteLength(JSON.stringify(current.state)); result = { ok: false, error: String(error.message || error), screenshot: current.relative, page: current.state }; }
         outputs.push({ type: 'function_call_output', call_id: call.call_id, output: JSON.stringify(result) });
+        appendDurableJsonl(traceStream, {
+          event: 'tool_exchange', phase: 'eval-usability', turn,
+          call, output: result,
+        });
       }
       outputs.push({ role: 'user', content: [{ type: 'input_text', text: `Current rendered UI after browser action: ${JSON.stringify(current.state)}` }, ...current.modelTargets.map(imageContent)] });
-      payload = { model, instructions: system, input: outputs, tools: browserTools(), tool_choice: turn >= maxTurns - 1 ? 'none' : 'auto', parallel_tool_calls: false, reasoning: { effort: reasoningEffort }, text: { format: { type: 'json_schema', name: 'uxd_live_persona_result', strict: true, schema }, verbosity: 'low' }, max_output_tokens: 5000, store: false, include: ['reasoning.encrypted_content'] };
+      payload = { model, instructions: system, input: outputs, tools: browserTools(), tool_choice: turn >= maxTurns - 1 ? 'none' : 'auto', parallel_tool_calls: false, reasoning: { effort: reasoningEffort }, text: { format: { type: 'json_schema', name: 'uxd_live_persona_result', strict: true, schema }, verbosity: 'low' }, max_output_tokens: maxOutputTokens, store: false };
     } catch (error) {
       if (error instanceof LiveUsabilityError) throw error;
       throw new LiveUsabilityError(String(error.message || error), { usage: total, turns: turn });
@@ -287,14 +419,14 @@ function aggregateArtifacts(artifactsDir, results) {
   for (const [target] of writes) fs.renameSync(`${target}.tmp`, target);
 }
 
-async function runLiveUsability({ artifactsDir, prototypeUrl, skillDir, model, reasoningEffort = 'low', maxTurns = 12, requestFn = requestOpenAI, traceStream }) {
+async function runLiveUsability({ artifactsDir, prototypeUrl, skillDir, model, reasoningEffort = 'low', maxTurns = 12, maxOutputTokens = 4000, requestFn = requestOpenAI, traceStream, usageJournalPath, runId, attemptId }) {
   const extract = JSON.parse(fs.readFileSync(path.join(artifactsDir, 'extract-state.json'), 'utf8'));
   const selected = (extract.persona_selection || {}).selected || [];
   const tasks = extract.tasks_to_be_done || [];
   if (!selected.length || !tasks.length) throw new Error('Usability requires selected personas and tasks');
   const browser = await chromium.launch({ headless: true }); const results = [];
   const promptPrefixes = [];
-  const total = { input_tokens: 0, output_tokens: 0, total_tokens: 0, cached_input_tokens: 0, reasoning_tokens: 0 };
+  const total = { input_tokens: 0, output_tokens: 0, total_tokens: 0, cached_input_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0 };
   let turns = 0;
   try {
     for (const personaId of selected) for (let index = 0; index < tasks.length; index += 1) {
@@ -305,7 +437,7 @@ async function runLiveUsability({ artifactsDir, prototypeUrl, skillDir, model, r
       const task = typeof tasks[index] === 'string' ? tasks[index] : (tasks[index].task || tasks[index].goal || JSON.stringify(tasks[index]));
       const acIds = typeof tasks[index] === 'object' ? (tasks[index].covers_acs || []) : [];
       try {
-        const session = await runPersonaSession({ page, artifactsDir, prototypeUrl, persona: loadPersona(skillDir, personaId), task, taskIndex: index + 1, acIds, model, reasoningEffort, maxTurns: Math.min(6, remainingTurns - ((remainingSessions - 1) * 2)), requestFn, traceStream });
+        const session = await runPersonaSession({ page, artifactsDir, prototypeUrl, persona: loadPersona(skillDir, personaId), task, taskIndex: index + 1, acIds, model, reasoningEffort, maxTurns: Math.min(6, remainingTurns - ((remainingSessions - 1) * 2)), maxOutputTokens, requestFn, traceStream, usageJournalPath, runId, attemptId });
         turns += session.turns; addUsage(total, session.usage); results.push(session.result); promptPrefixes.push(session.promptCache);
       } catch (error) {
         if (error instanceof LiveUsabilityError) {
@@ -324,7 +456,7 @@ async function main() {
   const args = process.argv.slice(2); const get = flag => args[args.indexOf(flag) + 1];
   const artifactsDir = path.resolve(get('--artifacts-dir')); const started = Date.now();
   try {
-    const result = await runLiveUsability({ artifactsDir, prototypeUrl: get('--url'), skillDir: path.resolve(__dirname, '..'), model: get('--model'), reasoningEffort: get('--reasoning-effort') || 'low', maxTurns: Number(get('--max-turns') || 12), traceStream: get('--trace') });
+    const result = await runLiveUsability({ artifactsDir, prototypeUrl: get('--url'), skillDir: path.resolve(__dirname, '..'), model: get('--model'), reasoningEffort: get('--reasoning-effort') || 'low', maxTurns: Number(get('--max-turns') || 12), maxOutputTokens: Number(get('--max-output-tokens') || 4000), traceStream: get('--trace'), usageJournalPath: get('--usage-journal'), runId: get('--run-id'), attemptId: get('--attempt-id') });
     process.stdout.write(JSON.stringify({ provider: 'openai', model: get('--model'), agent: 'responses-api-live-browser-personas', duration_s: Math.round((Date.now() - started) / 10) / 100, exit_code: 0, status: 'completed', output_text: JSON.stringify({ persona_runs: result.results }), token_usage: result.token_usage, cost_usd: null, billing_source: 'aggregated_by_pipeline', turns_used: result.turns_used, turn_limit_reached: false, prompt_cache: result.prompt_cache }));
   } catch (error) {
     process.stdout.write(JSON.stringify({ provider: 'openai', model: get('--model'), agent: 'responses-api-live-browser-personas', duration_s: Math.round((Date.now() - started) / 10) / 100, exit_code: 2, status: 'failed', output_text: String(error.message || error), token_usage: error.usage || {}, cost_usd: null, billing_source: 'aggregated_by_pipeline', turns_used: error.turns || 0, turn_limit_reached: false }));
@@ -332,5 +464,5 @@ async function main() {
   }
 }
 
-module.exports = { DIMENSIONS, LiveUsabilityError, browserTools, personaSchema, validateSchema, validatePersonaResult, runPersonaSession, runLiveUsability, loadPersona };
+module.exports = { DIMENSIONS, LiveUsabilityError, browserTools, personaSchema, validateSchema, validatePersonaResult, validateEvidenceGrounding, runPersonaSession, runLiveUsability, loadPersona, appendDurableJsonl, usageIsKnown };
 if (require.main === module) main().catch(error => { console.error(error.stack || error); process.exit(2); });

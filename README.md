@@ -72,6 +72,14 @@ After installing, skills work the same way — slash commands in any project:
 
 For MCP server access (component docs and design tokens), also install `pf-mcp`. See the [FAQ](FAQ.md#how-do-i-test-a-skill-without-the-patternfly-mcp-server) for setup.
 
+## Langfuse tracing
+
+The direct-API creator and evaluator pipelines emit Langfuse observations using
+the privacy profile selected for each run. Evaluator personal runs default to
+metadata-only tracing; controlled benchmarks may include full content. See the
+[tracing guide](docs/tracing-guide.md) for each component's data and cost
+policy. Full-session OpenCode tracing is maintained separately.
+
 ## Plugins
 
 <!-- BEGIN PLUGIN TABLE -->

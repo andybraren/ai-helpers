@@ -82,12 +82,19 @@ def main() -> int:
         shutil.copytree(REPORT_FIXTURE, report_artifacts)
         for generated in ("evaluation-report.html", "render-metrics.json"):
             (report_artifacts / generated).unlink(missing_ok=True)
+        report_classification = run_node("run-classification.js", report_artifacts, foreign_cwd)
+        assert report_classification["model_invoked"] is False
+        assert (report_artifacts / "evaluation-report.csv").is_file()
         report = run_node("run-report.js", report_artifacts, foreign_cwd)
         assert report["model_invoked"] is False
         assert report["validation_fail_count"] == 0
         assert (report_artifacts / "evaluation-report.html").is_file()
+        assert (report_artifacts / "evaluation-report.csv").is_file()
         assert (report_artifacts / "evaluation-summary.json").is_file()
         assert (report_artifacts / "render-metrics.json").is_file()
+
+        pipeline_source = (SCRIPTS_DIR / "langfuse-trace-pipeline.py").read_text()
+        assert 'evaluation-report.csv").unlink' not in pipeline_source
 
         for script_name in (
             "run-classification.js", "run-report.js", "classify-ac-tier.js",

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Lean artifact scorer with optional Langfuse quality scores.
 
-This replaces the active MLflow scorer path without deleting the old script.
 Scoring is local and deterministic; Langfuse receives one metadata-only trace.
 """
 
@@ -28,6 +27,7 @@ def parse_args():
     parser.add_argument("--provider", default=None)
     parser.add_argument("--prototype-key", default=None)
     parser.add_argument("--scorers", nargs="+", default=["pipeline-output", "report-rendering", "script-tests"])
+    parser.add_argument("--score-capture", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -93,6 +93,19 @@ def main() -> int:
     }
     summary = langfuse_trace.log_pipeline_run(payload)
     result = {"eval_run_id": eval_run_id, **quality, "checks": checks, **summary}
+    if args.score_capture:
+        capture = {
+            "source": "python_exporter_local_capture",
+            "scores": [{
+                "score_name": "local_artifact_quality",
+                "value": quality["pass_rate"],
+                "phase": "artifact-scoring",
+                "verdict": "pass" if quality["all_pass"] else "review",
+            }],
+        }
+        args.score_capture.parent.mkdir(parents=True, exist_ok=True)
+        args.score_capture.write_text(json.dumps(capture, indent=2) + "\n")
+        result["local_score_capture"] = str(args.score_capture)
     print(json.dumps(result, indent=2))
     return 0 if failed == 0 else 1
 
