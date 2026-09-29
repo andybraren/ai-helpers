@@ -17,6 +17,14 @@
     ]
   },
   {
+    "name": "FlyingWHR/tashan",
+    "url": "https://github.com/FlyingWHR/tashan",
+    "description": "",
+    "files": [
+      "web/capability/pkg-patternfly-patternfly-mcp.html"
+    ]
+  },
+  {
     "name": "Gkrumbach07/openshell-dashboard",
     "url": "https://github.com/Gkrumbach07/openshell-dashboard",
     "description": "Standalone upstream web admin UI for OpenShell",
@@ -63,13 +71,15 @@
     "files": [
       "presets/envs/patternfly-mcp/install.sh",
       "presets/envs/patternfly-mcp/manifest.yaml",
-      "docs/presets/envs.md",
       "docs/presets/README.md",
+      "docs/presets/envs.md",
       "presets/install-envs.sh",
-      "presets/workflows/onboarding/skills/detect-tech-stack/SKILL.md",
+      "scripts/verify-python-preset-e2e.sh",
+      "presets/shared/skills/detect-tech-stack/SKILL.md",
       "docs/onboarding-new-instance.md",
-      "presets/workflows/onboarding/skills/detect-tech-stack/detect_tech_stack.py",
-      "presets/workflows/onboarding/skills/detect-tech-stack/tests/test_detect_tech_stack.py"
+      "presets/shared/skills/detect-tech-stack/detect_tech_stack.py",
+      "coordinator/test/opencode-config.test.ts",
+      "presets/shared/skills/detect-tech-stack/tests/test_detect_tech_stack.py"
     ]
   },
   {
@@ -108,6 +118,14 @@
     "description": "Custom bot runner instance built on platform-frontend-ai-dev bot for framework development",
     "files": [
       "instance/framework-config/agent/instance.yaml"
+    ]
+  },
+  {
+    "name": "RedHatInsights/hcc-orchestrator-agent-dev",
+    "url": "https://github.com/RedHatInsights/hcc-orchestrator-agent-dev",
+    "description": "",
+    "files": [
+      "instance/hcc-orchestrator-config/agent/instance.yaml"
     ]
   },
   {
@@ -160,6 +178,17 @@
     ]
   },
   {
+    "name": "ansible/ansible-ui",
+    "url": "https://github.com/ansible/ansible-ui",
+    "description": "The UIs for Ansible Projects such as AWX, EDA, and HUB.",
+    "files": [
+      ".claude/skills/library_references.md",
+      ".mcp.json",
+      ".claude/skills/frontend-overlay/SKILL.md",
+      ".claude/skills/coding_standards.md"
+    ]
+  },
+  {
     "name": "brsbl/agent-mart",
     "url": "https://github.com/brsbl/agent-mart",
     "description": "A browsable directory of open source Claude Code plugins",
@@ -197,6 +226,14 @@
     "description": "",
     "files": [
       "instance/fleetshift-config/agent/instance.yaml"
+    ]
+  },
+  {
+    "name": "gahingwoo/ezy_speech_translate",
+    "url": "https://github.com/gahingwoo/ezy_speech_translate",
+    "description": "A complete real-time speech-to-text and translation system, supporting administrator proofreading and audience display.",
+    "files": [
+      ".mcp.json"
     ]
   },
   {
@@ -305,6 +342,14 @@
     ]
   },
   {
+    "name": "rhpds/rhdp-flow",
+    "url": "https://github.com/rhpds/rhdp-flow",
+    "description": "RHDP-Flow Workshop Automation - OpenShift workshop deployment from CSV files",
+    "files": [
+      ".mcp.json"
+    ]
+  },
+  {
     "name": "syntara-orchestration/syntara",
     "url": "https://github.com/syntara-orchestration/syntara",
     "description": "",
@@ -318,19 +363,6 @@
     "description": "",
     "files": [
       "public/sitemap-2.xml"
-    ]
-  },
-  {
-    "name": "tomevault-io/tomes",
-    "url": "https://github.com/tomevault-io/tomes",
-    "description": "Complete Tome bundles (config + skills + manifest), graded against the public Tome Standard and kept current as the models change by TomeVault",
-    "files": [
-      "redhat-cop--babylon/formats/AGENTS.md",
-      "redhat-cop--babylon/formats/GEMINI.md",
-      "redhat-cop--babylon/formats/CLAUDE.md",
-      "redhat-cop--babylon/formats/project-config.md",
-      "redhat-cop--babylon/formats/copilot-instructions.md",
-      "redhat-cop--babylon/formats/project-config.mdc"
     ]
   }
 ]
