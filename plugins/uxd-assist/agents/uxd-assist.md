@@ -24,6 +24,16 @@ When the user is moving from a validated design into implementation, these skill
 |-------|-------------|
 | `/uxd-design:uxd-design-handoff` | Produce an implementation-ready handoff with component mappings, states, interactions, and acceptance criteria |
 
+## Design — canvases
+
+When the user asks to create, export, or publish a journey map, service blueprint, flow, or other JSON Canvas, these skills are available:
+
+| Skill | What it does |
+|-------|-------------|
+| `/uxd-design:uxd-canvas-create` | Create or refine a JSON Canvas from a brief, research, or structured content |
+| `/uxd-design:uxd-canvas-export` | Export a canvas as a local HTML viewer, or as canvas.json and assets |
+| `/uxd-design:uxd-canvas-publish` | Publish an exported canvas to a git repo, GitHub Pages, GitLab Pages, or Vercel |
+
 ## Design Review — evaluating designs or Figma artifacts
 
 When Figma URLs are in the conversation, or the user requests design critique, consistency checks, or accessibility audits, these skills are available:

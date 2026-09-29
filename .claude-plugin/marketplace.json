@@ -22,7 +22,7 @@
     {
       "name": "uxd-design",
       "source": "./plugins/uxd-design",
-      "description": "UX design workflow — Figma context, design evaluation, and implementation handoff"
+      "description": "UX design workflow — Figma context, JSON Canvas artifacts, design evaluation, and implementation handoff"
     },
     {
       "name": "uxd-research",
@@ -33,11 +33,6 @@
       "name": "uxd-workshop",
       "source": "./plugins/uxd-workshop",
       "description": "UXD team tools — prototyping, research, design review"
-    },
-    {
-      "name": "uxd-canvas",
-      "source": "./plugins/uxd-canvas",
-      "description": "Canvas creation, export, and publishing — JSON Canvas journey maps, diagrams, and interactive viewers"
     },
     {
       "name": "uxd-prototype",
