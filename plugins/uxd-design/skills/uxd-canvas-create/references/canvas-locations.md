@@ -48,7 +48,7 @@ When a snapshot is saved:
 Use Mermaid for a flowchart, sequence diagram, ERD, or class diagram. Do not encode a journey map, service blueprint, or affinity map as Mermaid. Those lose lanes, phases, and evidence.
 
 - **Miro, and the content is a real diagram:** pass the Mermaid source through as a Miro diagram widget. Do not explode it into JSON Canvas boxes first.
-- **Local canvas:** store the source on a text node with `subtype: "mermaid"`. The HTML viewer renders it. Expand a simple flowchart into nodes and edges only when the user wants to rearrange boxes by hand, and say which Mermaid features that drops.
+- **Local canvas:** store the source on a text node with `subtype: "mermaid"`. The HTML viewer shows that source. It does not render the diagram. Expand a simple flowchart into nodes and edges only when the user wants the canvas viewer to draw boxes, and say which Mermaid features that drops. A Miro board renders the diagram itself.
 - **Export:** `uxd-canvas-export --mermaid` writes `diagram.mmd` from Mermaid nodes, or from a simple node-and-edge flow. Do not request it for a journey map, blueprint, or affinity map.
 
 ## Snapshot metadata

@@ -17,7 +17,7 @@ Family: `uxd-canvas-create` → `uxd-canvas-export` → **publish**.
 
 ## Not a Miro write
 
-This skill publishes the static export only. Creating or updating a Miro board is `uxd-canvas-create`. A board URL is not a `--target`. If the user wants the board changed, stop and use that skill. Read [canvas locations](../../references/canvas-locations.md) when the request mixes a board with a static host.
+This skill publishes the static export only. Creating or updating a Miro board is `uxd-canvas-create`. A board URL is not a `--target`. If the user wants the board changed, stop and use that skill.
 
 ## Requirements
 

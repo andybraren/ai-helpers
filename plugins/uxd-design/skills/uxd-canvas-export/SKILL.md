@@ -35,8 +35,6 @@ Family: `uxd-canvas-create` → **export** → `uxd-canvas-publish`.
 
 Accept a canvas directory, a path to `canvas.json`, or a Miro board URL. A canvas directory can also contain `metadata.json` and `assets/`.
 
-Read [canvas locations](../../references/canvas-locations.md) when the input is a Miro URL.
-
 If the input is a Miro URL:
 
 1. Read the board, or one frame if it is large, into the JSON Canvas working model. The board stays canonical.

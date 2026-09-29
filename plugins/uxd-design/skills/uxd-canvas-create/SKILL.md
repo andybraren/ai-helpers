@@ -21,7 +21,7 @@ Family: **create** → `uxd-canvas-export` → `uxd-canvas-publish`. Publish shi
 
 ## Where it lives
 
-Read [canvas locations](../../references/canvas-locations.md) before choosing or changing the location.
+Read [canvas locations](references/canvas-locations.md) before choosing or changing the location.
 
 - **Local** (default when the user does not name a board): write `.artifacts/{ID}/canvas/`, or a path they supply.
 - **Miro:** create or update the board. A local `canvas.json` is optional. When the board is canonical, call that file a snapshot, not the source of truth.
@@ -42,13 +42,19 @@ canvas/
 
 `metadata.json` contains `title`, `description`, `createdAt`, and `updatedAt`. A Miro snapshot also contains `source` as defined in the locations reference. Do not put presentation state or secrets there.
 
-## Canvas modes
+## Templates
 
-- **Journey map:** define the persona, journey scope, phases, and evidence-backed lanes. Common lanes are goals/actions, touchpoints or tools, thoughts or emotions, pain points, and opportunities. Distinguish current-state and future-state journeys. Label assumptions instead of presenting invented observations as research.
-- **Service blueprint:** align customer actions, frontstage activity, backstage activity, support processes, and evidence by phase.
-- **Flow or architecture:** establish a clear reading direction, use short relationship labels, and encode direction with edge endpoints. A flowchart, sequence diagram, ERD, or class diagram may stay Mermaid instead of boxes.
-- **Affinity or mind map:** cluster concepts spatially and use groups only when the grouping adds meaning.
-- **Freeform:** choose the structure that best communicates the source material.
+If the user names a type below, read that folder's `context.md` and start from its `canvas.json`. See [templates/README.md](templates/README.md). Keep the template's columns, rows, and reading order. Replace the placeholder text. Add or remove a whole phase column when the evidence needs a different number of stages. When revising a canvas that already exists, keep its structure unless the user asks to restart from the template.
+
+| Request | Template |
+|---|---|
+| Journey map, customer journey, or experience map | `templates/journey-map` |
+| Service blueprint | `templates/service-blueprint` |
+| User flow or task flow | `templates/user-flow` |
+| Affinity map | `templates/affinity-map` |
+| Mind map | `templates/mind-map` |
+
+A flowchart, sequence diagram, ERD, or class diagram stays Mermaid. A freeform canvas has no template: choose the structure that fits the source.
 
 ## Mermaid
 
@@ -56,9 +62,9 @@ Follow the locations reference. Journey maps, blueprints, and affinity maps stay
 
 ## Authoring workflow
 
-1. Resolve location, communication goal, audience, canvas mode, source evidence, and reading order.
-2. If the source is a Miro URL, read that board or one frame and preserve every widget id before editing. Confirm before creating a board, writing widgets, or deleting items.
-3. Sketch the information hierarchy before writing nodes. For journey maps and blueprints, make phases consistent columns and lanes consistent rows.
+1. Resolve location, communication goal, audience, canvas type, source evidence, and reading order.
+2. If the type has a template, read its `context.md` and copy `canvas.json` as the base before writing anything else.
+3. If the source is a Miro URL, read that board or one frame and preserve every widget id before editing. Confirm before creating a board, writing widgets, or deleting items. Fit the board's content into the template when the user asked for one of those types.
 4. Read [JSON Canvas fields and extensions](references/canvas-schema.md) before authoring unfamiliar node types or presentation extensions.
 5. Write the working model with stable ids such as `phase-discover-actions`. Copy widget ids onto `miroId` in any snapshot. After a new board write, store the ids the create call returns.
 6. Copy local files into `assets/` and use relative paths. Do not embed credentials, authenticated URLs, or inaccessible local absolute paths.
@@ -82,8 +88,8 @@ Fix every error. Review warnings for overlaps, dense text, and edge routing rath
 
 ## Completion check
 
-- The structure answers the stated communication goal.
-- Research-derived claims are traceable to supplied sources; assumptions are labeled.
+- The structure answers the stated communication goal. A requested journey map, blueprint, flow, affinity map, or mind map still follows its template.
+- Placeholder template copy is gone. Research-derived claims trace to the supplied sources, and assumptions are labeled.
 - Local canvases pass the validator: unique ids, positive dimensions, resolved edges, readable labels, no unintended overlap, and local assets resolve.
 - A Miro write names the board URL. Updates reuse existing widget ids. Deletions were confirmed item by item.
 - A snapshot records `source.url` and `miroId` values, and is not described as the source of truth when the board is canonical.
