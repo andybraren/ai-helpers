@@ -68,7 +68,7 @@ Mermaid diagram:
 }
 ```
 
-`text` is the Mermaid source. Use this for a flowchart, sequence diagram, ERD, or class diagram stored in a local canvas. The bundled viewer renders it. Do not use it for a journey map, service blueprint, or affinity map.
+`text` is the Mermaid source. Use this for a flowchart, sequence diagram, ERD, or class diagram stored in a local canvas. The bundled viewer shows that source and does not render it. Do not use it for a journey map, service blueprint, or affinity map.
 
 Optional `miroId` on a node or edge is the Miro widget id from a board read or write. Preserve it on snapshots so the next board update patches the same widget. Omit it on a local-only canvas.
 

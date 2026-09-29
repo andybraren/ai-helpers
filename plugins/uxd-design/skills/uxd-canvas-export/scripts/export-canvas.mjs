@@ -53,7 +53,7 @@ function replaceOnce(source, token, replacement, label) {
   return source.replace(token, () => replacement);
 }
 
-function buildExportHtml(title, canvasData, assetMap, { chrome = 'viewer', mermaid = false } = {}) {
+function buildExportHtml(title, canvasData, assetMap, { chrome = 'viewer' } = {}) {
   const html = readRequired(VIEWER_HTML, 'viewer HTML');
   const css = readRequired(VIEWER_CSS, 'viewer CSS');
   const jsTemplate = readRequired(VIEWER_JS, 'viewer JS');
@@ -80,13 +80,10 @@ function buildExportHtml(title, canvasData, assetMap, { chrome = 'viewer', merma
     `<style>\n${css.trimEnd()}\n</style>`,
     'HTML'
   );
-  const mermaidTag = mermaid
-    ? '<script src="https://cdn.jsdelivr.net/npm/mermaid@12.0.0/dist/mermaid.min.js"></script>\n'
-    : '';
   bundled = replaceOnce(
     bundled,
     '<script src="./viewer.js"></script>',
-    `${mermaidTag}<script>\n${js.trimEnd()}\n</script>`,
+    `<script>\n${js.trimEnd()}\n</script>`,
     'HTML'
   );
   return bundled;
@@ -347,12 +344,6 @@ function buildMermaidExport(canvasData) {
   return { status: 'written', source: flowchartFromCanvas(canvasData), warning: '' };
 }
 
-function canvasHasMermaid(canvasData) {
-  return (canvasData.nodes || []).some((node) => (
-    node && node.subtype === 'mermaid' && typeof node.text === 'string' && node.text.trim()
-  ));
-}
-
 function buildViewer(options) {
   if (!options.input) throw new Error('A canvas directory or canvas.json path is required.');
   const exportOptions = resolveExportOptions(options);
@@ -390,10 +381,7 @@ function buildViewer(options) {
   if (exportOptions.includeViewer) {
     fs.writeFileSync(
       path.join(outputPath, 'index.html'),
-      buildExportHtml(title, canvasData, assetMap, {
-        chrome: exportOptions.chrome,
-        mermaid: canvasHasMermaid(canvasData)
-      })
+      buildExportHtml(title, canvasData, assetMap, { chrome: exportOptions.chrome })
     );
     written.push('index.html');
   }

@@ -21,7 +21,7 @@ viewer/
 └── viewer.js
 ```
 
-`scripts/export-canvas.mjs` inlines those files with the canvas JSON into a single `index.html` when `--viewer html`. Do not copy the separate CSS or JS into the export. Mermaid diagram nodes pull Mermaid 12 from a CDN when the HTML file is opened. The diagram source stays in the file if that CDN is unavailable.
+`scripts/export-canvas.mjs` inlines those files with the canvas JSON into a single `index.html` when `--viewer html`. Do not copy the separate CSS or JS into the export. A Mermaid node in that file shows its source. It does not load a Mermaid library. `--mermaid` writes `diagram.mmd` for a tool or a Miro board that can render it.
 
 Family: `uxd-canvas-create` → **export** → `uxd-canvas-publish`.
 
@@ -109,7 +109,7 @@ node "${CLAUDE_SKILL_DIR}/scripts/export-canvas.mjs" <canvas-path> --no-viewer
 node "${CLAUDE_SKILL_DIR}/scripts/export-canvas.mjs" <canvas-path> --mermaid
 ```
 
-4. If the export includes HTML, serve it locally and inspect the initial fit, node content, edges, assets, links, theme choices, pan, and zoom. A simple server is enough: `python3 -m http.server --directory <export-dir> 8000`. For `--viewer none`, confirm `canvas.json`, `diagram.mmd`, and any `assets/` instead. Open a Mermaid node in a browser with network access so the CDN script can render it.
+4. If the export includes HTML, serve it locally and inspect the initial fit, node content, edges, assets, links, theme choices, pan, and zoom. A simple server is enough: `python3 -m http.server --directory <export-dir> 8000`. For `--viewer none`, confirm `canvas.json`, `diagram.mmd`, and any `assets/` instead. A Mermaid node should show its source text.
 5. Report the local output, including viewer, json, mermaid, and assets mode. Suggest `uxd-canvas-publish` only when the user wants a static host. Suggest `uxd-canvas-create` when they want to change the Miro board.
 
 ## Completion check
@@ -119,7 +119,7 @@ node "${CLAUDE_SKILL_DIR}/scripts/export-canvas.mjs" <canvas-path> --mermaid
 - `--assets inline` produces no `assets/` folder; `--assets folder` copies local files next to the export.
 - `--json` writes `canvas.json`; it is omitted by default when HTML is included.
 - `--mermaid` writes `diagram.mmd`, or reports that a journey map, blueprint, or affinity map was skipped.
-- Mermaid nodes in the HTML viewer render when the CDN loads, and the source is still visible in the file when it does not.
+- Mermaid nodes in the HTML viewer show their source. The export does not load a Mermaid library.
 - `export-manifest.json` records title, flags, and written files.
 - All nodes, edges, labels, styles, and local assets render.
 - A Miro input was read only. The board was not written.

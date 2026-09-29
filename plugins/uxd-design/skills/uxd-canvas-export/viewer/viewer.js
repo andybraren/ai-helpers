@@ -248,19 +248,6 @@ function render() {
   transformLayer.innerHTML = html;
   updateTransform();
   updateStatusBar(nodes, edges);
-  renderMermaidDiagrams();
-}
-
-function renderMermaidDiagrams() {
-  var blocks = transformLayer.querySelectorAll('.cv-mermaid');
-  if (!blocks.length || typeof mermaid === 'undefined') return;
-  try {
-    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
-    var pending = mermaid.run({ nodes: blocks });
-    if (pending && typeof pending.catch === 'function') pending.catch(function() {});
-  } catch (err) {
-    // Keep the diagram source visible when Mermaid cannot render it.
-  }
 }
 
 function renderNode(node, theme) {

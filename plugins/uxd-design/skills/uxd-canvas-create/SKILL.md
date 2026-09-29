@@ -73,7 +73,7 @@ Fix every error. Review warnings for overlaps, dense text, and edge routing rath
 ## Craft rules
 
 - Keep nodes scannable. A title plus one short supporting line is usually enough; split paragraphs and long lists across nodes.
-- Size nodes to fit their content. Starting points: title `200×80`; title plus a line `250×100–120`; 3–4 short lines `250×160–200`; dense content `320–400×240–400` or multiple nodes. Mermaid nodes need enough height for the rendered diagram, often `480×320` or larger.
+- Size nodes to fit their content. Starting points: title `200×80`; title plus a line `250×100–120`; 3–4 short lines `250×160–200`; dense content `320–400×240–400` or multiple nodes. Size a Mermaid node for its source text. The HTML viewer shows that source.
 - Use a 20-unit grid and leave at least 30–40 units between neighboring nodes. Avoid overlaps and edges crossing unrelated nodes.
 - Use color semantically and consistently. Do not rely on color alone to communicate status or meaning.
 - Put groups behind their children. The bundled viewer reserves the top 24 units of a group for its label.
