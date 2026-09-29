@@ -2,7 +2,7 @@
 
 # UXD Design Plugin
 
-UX design workflow — Figma context, JSON Canvas artifacts, design evaluation, and implementation handoff.
+UX design workflow — Figma context, canvas artifacts, design evaluation, and implementation handoff.
 
 ## What's Included
 
