@@ -1,0 +1,50 @@
+{
+  "no-custom-css": {
+    "result": "VIOLATION",
+    "severity": "error",
+    "expected_findings": [
+      {
+        "file": "src/index.html",
+        "line": 8,
+        "kind": "non-PatternFly stylesheet link"
+      },
+      {
+        "file": "src/index.html",
+        "line": 9,
+        "kind": "embedded style block"
+      },
+      {
+        "file": "src/index.html",
+        "line": 26,
+        "kind": "inline style attribute"
+      },
+      {
+        "file": "src/custom.css",
+        "line": null,
+        "kind": "authored stylesheet"
+      }
+    ]
+  },
+  "rhoai_conventions": {
+    "page": "Model registry",
+    "expected_examples": [
+      "PatternFly page, masthead, navigation, card, and button classes",
+      "Selected navigation item marked with pf-m-current",
+      "Text-only page-level Create model action"
+    ],
+    "note": "These examples document RHOAI conventions. Static HTML receives strict custom-CSS and PatternFly component-usage checks."
+  },
+  "project-felt-correct": {
+    "result": "PASS",
+    "expected_findings": []
+  },
+  "project-felt-mixed": {
+    "result": "VIOLATION",
+    "expected_findings": [
+      {
+        "file": "theme.css",
+        "kind": "default PatternFly background asset mixed into Felt"
+      }
+    ]
+  }
+}

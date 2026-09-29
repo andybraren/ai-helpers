@@ -1,0 +1,506 @@
+import subprocess
+import sys
+import tempfile
+import unittest
+import json
+import importlib.util
+from pathlib import Path
+
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+ANALYZER = SKILL_DIR / "scripts" / "analyze.py"
+FIXTURES = Path(__file__).parent / "fixtures"
+
+ANALYZE_SPEC = importlib.util.spec_from_file_location("consistency_analyze", ANALYZER)
+ANALYZE_MODULE = importlib.util.module_from_spec(ANALYZE_SPEC)
+ANALYZE_SPEC.loader.exec_module(ANALYZE_MODULE)
+
+
+class AnalyzeCliTests(unittest.TestCase):
+    def test_grep_context_with_jsx_colon_preserves_file_and_line(self):
+        matches = [
+            "src/components/Example.tsx-70-<Flex alignItems={{ default: 'alignItemsCenter' }} />"
+        ]
+
+        parsed = ANALYZE_MODULE.parse_matches_to_by_file(matches)
+
+        self.assertEqual(list(parsed), ["src/components/Example.tsx"])
+        self.assertEqual(parsed["src/components/Example.tsx"][0]["line"], "70")
+        self.assertIn("default: 'alignItemsCenter'", parsed["src/components/Example.tsx"][0]["content"])
+
+    def run_checker(self, fixture_name, guideline):
+        fixture = FIXTURES / fixture_name
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-") as report_dir:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ANALYZER),
+                    "--src",
+                    str(fixture),
+                    "--guideline",
+                    guideline,
+                    "--report-dir",
+                    report_dir,
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            reports = list(Path(report_dir).glob("*.md"))
+            markdown = reports[0].read_text() if reports else ""
+            return result, markdown
+
+    def run_json_checker(self, fixture_name, guideline):
+        fixture = FIXTURES / fixture_name
+        return subprocess.run(
+            [
+                sys.executable,
+                str(ANALYZER),
+                "--src",
+                str(fixture),
+                "--guideline",
+                guideline,
+                "--json-output",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    def test_project_felt_correct_ground_truth_passes(self):
+        result = self.run_json_checker("ground-truth/project-felt-correct", "project-felt-adoption")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["summary"]["violations"], 0)
+        self.assertEqual(report["source_mode"]["violations"], [])
+
+    def test_project_felt_mixed_ground_truth_flags_default_background(self):
+        result = self.run_json_checker("ground-truth/project-felt-mixed", "project-felt-adoption")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        report = json.loads(result.stdout)
+        findings = report["source_mode"]["violations"]
+        self.assertEqual(len(findings), 1)
+        self.assertTrue(findings[0]["file"].endswith("theme.css"))
+        self.assertIn("PF-Bkg-Generic-Light.svg", findings[0]["value"])
+        expected = json.loads((FIXTURES / "ground-truth" / "expected-findings.json").read_text())
+        self.assertEqual(expected["project-felt-correct"]["result"], "PASS")
+        self.assertEqual(expected["project-felt-mixed"]["result"], "VIOLATION")
+
+    def test_project_felt_requires_root_class_and_specific_background_asset(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-felt-missing-") as tmp:
+            workspace = Path(tmp)
+            (workspace / "index.html").write_text('<html lang="en"><body>Prototype</body></html>\n')
+            result = subprocess.run(
+                [sys.executable, str(ANALYZER), "--src", str(workspace),
+                 "--guideline", "project-felt-adoption", "--json-output"],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            values = [item["value"] for item in json.loads(result.stdout)["source_mode"]["violations"]]
+            self.assertTrue(any("pf-v6-theme-felt" in value for value in values))
+            self.assertTrue(any("Felt-Bkg-Generic" in value for value in values))
+
+    def test_clean_patternfly_fixture_passes(self):
+        result, markdown = self.run_checker("clean", "icon-style-consistency")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("All checks passed", markdown)
+
+    def test_filled_icon_fixture_is_reported(self):
+        result, markdown = self.run_checker("violating", "icon-style-consistency")
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("Example.tsx", markdown)
+        self.assertIn("FolderIcon", markdown)
+
+    def test_clean_html_ground_truth_passes(self):
+        result, markdown = self.run_checker("ground-truth-clean", "no-custom-css")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("All checks passed", markdown)
+
+    def test_html_ground_truth_reports_all_expected_custom_css(self):
+        result, markdown = self.run_checker("ground-truth", "no-custom-css")
+        expected = json.loads((FIXTURES / "ground-truth" / "expected-findings.json").read_text())
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn(
+            f"Violations:** {len(expected['no-custom-css']['expected_findings'])} across 1 guidelines",
+            markdown,
+        )
+        for finding in expected["no-custom-css"]["expected_findings"]:
+            self.assertIn(finding["file"].split("/")[-1], markdown)
+
+    def test_json_output_matches_evaluator_contract(self):
+        fixture = FIXTURES / "ground-truth"
+        expected = json.loads((fixture / "expected-findings.json").read_text())
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ANALYZER),
+                "--src",
+                str(fixture),
+                "--guideline",
+                "no-custom-css",
+                "--json-output",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["summary"], {
+            "total_guidelines_checked": 1,
+            "violations": 1,
+            "warnings": 0,
+            "passes": 0,
+        })
+        actual_locations = sorted(
+            (finding["file"], finding["line"])
+            for finding in report["source_mode"]["violations"]
+        )
+        expected_locations = sorted(
+            (finding["file"], finding["line"])
+            for finding in expected["no-custom-css"]["expected_findings"]
+        )
+        self.assertEqual(actual_locations, expected_locations)
+        self.assertTrue(all(finding["verdict"] == "VIOLATION" for finding in report["source_mode"]["violations"]))
+        self.assertTrue(all(finding["confidence"] == "high" for finding in report["source_mode"]["violations"]))
+        self.assertTrue(all(not finding["review_candidate"] for finding in report["source_mode"]["violations"]))
+
+    def test_candidate_search_is_flagged_and_never_fails(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-candidate-") as tmp:
+            workspace = Path(tmp)
+            source = workspace / "src" / "Example.tsx"
+            source.parent.mkdir(parents=True)
+            source.write_text("export const Example = () => <Pagination itemCount={30} />;\n")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ANALYZER),
+                    "--src",
+                    str(workspace),
+                    "--guideline",
+                    "table-pagination",
+                    "--json-output",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["summary"]["violations"], 0)
+            self.assertEqual(report["summary"]["warnings"], 1)
+            finding = report["source_mode"]["violations"][0]
+            self.assertEqual(finding["severity"], "warning")
+            self.assertEqual(finding["verdict"], "FLAGGED")
+            self.assertEqual(finding["confidence"], "low")
+            self.assertTrue(finding["review_candidate"])
+            self.assertEqual(finding["check_method"], "automated_candidate")
+
+    def test_native_react_control_is_blocking_component_violation(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-component-") as tmp:
+            workspace = Path(tmp)
+            source = workspace / "src" / "Example.tsx"
+            source.parent.mkdir(parents=True)
+            source.write_text("export const Example = () => <button>Save</button>;\n")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ANALYZER),
+                    "--src",
+                    str(workspace),
+                    "--guideline",
+                    "patternfly-component-usage",
+                    "--json-output",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["summary"]["violations"], 1)
+            finding = report["source_mode"]["violations"][0]
+            self.assertEqual(finding["guideline_id"], "patternfly-component-usage")
+            self.assertEqual(finding["severity"], "error")
+            self.assertEqual(finding["verdict"], "VIOLATION")
+            self.assertFalse(finding["review_candidate"])
+
+    def test_patternfly_html_control_passes_component_usage(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-pf-component-") as tmp:
+            workspace = Path(tmp)
+            source = workspace / "src" / "index.html"
+            source.parent.mkdir(parents=True)
+            source.write_text('<button class="pf-v6-c-button pf-m-primary">Save</button>\n')
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ANALYZER),
+                    "--src",
+                    str(workspace),
+                    "--guideline",
+                    "patternfly-component-usage",
+                    "--json-output",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(json.loads(result.stdout)["source_mode"]["violations"], [])
+
+    def test_competing_component_library_is_blocking_violation(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-library-") as tmp:
+            workspace = Path(tmp)
+            source = workspace / "src" / "Example.tsx"
+            source.parent.mkdir(parents=True)
+            source.write_text("import { Button } from '@mui/material';\n")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ANALYZER),
+                    "--src",
+                    str(workspace),
+                    "--guideline",
+                    "patternfly-component-usage",
+                    "--json-output",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            findings = json.loads(result.stdout)["source_mode"]["violations"]
+            self.assertEqual(len(findings), 1)
+            self.assertIn("@mui", findings[0]["value"])
+            self.assertEqual(findings[0]["severity"], "error")
+
+    def test_changed_mode_excludes_unchanged_lines_in_touched_file(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-git-") as tmp:
+            workspace = Path(tmp)
+            source = workspace / "src" / "Example.tsx"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                "export const Existing = () => <div style={{ color: 'red' }} />;\n"
+                "export const Stable = () => <div className=\"pf-v6-u-m-md\" />;\n"
+            )
+            subprocess.run(["git", "init", "-q"], cwd=workspace, check=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@example.com"],
+                cwd=workspace,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test User"],
+                cwd=workspace,
+                check=True,
+            )
+            subprocess.run(["git", "add", "src/Example.tsx"], cwd=workspace, check=True)
+            subprocess.run(["git", "commit", "-qm", "base"], cwd=workspace, check=True)
+
+            source.write_text(
+                source.read_text()
+                + "export const Added = () => <div style={{ color: 'blue' }} />;\n"
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ANALYZER),
+                    "--src",
+                    str(workspace),
+                    "--guideline",
+                    "no-custom-css",
+                    "--changed",
+                    "--base-ref",
+                    "HEAD",
+                    "--json-output",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            findings = json.loads(result.stdout)["source_mode"]["violations"]
+            self.assertEqual(len(findings), 1)
+            self.assertEqual(findings[0]["line"], 3)
+
+    def test_json_file_writes_evaluator_contract(self):
+        fixture = FIXTURES / "ground-truth-clean"
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-json-") as tmp:
+            output = Path(tmp) / "nested" / "consistency-report.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ANALYZER),
+                    "--src",
+                    str(fixture),
+                    "--guideline",
+                    "no-custom-css",
+                    "--json-file",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(result.stdout, "")
+            report = json.loads(output.read_text())
+            self.assertEqual(report["source"], "uxd-consistency-check")
+            self.assertTrue(report["source_mode"]["ran"])
+
+    def test_standalone_html_root_without_src_directory_is_checked(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-standalone-") as tmp:
+            prototype = Path(tmp) / "prototype"
+            prototype.mkdir()
+            (prototype / "index.html").write_text(
+                '<link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@6/patternfly.min.css">\n'
+                '<div style="color: red">Custom</div>\n'
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ANALYZER),
+                    "--src",
+                    str(prototype),
+                    "--guideline",
+                    "no-custom-css",
+                    "--json-output",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            findings = json.loads(result.stdout)["source_mode"]["violations"]
+            self.assertEqual(len(findings), 1)
+            self.assertEqual(Path(findings[0]["file"]).name, "index.html")
+
+    def test_changed_mode_includes_untracked_prototype_files(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-untracked-") as tmp:
+            workspace = Path(tmp)
+            (workspace / "src").mkdir()
+            subprocess.run(["git", "init", "-q"], cwd=workspace, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=workspace, check=True)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=workspace, check=True)
+            (workspace / "README.md").write_text("fixture\n")
+            subprocess.run(["git", "add", "README.md"], cwd=workspace, check=True)
+            subprocess.run(["git", "commit", "-qm", "base"], cwd=workspace, check=True)
+            (workspace / "src" / "New.tsx").write_text(
+                "export const New = () => <div style={{ color: 'red' }} />;\n"
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ANALYZER),
+                    "--src",
+                    str(workspace),
+                    "--guideline",
+                    "no-custom-css",
+                    "--changed",
+                    "--base-ref",
+                    "HEAD",
+                    "--json-output",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            findings = json.loads(result.stdout)["source_mode"]["violations"]
+            self.assertEqual(len(findings), 1)
+            self.assertTrue(findings[0]["file"].endswith("New.tsx"))
+
+    def test_tracked_only_changed_mode_ignores_untracked_worktree_files(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-tracked-only-") as tmp:
+            workspace = Path(tmp)
+            (workspace / "src").mkdir()
+            tracked = workspace / "src" / "Tracked.tsx"
+            tracked.write_text("export const Tracked = () => <div />;\n")
+            subprocess.run(["git", "init", "-q"], cwd=workspace, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=workspace, check=True)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=workspace, check=True)
+            subprocess.run(["git", "add", "src/Tracked.tsx"], cwd=workspace, check=True)
+            subprocess.run(["git", "commit", "-qm", "base"], cwd=workspace, check=True)
+            (workspace / "src" / "LocalScratch.tsx").write_text(
+                "export const Scratch = () => <div style={{ color: 'red' }} />;\n"
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable, str(ANALYZER), "--src", str(workspace),
+                    "--guideline", "no-custom-css", "--changed", "--tracked-only",
+                    "--base-ref", "HEAD", "--json-output",
+                ],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["source_mode"]["violations"], [])
+            self.assertEqual(report["summary"]["passes"], 0)
+
+    def test_merge_base_changed_mode_scopes_review_to_topic_commits(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-merge-base-") as tmp:
+            workspace = Path(tmp)
+            source = workspace / "src"
+            source.mkdir()
+            (source / "Base.tsx").write_text("export const Base = () => <div />;\n")
+            subprocess.run(["git", "init", "-q"], cwd=workspace, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=workspace, check=True)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=workspace, check=True)
+            subprocess.run(["git", "add", "src/Base.tsx"], cwd=workspace, check=True)
+            subprocess.run(["git", "commit", "-qm", "common base"], cwd=workspace, check=True)
+            common = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=workspace, text=True, capture_output=True, check=True
+            ).stdout.strip()
+
+            subprocess.run(["git", "branch", "target"], cwd=workspace, check=True)
+            subprocess.run(["git", "checkout", "-qb", "topic"], cwd=workspace, check=True)
+            (source / "Topic.tsx").write_text("export const Topic = () => <div style={{ color: 'red' }} />;\n")
+            subprocess.run(["git", "add", "src/Topic.tsx"], cwd=workspace, check=True)
+            subprocess.run(["git", "commit", "-qm", "topic addition"], cwd=workspace, check=True)
+
+            subprocess.run(["git", "checkout", "-q", "target"], cwd=workspace, check=True)
+            (source / "Target.tsx").write_text("export const Target = () => <div style={{ color: 'blue' }} />;\n")
+            subprocess.run(["git", "add", "src/Target.tsx"], cwd=workspace, check=True)
+            subprocess.run(["git", "commit", "-qm", "target addition"], cwd=workspace, check=True)
+            subprocess.run(["git", "checkout", "-q", "topic"], cwd=workspace, check=True)
+            subprocess.run(["git", "branch", "merge-base", common], cwd=workspace, check=True)
+            (source / "LocalScratch.tsx").write_text("export const Scratch = () => <div style={{ color: 'green' }} />;\n")
+
+            result = subprocess.run(
+                [
+                    sys.executable, str(ANALYZER), "--src", str(workspace),
+                    "--guideline", "no-custom-css", "--changed", "--merge-base",
+                    "--tracked-only", "--base-ref", "target", "--json-output",
+                ],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            findings = json.loads(result.stdout)["source_mode"]["violations"]
+            self.assertEqual(len(findings), 1)
+            self.assertTrue(findings[0]["file"].endswith("Topic.tsx"))
+
+    def test_trace_context_matches_gitlab_scp_remote_to_https_url(self):
+        with tempfile.TemporaryDirectory(prefix="uxd-consistency-gitlab-url-") as tmp:
+            workspace = Path(tmp)
+            (workspace / "src").mkdir()
+            (workspace / "src" / "Clean.tsx").write_text("export const Clean = () => <div />;\n")
+            subprocess.run(["git", "init", "-q"], cwd=workspace, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=workspace, check=True)
+            subprocess.run(["git", "config", "user.name", "Test User"], cwd=workspace, check=True)
+            subprocess.run(["git", "remote", "add", "origin", "git@gitlab.cee.redhat.com:uxd/prototypes/rhoai.git"], cwd=workspace, check=True)
+
+            result = subprocess.run(
+                [
+                    sys.executable, str(ANALYZER), "--src", str(workspace),
+                    "--guideline", "no-custom-css", "--gitlab-url",
+                    "https://gitlab.cee.redhat.com/uxd/prototypes/rhoai.git", "--json-output",
+                ],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+if __name__ == "__main__":
+    unittest.main()
