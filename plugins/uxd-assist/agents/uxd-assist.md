@@ -1,6 +1,6 @@
 ---
 name: uxd-assist
-description: UXD skill routing — maps task context to the right UXD sub-skills for research, design review, prototyping, and vision work. Active when working on UXD research, design review, prototyping, problem framing, or a product vision.
+description: UXD skill routing — maps task context to the right UXD sub-skills for research, design review, and prototyping. Active when working on UXD research, design review, or prototyping tasks.
 ---
 
 # UXD assist
@@ -47,28 +47,6 @@ When the user asks to create, iterate on, evaluate, export, or publish a prototy
 **When to use evaluate vs. design heuristics:**
 - `/uxd-prototype:uxd-prototype-evaluate` — running prototype with a Jira ticket (AC verdicts + usability scores)
 - `/uxd-research:uxd-evaluate-design-heuristics` — static design (Figma, screenshot, or mockup) without a Jira ticket
-
-## Vision — a future experience from a framed problem
-
-When the user asks for a vision, a future experience, or where a product should go, walk this checklist. A vision is these artifacts together. Do not treat it as its own skill.
-
-Look in the conversation and under `.artifacts/` before asking for something that already exists. With a work item id, the files are in `.artifacts/{ID}/`. Without one, they are at the top of `.artifacts/`. Show the list with present or missing, then offer only the next missing artifact. Stop when the user has what they asked for. A problem brief alone is a complete request.
-
-| Step | Artifact | Skill | Needs |
-|------|----------|-------|-------|
-| 1 | `problem-brief.md` | `/uxd-workshop:uxd-problem-brief` | A problem, feature request, or discovery brief |
-| 2 | `experience-narrative.md` | `/uxd-workshop:uxd-experience-narrative` | The problem brief. For a vision, also a time horizon and the capabilities that make the new experience plausible |
-| 3 | Prototype | `/uxd-prototype:uxd-prototype-create` | The narrative's screen list. Pass `--workspace` when they have a product codebase |
-| 4 | `experience-review.md` | `/uxd-workshop:uxd-experience-review` | The brief, the narrative, and the prototype |
-
-Use these only when the user asks, or when the checklist is blocked without them:
-
-- `/uxd-research:uxd-discovery` when the problem is still too fuzzy to brief
-- A research-lookup skill when they want evidence pulled in
-- `/uxd-prototype:uxd-prototype-evaluate` for usability or acceptance criteria
-- `/uxd-research:uxd-evaluate-design-heuristics` for a design critique of static screens
-
-Send "review this design" and "evaluate this prototype" to those skills. Send "does this experience carry the problem we framed" to `uxd-experience-review`.
 
 ## Synthesis guidance
 
