@@ -80,7 +80,6 @@ Tags: `team:uxd`, `pipeline:prototype-evaluator`
 |-------|---------|
 | `llm_cost_usd` | Provider-reported model usage |
 | `observability_cost_usd` | Langfuse infra allocation per run |
-| `qwen_cost_usd` | Qwen provider billing when available; otherwise `null` |
 
 `render-report.js` always logs `llm_cost_usd: 0` with `duration_ms` and `output_bytes`.
 

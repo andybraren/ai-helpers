@@ -28,19 +28,6 @@ if [[ ! -f "${JIRA_CONTEXT}" ]]; then
   exit 2
 fi
 
-# Link the designer run to the cluster-side Qwen LLM-as-a-judge. The
-# prototype-evaluator project's evaluation rule is scoped to
-# benchmark_name=designer-phase-costs + privacy_mode:sanitized_artifact_output,
-# so we pin that benchmark name and opt into sanitized (scored) outputs.
-# Set UXD_EVAL_NO_QWEN_JUDGE=1 to run the designer path without the judge.
-QWEN_JUDGE_FLAGS=()
-if [[ "${UXD_EVAL_NO_QWEN_JUDGE:-0}" != "1" ]]; then
-  QWEN_JUDGE_FLAGS=(
-    --qwen-quality-judge
-    --benchmark-name "${UXD_EVAL_BENCHMARK_NAME:-designer-phase-costs}"
-  )
-fi
-
 exec "${REPO_ROOT}/scripts/eval-run.sh" "${PYTHON}" "${SCRIPT_DIR}/langfuse-trace-pipeline.py" \
   --personal-run \
   --key "${KEY}" \
@@ -51,5 +38,4 @@ exec "${REPO_ROOT}/scripts/eval-run.sh" "${PYTHON}" "${SCRIPT_DIR}/langfuse-trac
   --env-file "${REPO_ROOT}/.env.local" \
   --trace-sanitized-artifacts \
   --iterate-flags="--max-iterations=1" \
-  ${QWEN_JUDGE_FLAGS[@]+"${QWEN_JUDGE_FLAGS[@]}"} \
   "$@"

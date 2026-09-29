@@ -111,9 +111,9 @@ written under `tmp/benchmarks/<KEY>/phase-packets/`.
 
 For controlled cost benchmarks, run zero-spend preflight first. It loads
 `.env.local` without displaying values; validates OpenAI through `GET /models`,
-Langfuse project/Qwen configuration reads, live prototype, staged Jira, exact
+Langfuse project configuration reads, live prototype, staged Jira, exact
 source revision, two personas, and three matching canonical states produced by
-disposable condition workspaces. It never invokes OpenAI or Qwen. Warm cache
+disposable condition workspaces. It never invokes OpenAI. Warm cache
 verification is a separate $0 gate before each optimized-warm repetition:
 
 ```bash
@@ -148,36 +148,6 @@ The bounded OpenAI runner currently supports no-fix evaluation runs. After
 explicit approval, repeat exact command with `APPROVE_ESTIMATE=1` and
 `ITERATE_FLAGS="--no-fix --max-iterations=1"`.
 
-Qwen quality judging is disabled by default and runs only as a Langfuse-side
-LLM-as-a-Judge evaluator; this repository never invokes Qwen. Provision it in
-the POC7 Langfuse project from `config/qwen-quality-evaluator.yaml`:
-
-1. In **LLM connections**, verify `Qwen3.8`; in **Models**, verify `Qwen3.8-27B`.
-2. In **Evaluators**, create an LLM-as-a-Judge evaluator named
-   `uxd-prototype-quality-qwen-v1`, version `1.0.0`, using that connection/model,
-   `{{output}}` as input, and the rubric fields in `qwen-quality-rubric.yaml`.
-3. Enable one observation-level rule for exactly `eval-journey`, `eval-fix`,
-   `eval-consistency-visual`, `eval-heuristic`, and `eval-usability`; require metadata
-   `benchmark_name=<benchmark name>`, `qwen_quality_judge=asserted`, and
-   `privacy_mode=sanitized_artifact_output`.
-4. Enable the evaluator and rule. `QWEN_QUALITY_JUDGE=1` plus
-   `TRACE_SANITIZED_ARTIFACTS=1` makes preflight assert the setup and probe the
-   authenticated public Scores API. It does not execute Qwen; the first judged
-   paid phase is the end-to-end validation.
-
-Each phase receives only its scrubbed structured artifact output—never prompts,
-screenshots, binary data, or source inputs. Qwen's $10 is a declared expectation,
-not a repository reservation. After every condition, run
-`make langfuse-judge-scores BENCHMARK_DIR=<dir> CONDITION=<condition>
-BENCHMARK_NAME=<name>`; it reads named Qwen scores through authenticated
-`/api/public/v3/scores`, verifies their attached observation has the benchmark
-tag, records provider cost or `unavailable`, and flags cost above $10 with trace
-links. `--data-mcp-export` and Python exporter score capture are labelled
-fallbacks only. A user-side Data MCP/UI `events_only` check is optional and never
-blocks this repository's preflight. Warm cache hits create no paid-phase
-observations, so the side evaluator cannot run and Qwen spend is $0 by
-construction.
-
 Jira extraction, AC classification, and baseline screenshot/DOM capture are
 deterministic local steps. The runner then invokes bounded model phases for
 journey, visual consistency, the sibling heuristic evaluation, and usability. Journey uses one tool-free Responses
@@ -194,7 +164,7 @@ directory. The runner never discovers global marketplace caches.
 credentials and connectivity before a real run with:
 
 ```bash
-eval "$(make langfuse-local-env)" # or: eval "$(make langfuse-env)"
+eval "$(make langfuse-env)"
 make langfuse-verify
 ```
 

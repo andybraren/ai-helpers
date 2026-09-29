@@ -177,10 +177,6 @@ def parse_args():
         help="Content profile for Langfuse. Controlled benchmarks default to full content.",
     )
     parser.add_argument(
-        "--qwen-quality-judge", action="store_true",
-        help="Assert the configured Langfuse-side Qwen judge before sanitized paid phases",
-    )
-    parser.add_argument(
         "--deterministic-only",
         action="store_true",
         help="Run validated source consistency without invoking a model",
@@ -241,7 +237,6 @@ def run_step_zero(args: argparse.Namespace) -> dict[str, Any]:
         personas=args.personas,
         canonical_state=args.canonical_state,
         condition_workspace=args.condition_workspace,
-        qwen_quality_judge=bool(args.qwen_quality_judge),
         benchmark_name=args.benchmark_name,
     )
     preflight = verify_langfuse.run_preflight(preflight_args)
@@ -278,18 +273,6 @@ def run_personal_preflight(args: argparse.Namespace) -> dict[str, Any]:
     verify_langfuse.check_auth(
         host, os.environ["LANGFUSE_PUBLIC_KEY"], os.environ["LANGFUSE_SECRET_KEY"]
     )
-    if args.qwen_quality_judge:
-        verify_langfuse.check_langfuse_scores_api(
-            host, os.environ["LANGFUSE_PUBLIC_KEY"], os.environ["LANGFUSE_SECRET_KEY"]
-        )
-        qwen_assertion = verify_langfuse.check_langfuse_qwen_evaluator(
-            host,
-            os.environ["LANGFUSE_PUBLIC_KEY"],
-            os.environ["LANGFUSE_SECRET_KEY"],
-            args.benchmark_name,
-        )
-    else:
-        qwen_assertion = None
     verify_langfuse.check_prototype_url(args.url)
 
     estimate = verify_langfuse.expected_openai_cost()
@@ -305,10 +288,6 @@ def run_personal_preflight(args: argparse.Namespace) -> dict[str, Any]:
         "prototype_url": args.url,
         "workspace": str(workspace),
         "personas": personas,
-        "qwen": {
-            "requested": bool(args.qwen_quality_judge),
-            "assertion": qwen_assertion,
-        },
         "estimate": {
             "single_run_openai_cost_usd": one_run,
             "openai_cap_usd": langfuse_trace.OPENAI_CAP_USD,
@@ -792,7 +771,7 @@ def write_evaluation_cost(artifacts_dir: Path, result: dict[str, Any], eval_run_
         "cached_input_tokens": int((result.get("token_usage") or {}).get("cached_input_tokens", 0) or 0),
         "cache_write_tokens": int((result.get("token_usage") or {}).get("cache_write_tokens", 0) or 0),
         "phases": phases,
-        "excluded_costs": ["OpenCode session model billing", "Langfuse Qwen judge billing when not provider-reported"],
+        "excluded_costs": ["OpenCode session model billing"],
     }
     (Path(artifacts_dir) / "evaluation-cost.json").write_text(json.dumps(report, indent=2) + "\n")
     return report
@@ -1256,12 +1235,6 @@ def main() -> int:
     model = model_override or (
         model_for("eval-journey", platform) if provider == "anthropic" else "phase-routed"
     )
-    if args.qwen_quality_judge and not args.trace_sanitized_artifacts:
-        print(
-            "Qwen quality judging requires --trace-sanitized-artifacts; raw trace content is forbidden.",
-            file=sys.stderr,
-        )
-        return 2
     try:
         local_inputs = resolve_local_inputs(
             key=args.key,
@@ -1499,10 +1472,6 @@ def main() -> int:
         }[trace_content],
         "trace_context_path": str(Path(local_inputs["benchmark_dir"]) / "langfuse-trace-context.json"),
         "artifacts_dir": str(artifacts_dir),
-        "qwen_quality_judge": (
-            "asserted" if args.qwen_quality_judge else "disabled"
-        ),
-        "qwen_judge_assertion": program_preflight.get("qwen", {}).get("assertion"),
         "deterministic_source": deterministic_result,
         "deterministic_extract": deterministic_extract,
         "deterministic_classification": deterministic_classification,
@@ -1753,13 +1722,6 @@ def main() -> int:
             (Path(local_inputs["benchmark_dir"]) / "calibration-report.json").write_text(
                 json.dumps(calibration, indent=2) + "\n"
             )
-        result["qwen_judge"] = {
-            "asserted": bool(args.qwen_quality_judge),
-            "configuration": program_preflight.get("qwen", {}).get("assertion"),
-            "inference": "first judged paid phase is end-to-end validation"
-            if args.qwen_quality_judge else "not requested",
-            "cost_usd": None,
-        }
         usage = result.get("token_usage", {})
         stdout_lines = trace_path.read_text().splitlines() if trace_path.is_file() else []
         artifact_phases = langfuse_trace.build_pipeline_phases(
@@ -1867,12 +1829,11 @@ def main() -> int:
         "totals": {"llm_cost_usd": result.get("cost_usd"),
                    "known_usage_cost_usd": result.get("known_usage_cost_usd"),
                    "usage_known": result.get("usage_known", True),
-                   "total_tokens": (result.get("token_usage") or {}).get("total_tokens"),
-                   "qwen_cost_usd": None},
+                   "total_tokens": (result.get("token_usage") or {}).get("total_tokens")},
         "langfuse_trace_url": summary.get("langfuse_trace_url", ""),
         "privacy_mode": initial_payload["privacy_mode"],
         "trace_content": initial_payload["trace_content"],
-        "notes": "Provider-usage short-context price-card estimate; excludes OpenCode and Qwen judge billing.",
+        "notes": "Provider-usage short-context price-card estimate; excludes OpenCode session model billing.",
     }
     ledger = subprocess.run(
         ["node", str(SCRIPT_DIR / "log-cost-ledger.js"), "--artifacts-dir", str(artifacts_dir)],

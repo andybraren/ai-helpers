@@ -6,15 +6,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 import base64
 import hashlib
 import subprocess
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import urllib.error
-import urllib.parse
 import urllib.request
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -25,32 +22,10 @@ from model_routing import route_for  # noqa: E402
 
 
 CANONICAL_FILES = ("brief.json", "evaluation.json", "evidence.json", "actions.json", "state.json")
-QWEN_CONNECTION = "Qwen3.8"
-QWEN_MODEL = "Qwen3.8-27B"
-QWEN_EVALUATOR_NAME = "uxd-prototype-quality-qwen-v1"
-QWEN_SCORE_NAMES = "uxd-prototype-quality-qwen-v1"
 OPENAI_PHASE_MODELS = {
     phase: route_for(phase, "api")["model"]
     for phase in ("eval-journey", "eval-fix", "eval-consistency-visual", "eval-heuristic", "eval-usability")
 }
-
-
-def load_qwen_rubric() -> dict[str, str]:
-    """Read pinned judge identity from versioned config without a YAML runtime dependency."""
-    path = Path(__file__).resolve().parent.parent / "config" / "qwen-quality-rubric.yaml"
-    try:
-        fields = {}
-        for line in path.read_text().splitlines():
-            match = re.fullmatch(r"(version|connection|model):\s*([^#\s]+)", line.strip())
-            if match:
-                fields[match.group(1)] = match.group(2)
-    except OSError as error:
-        raise RuntimeError(f"Qwen quality rubric is unavailable: {path}") from error
-    if fields.get("connection") != QWEN_CONNECTION or fields.get("model") != QWEN_MODEL:
-        raise RuntimeError("Qwen quality rubric does not pin Qwen3.8 / Qwen3.8-27B")
-    if not fields.get("version"):
-        raise RuntimeError("Qwen quality rubric has no version")
-    return fields
 
 
 def check_health(host: str) -> None:
@@ -108,48 +83,6 @@ def _get_json(url: str, headers: dict[str, str], label: str) -> dict:
         raise RuntimeError(f"{label} returned invalid JSON") from error
 
 
-def check_langfuse_scores_api(host: str, public_key: str, secret_key: str) -> dict[str, str]:
-    """Probe score-read API shape with read-only, documented v3 parameters."""
-    headers = _basic_headers(public_key, secret_key)
-    v2_endpoint = host.rstrip("/") + "/api/public/v2/scores"
-    try:
-        _get_json(v2_endpoint, headers, "Langfuse Scores API v2")
-        v2_status = "available"
-    except RuntimeError as error:
-        v2_status = str(error)
-    now = datetime.now(timezone.utc)
-    query = urllib.parse.urlencode({
-        "name": QWEN_SCORE_NAMES, "fields": "details,subject", "limit": "1",
-        "fromTimestamp": (now - timedelta(minutes=1)).isoformat(),
-        "toTimestamp": now.isoformat(),
-    })
-    v3_endpoint = host.rstrip("/") + "/api/public/v3/scores"
-    payload = _get_json(
-        f"{v3_endpoint}?{query}", headers, "Langfuse Scores API v3"
-    )
-    if not isinstance(payload.get("data"), list) or not isinstance(payload.get("meta"), dict):
-        raise RuntimeError("Langfuse Scores API v3 returned unexpected data/meta shape")
-    filter_value = json.dumps([{
-        "type": "string", "column": "id", "operator": "=",
-        "value": "__uxd_preflight_read_probe__",
-    }], separators=(",", ":"))
-    observation_query = urllib.parse.urlencode({
-        "filter": filter_value, "fields": "core,basic,metadata,trace_context,usage", "limit": "1",
-    })
-    observations = _get_json(
-        f"{host.rstrip('/')}/api/public/v2/observations?{observation_query}",
-        headers, "Langfuse Observations API v2",
-    )
-    if not isinstance(observations.get("data"), list) or not isinstance(observations.get("meta"), dict):
-        raise RuntimeError("Langfuse Observations API v2 returned unexpected data/meta shape")
-    return {
-        "primary_endpoint": "/api/public/v3/scores",
-        "parameters_verified": "scores name,fields,limit,fromTimestamp,toTimestamp; observations filter,fields,limit",
-        "v2_endpoint": "/api/public/v2/scores",
-        "v2_status": v2_status,
-    }
-
-
 def check_openai_auth(api_key: str, base_url: str | None = None) -> None:
     """Validate OpenAI credentials via the non-inference Models read endpoint."""
     base = (base_url or "https://api.openai.com/v1").rstrip("/")
@@ -160,81 +93,6 @@ def check_openai_auth(api_key: str, base_url: str | None = None) -> None:
         {"Accept": "application/json", "Authorization": f"Bearer {api_key}"},
         "OpenAI Models API",
     )
-
-
-def check_langfuse_qwen_config(host: str, public_key: str, secret_key: str) -> None:
-    """Read Langfuse configuration; this never invokes the Qwen provider."""
-    headers = _basic_headers(public_key, secret_key)
-    connections = _get_json(
-        host.rstrip("/") + "/api/public/llm-connections", headers, "Langfuse LLM connections API"
-    )
-    models = _get_json(
-        host.rstrip("/") + "/api/public/models", headers, "Langfuse Models API"
-    )
-    serialized_connections = json.dumps(connections, sort_keys=True)
-    serialized_models = json.dumps(models, sort_keys=True)
-    if QWEN_CONNECTION not in serialized_connections:
-        raise RuntimeError(f"Langfuse connection is not configured: {QWEN_CONNECTION}")
-    if QWEN_MODEL not in serialized_models:
-        raise RuntimeError(f"Langfuse model is not configured: {QWEN_MODEL}")
-
-
-def check_langfuse_qwen_evaluator(
-    host: str, public_key: str, secret_key: str, benchmark_name: str | None
-) -> dict[str, str]:
-    """Read-only assertion for the cluster-side paid-phase Qwen judge."""
-    if not benchmark_name:
-        raise RuntimeError("Qwen judge assertion requires --benchmark-name")
-    evaluators = _get_json(
-        host.rstrip("/") + "/api/public/v2/evaluators",
-        _basic_headers(public_key, secret_key),
-        "Langfuse evaluators API",
-    )
-    candidates = (evaluators.get("data") or evaluators.get("evaluators") or [])
-    evaluator = next(
-        (item for item in candidates if isinstance(item, dict) and item.get("name") == QWEN_EVALUATOR_NAME),
-        None,
-    )
-    if evaluator is None:
-        raise RuntimeError(
-            f"Langfuse Qwen evaluator is not configured: {QWEN_EVALUATOR_NAME}"
-        )
-    status = str(evaluator.get("status", "")).lower()
-    if evaluator.get("enabled") is not True and status not in {"enabled", "active"}:
-        raise RuntimeError(f"Langfuse Qwen evaluator is not enabled: {QWEN_EVALUATOR_NAME}")
-    serialized_evaluator = json.dumps(evaluator, sort_keys=True)
-    if QWEN_CONNECTION not in serialized_evaluator or QWEN_MODEL not in serialized_evaluator:
-        raise RuntimeError("Langfuse Qwen evaluator does not pin the configured connection/model")
-
-    # ponytail: one API page is sufficient for this named judge/rule; upgrade to
-    # cursor pagination if a project config grows beyond the default page size.
-    rules = _get_json(
-        host.rstrip("/") + "/api/public/v2/evaluation-rules",
-        _basic_headers(public_key, secret_key),
-        "Langfuse evaluation rules API",
-    )
-    serialized_rules = json.dumps(rules, sort_keys=True)
-    paid_phases = ("eval-journey", "eval-fix", "eval-consistency-visual", "eval-heuristic", "eval-usability")
-    evaluator_id = str(evaluator.get("id", ""))
-    # ponytail: the cluster filter UI silently drops metadata keys no
-    # observation has written yet (qwen_quality_judge), so it cannot be a
-    # pre-run rule condition. Scoping still holds: only benchmark-tagged
-    # runs reach the judge, and the trace writer sets output=None unless
-    # privacy_mode is sanitized_artifact_output, so raw content cannot be
-    # judged. Upgrade path: re-add the metadata condition once the first
-    # benchmark observation exists.
-    if (
-        not evaluator_id
-        or evaluator_id not in serialized_rules
-        or f"benchmark_name={benchmark_name}" not in serialized_rules
-        or "sanitized_artifact_output" not in serialized_rules
-        or any(phase not in serialized_rules for phase in paid_phases)
-    ):
-        raise RuntimeError(
-            "Langfuse Qwen rule must target the named evaluator, all paid phases, "
-            "and benchmark_name=<benchmark-name>"
-        )
-    return {"evaluator_id": evaluator_id, "benchmark_name": benchmark_name}
 
 
 def load_env_file(env_file: Path | None = None) -> Path | None:
@@ -383,7 +241,6 @@ def expected_openai_cost() -> dict:
         "conditions": conditions,
         "program_openai_cost_usd": round(sum(item["openai_cost_usd"] for item in conditions.values()), 6),
         "estimate_label": "prior (pre-calibration)",
-        "qwen_cost": "unavailable until provider billing data is returned",
         "openai_cap_usd": langfuse_trace.OPENAI_CAP_USD,
     }
 
@@ -401,7 +258,6 @@ def run_preflight(args) -> dict:
     personas = [persona.strip() for persona in args.personas.split(",") if persona.strip()]
     if len(personas) != 2 or len(set(personas)) != 2:
         raise RuntimeError("exactly two distinct personas are required")
-    qwen_rubric = load_qwen_rubric()
     states = {}
     for item in args.canonical_state:
         condition, separator, raw_path = item.partition("=")
@@ -427,23 +283,6 @@ def run_preflight(args) -> dict:
     host = os.environ["LANGFUSE_HOST"]
     check_health(host)
     check_auth(host, os.environ["LANGFUSE_PUBLIC_KEY"], os.environ["LANGFUSE_SECRET_KEY"])
-    # With the judge requested, its evaluator assertion is authoritative for the
-    # connection/model pin. Some clusters omit evaluator-bound models from the
-    # generic Models catalog, so requiring both creates a false preflight gate.
-    if not getattr(args, "qwen_quality_judge", False):
-        check_langfuse_qwen_config(
-            host, os.environ["LANGFUSE_PUBLIC_KEY"], os.environ["LANGFUSE_SECRET_KEY"]
-        )
-    qwen_assertion = None
-    score_api = None
-    if getattr(args, "qwen_quality_judge", False):
-        score_api = check_langfuse_scores_api(
-            host, os.environ["LANGFUSE_PUBLIC_KEY"], os.environ["LANGFUSE_SECRET_KEY"]
-        )
-        qwen_assertion = check_langfuse_qwen_evaluator(
-            host, os.environ["LANGFUSE_PUBLIC_KEY"], os.environ["LANGFUSE_SECRET_KEY"],
-            getattr(args, "benchmark_name", None),
-        )
     check_prototype_url(args.url)
     return {
         "status": "ready", "model_invoked": False,
@@ -453,13 +292,6 @@ def run_preflight(args) -> dict:
         "personas": personas, "canonical_compound_key": next(iter(compound_keys)),
         "condition_states": {name: {"path": data["path"], "compound_key": data["compound_key"]} for name, data in states.items()},
         "condition_workspaces": condition_workspaces,
-        "qwen": {
-            **qwen_rubric,
-            "evaluator_checked": bool(getattr(args, "qwen_quality_judge", False)),
-            "assertion": qwen_assertion,
-            "score_api": score_api,
-            "provider_inference": "not run",
-        },
         "expected_cost": expected_cost,
     }
 
@@ -487,14 +319,9 @@ def main() -> int:
     )
     parser.add_argument("--warm-cache-root")
     parser.add_argument("--optimized-cold-state")
-    parser.add_argument("--benchmark-name")
     parser.add_argument(
         "--warm-preflight", action="store_true",
         help="Read-only cache validation required before one optimized-warm repetition",
-    )
-    parser.add_argument(
-        "--qwen-quality-judge", action="store_true",
-        help="Also require the configured Qwen evaluator; does not invoke Qwen",
     )
     args = parser.parse_args()
     if args.warm_preflight:

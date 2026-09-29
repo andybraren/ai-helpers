@@ -160,7 +160,6 @@ async function main() {
     phases: payload.phases || [],
     totals: {
       llm_cost_usd: payload.totals?.llm_cost_usd ?? payload.llm_cost_usd ?? 0,
-      qwen_cost_usd: payload.totals?.qwen_cost_usd ?? payload.qwen_cost_usd ?? null,
       observability_cost_usd: payload.totals?.observability_cost_usd ?? 0,
       total_tokens: payload.totals?.total_tokens ?? 0,
     },

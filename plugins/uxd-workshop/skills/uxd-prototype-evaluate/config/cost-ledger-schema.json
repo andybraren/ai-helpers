@@ -54,7 +54,6 @@
       "required": ["llm_cost_usd", "observability_cost_usd", "total_tokens"],
       "properties": {
         "llm_cost_usd": { "type": "number", "minimum": 0 },
-        "qwen_cost_usd": { "type": ["number", "null"], "minimum": 0 },
         "observability_cost_usd": { "type": "number", "minimum": 0 },
         "total_tokens": { "type": "integer", "minimum": 0 }
       }

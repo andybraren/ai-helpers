@@ -113,7 +113,6 @@ def main() -> int:
             "privacy_mode": "metadata_only",
             "trace_content": "metadata",
             "trace_context_path": str(runner.creator_trace_context_path(benchmark, args.run_id)),
-            "qwen_quality_judge": "disabled",
             "benchmark": {
                 "benchmark_name": args.benchmark_name,
                 "comparison_id": args.comparison_id,

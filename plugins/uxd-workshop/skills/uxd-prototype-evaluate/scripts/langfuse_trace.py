@@ -147,17 +147,6 @@ PHASE_DISPLAY_ORDER = {
     "create-refine": (22, "creator-paid"),
 }
 
-# Only these observations contain paid model conclusions suitable for the Qwen
-# quality judge.  Deterministic phase observations retain benchmark/privacy
-# metadata for trace correlation, but must never become evaluator candidates.
-QUALITY_JUDGE_ELIGIBLE_PHASES = frozenset({
-    "eval-journey",
-    "eval-fix",
-    "eval-consistency-visual",
-    "eval-heuristic",
-    "eval-usability",
-})
-
 # One authority for OpenAI study pricing, reservations, settlement, and trace
 # allocation. Bounds are worst-case ceilings: observed maxima get 25% headroom
 # and round up; visual input uses the static 5,000-finding prompt ceiling.
@@ -1042,6 +1031,14 @@ class OpenAICostAuthority:
         if self.ledger_path and not self.ledger_path.exists():
             self._persist({"event": "initialize", "at": _utc_now()})
 
+    def estimate(self, phase: str, model: str) -> float:
+        """Price the configured token bound without writing a reservation."""
+        try:
+            input_tokens, output_tokens = self.phase_bounds[phase]
+        except KeyError as error:
+            raise ValueError(f"No bounded estimate configured for {phase}") from error
+        return estimated_cost(model, input_tokens, output_tokens)
+
     @staticmethod
     def settle_estimate(reservation: dict[str, Any], usage: dict[str, Any]) -> float:
         """Use durable per-response pricing when available, otherwise a conservative total."""
@@ -1302,8 +1299,6 @@ def _trace_values(payload: dict[str, Any]) -> dict[str, Any]:
         "invocation": invocation,
         "privacy_mode": payload.get("privacy_mode", "metadata_only"),
         "trace_content": payload.get("trace_content", "metadata"),
-        "qwen_quality_judge": payload.get("qwen_quality_judge", "disabled"),
-        "qwen_judge_assertion": payload.get("qwen_judge_assertion"),
         "iterate_flags": dims["iterate_flags"],
         "team": "uxd",
         "component": component,
@@ -1375,7 +1370,6 @@ def _record_pipeline_content(
             key: value for key, value in phase.items()
             if key in PHASE_METADATA_FIELDS and value is not None
         }
-        phase_metadata["quality_judge_eligible"] = phase_name in QUALITY_JUDGE_ELIGIBLE_PHASES
         is_llm = phase_name not in NON_LLM_PHASES
         if is_llm and phase.get("model"):
             usage = langfuse_usage(phase)
@@ -1393,7 +1387,6 @@ def _record_pipeline_content(
                 level=level,
                 metadata={
                     "phase": phase_name,
-                    "quality_judge_eligible": phase_name in QUALITY_JUDGE_ELIGIBLE_PHASES,
                     "provider": phase.get("provider") or values["provider"],
                     "status": status,
                     "privacy_mode": values["metadata"]["privacy_mode"],
@@ -1611,8 +1604,6 @@ class LivePipelineTrace:
                 "csv_used": self.values["metadata"].get("csv_used"),
                 "phase_order": phase_order,
                 "phase_group": phase_group,
-                "quality_judge_eligible": name in QUALITY_JUDGE_ELIGIBLE_PHASES,
-                "qwen_quality_judge": self.values["metadata"]["qwen_quality_judge"],
                 "privacy_mode": self.values["metadata"]["privacy_mode"],
                 "input_chars": len(input_text),
                 "input_sha256": content_sha256(input_text),
@@ -1698,8 +1689,6 @@ class LivePipelineTrace:
                 "csv_used": self.values["metadata"].get("csv_used"),
                 "phase_order": phase_order,
                 "phase_group": phase_group,
-                "quality_judge_eligible": phase_name in QUALITY_JUDGE_ELIGIBLE_PHASES,
-                "qwen_quality_judge": self.values["metadata"]["qwen_quality_judge"],
                 "privacy_mode": self.values["metadata"]["privacy_mode"],
                 "trace_content": self.trace_content,
                 "child_observation_counts": child_observation_counts,
@@ -1929,8 +1918,6 @@ class LivePipelineTrace:
                 "audit_type": audit_type,
                 "privacy_mode": self.values["metadata"]["privacy_mode"],
                 "trace_content": self.trace_content,
-                "data_flow_judge_eligible": name == "eval-data-flow-audit",
-                "report_quality_judge_eligible": name == "eval-report-quality-audit",
                 "run_id": self.values["eval_run_id"], "model_invoked": False,
             },
         )

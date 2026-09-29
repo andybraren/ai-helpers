@@ -246,7 +246,6 @@ def export_create_serve_trace(
         "trace_context_path": str(creator_trace_context_path(
             benchmark_dir_for(args, artifacts_dir), program_run_id
         )),
-        "qwen_quality_judge": "disabled",
         "benchmark": {"benchmark_name": args.benchmark_name},
     }
     trace = verifier.langfuse_trace.LivePipelineTrace(trace_payload)
@@ -311,12 +310,7 @@ def creator_estimate_only(args: argparse.Namespace, artifacts_dir: Path) -> dict
     routing = load_creator_routing()
     phases = []
     for name, spec in routing["phases"].items():
-        cost = authority.estimate(
-            name,
-            spec["model"],
-            int(spec["input_tokens_bound"]),
-            int(spec["output_tokens_bound"]),
-        )
+        cost = authority.estimate(name, spec["model"])
         phases.append({
             "phase": name,
             "provider": routing["provider"],

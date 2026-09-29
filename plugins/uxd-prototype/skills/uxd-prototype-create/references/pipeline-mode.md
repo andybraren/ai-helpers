@@ -213,10 +213,6 @@ failed phase; do not retry a paid phase in the same experiment.
 The default phase routes are `gpt-6-sol`; the optional creator quality judge is
 `gpt-6-luna`. The separate skill eval config also uses these GPT-6 defaults.
 
-The optional Langfuse Qwen judge is defined in
-`config/qwen-quality-evaluator.yaml`. It scores only the sanitized create-serve
-contract; it never receives prototype content, source, or screenshots.
-
 ## Defaults
 
 | Flag | Default |

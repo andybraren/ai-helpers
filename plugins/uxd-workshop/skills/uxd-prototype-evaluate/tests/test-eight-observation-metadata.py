@@ -46,7 +46,6 @@ def main() -> int:
         "provider": "openai",
         "model": "phase-routed",
         "privacy_mode": "sanitized_artifact_output",
-        "qwen_quality_judge": "asserted",
         "benchmark": {"benchmark_name": "designer-phase-costs"},
     }
     with patch.object(langfuse_trace, "_get_client", return_value=client):
@@ -91,13 +90,9 @@ def main() -> int:
         finish_metadata = observation.updates[-1]["metadata"]
         assert start_metadata["benchmark_name"] == "designer-phase-costs"
         assert start_metadata["privacy_mode"] == "sanitized_artifact_output"
-        assert start_metadata["qwen_quality_judge"] == "asserted"
-        assert start_metadata["quality_judge_eligible"] is (start_metadata["phase"] in paid)
         assert observation.start_kwargs.get("model") == ("gpt-6-sol" if start_metadata["phase"] in paid else None)
         assert finish_metadata["benchmark_name"] == "designer-phase-costs"
         assert finish_metadata["privacy_mode"] == "sanitized_artifact_output"
-        assert finish_metadata["qwen_quality_judge"] == "asserted"
-        assert finish_metadata["quality_judge_eligible"] is (finish_metadata["phase"] in paid)
         assert finish_metadata["model"] == ("gpt-6-sol" if finish_metadata["phase"] in paid else None)
         assert finish_metadata["model_invoked"] is (finish_metadata["phase"] in paid)
         assert "estimated_cost_usd" in finish_metadata

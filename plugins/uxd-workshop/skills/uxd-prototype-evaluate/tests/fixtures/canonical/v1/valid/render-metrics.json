@@ -1,7 +1,0 @@
-{
-  "phase": "render-report.js",
-  "input_mode": "canonical-v1",
-  "duration_ms": 376,
-  "output_bytes": 127184,
-  "llm_cost_usd": 0
-}

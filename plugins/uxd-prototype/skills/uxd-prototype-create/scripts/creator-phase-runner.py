@@ -429,12 +429,7 @@ def estimate(args: argparse.Namespace, resolved: dict[str, Any]) -> dict[str, An
     )
     authority.initialize()
     phase_spec = resolved["phase_spec"]
-    reserved = authority.estimate(
-        args.phase,
-        resolved["model"],
-        int(phase_spec["input_tokens_bound"]),
-        int(phase_spec["output_tokens_bound"]),
-    )
+    reserved = authority.estimate(args.phase, resolved["model"])
     active = round(sum(authority.active_reservations.values()), 8)
     estimate_record = {
         "run_id": resolved["run_id"],
@@ -767,7 +762,6 @@ def run_paid_phase(args: argparse.Namespace, resolved: dict[str, Any], estimate_
             resolved["benchmark"], resolved["run_id"]
         )),
         "artifacts_dir": str(resolved["artifacts"]),
-        "qwen_quality_judge": "disabled",
         "benchmark": {
             "benchmark_name": args.benchmark_name,
             "comparison_id": args.comparison_id,
@@ -1098,7 +1092,6 @@ def run_paid_phase(args: argparse.Namespace, resolved: dict[str, Any], estimate_
         "artifact_manifest_logged": phase.get("artifact_manifest_logged", False),
         "artifact_manifest_error_category": phase.get("artifact_manifest_error_category"),
     })
-    phase["qwen_cost_usd"] = None
     phase["billing_note"] = "OpenAI usage priced with the pinned price card; not an invoice"
     write_phase_result(resolved["benchmark"], resolved["run_id"], phase)
     return {"run_id": resolved["run_id"], **phase}

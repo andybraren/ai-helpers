@@ -219,11 +219,6 @@ The evaluator may also project that same source result into a schema-validated
 five-file canonical shadow bundle. The analyzer still runs once, and the legacy
 report remains authoritative until the migration promotes canonical output.
 
-<!--Only used if the user is running a trace in Langfuse or if the user has langfuse setup in their ai-helpers project-->
-The optional Langfuse Qwen judge is defined in
-`config/qwen-quality-evaluator.yaml`. It scores only the sanitized summary
-contract and arithmetic; it never receives findings, source, or screenshots.
-
 Do not write evaluation artifacts into this installed skill directory.
 
 ## Guidelines

@@ -17,7 +17,7 @@ PNG = bytes.fromhex("89504e470d0a1a0a0a0000000d494844520000000100000001080600000
 
 
 def main():
-    ledger_schema = json.loads((Path(__file__).resolve().parents[5] / "docs" / "cost-experiments" / "ledger-schema.json").read_text())
+    ledger_schema = json.loads((Path(__file__).resolve().parents[1] / "config" / "cost-ledger-schema.json").read_text())
     assert "api" in ledger_schema["properties"]["invocation"]["enum"]
     assert ledger_schema["properties"]["eval_run_id"]["pattern"] == "^(eval|evaluator)-"
     phase_properties = ledger_schema["properties"]["phases"]["items"]["properties"]

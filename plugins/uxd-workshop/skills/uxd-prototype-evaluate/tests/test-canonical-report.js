@@ -37,7 +37,7 @@ try {
   fs.writeFileSync(path.join(evalDir, 'evaluation-cost.json'), JSON.stringify({
     total_estimated_usd: 0.1831944, total_tokens: 76569, billing_source: 'provider_usage_price_card_estimate',
     pricing_reference: 'https://developers.openai.com/api/docs/pricing',
-    excluded_costs: ['OpenCode session model billing', 'Langfuse Qwen judge billing when not provider-reported'],
+    excluded_costs: ['OpenCode session model billing'],
     phases: [{ phase: 'eval-journey', model: 'gpt-6-sol', input_tokens: 100, cache_read_tokens: 20, cache_write_tokens: 30, output_tokens: 10, llm_cost_usd: 0.001 }],
   }));
 

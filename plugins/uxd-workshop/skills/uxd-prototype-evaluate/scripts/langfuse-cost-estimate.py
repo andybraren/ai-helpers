@@ -22,7 +22,7 @@ Usage:
   python3 langfuse-cost-estimate.py --key RHAISTRAT-1492
   python3 langfuse-cost-estimate.py --key RHAISTRAT-1492 \
     --run-mode fresh --fix-mode no_fix --model-tier premium \
-    --config docs/cost-experiments/cost-estimate-config.example.json
+    --config config/cost-estimate.example.json
   python3 langfuse-cost-estimate.py --key RHAISTRAT-1492 --budget-usd 5.00
   python3 langfuse-cost-estimate.py --key RHAISTRAT-1492 --json
 """
@@ -315,7 +315,7 @@ def main() -> None:
         host = os.environ.get("LANGFUSE_HOST", "").rstrip("/")
         if not host or not os.environ.get("LANGFUSE_PUBLIC_KEY") or not os.environ.get("LANGFUSE_SECRET_KEY"):
             fail("LANGFUSE_HOST / LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY not set. "
-                 "Run: eval \"$(make langfuse-env)\" or eval \"$(make langfuse-local-env)\"", 3)
+                 "Run: eval \"$(make langfuse-env)\"", 3)
         since = datetime.now(timezone.utc) - timedelta(days=args.limit_days)
         try:
             runs = fetch_trace_history(host, args.key, since, args.max_runs)

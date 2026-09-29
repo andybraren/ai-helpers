@@ -172,9 +172,7 @@ consent and paid-phase approval remain distinct.
 
 The wrapper defaults to sanitized Langfuse tracing, fix enabled, and one
 Phase A iteration. Stage Jira context at
-`tmp/personal-runs/<KEY>/jira-context.json` before running it. Add
-`--qwen-quality-judge` only after the selected Langfuse project has a matching
-Qwen evaluator rule; cost tracing does not require Qwen.
+`tmp/personal-runs/<KEY>/jira-context.json` before running it.
 
 That entrypoint always runs source consistency, Jira extraction, AC
 classification, and baseline screenshot capture locally. It invokes models only

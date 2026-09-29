@@ -1,10 +1,7 @@
 .PHONY: validate lint security scaffold help docs cluster-env \
-	langfuse-env langfuse-local-env langfuse-local-up langfuse-local-down langfuse-smoke \
-	langfuse-deps langfuse-eval langfuse-pipeline langfuse-benchmark \
-	langfuse-judge-scores langfuse-benchmark-report eval-onboard \
+	langfuse-env langfuse-smoke langfuse-deps langfuse-eval langfuse-pipeline eval-onboard \
 	langfuse-verify langfuse-preflight langfuse-cost-estimate \
-	test-subskills \
-	run-phase0 run-phase1-verify run-golden-baseline run-run-mode-matrix
+	test-subskills backfill-ledger
 
 cluster-env: ## Print export PATH for oc/node (eval "$(make cluster-env)")
 	@echo 'export PATH="$(CURDIR)/.local/node/bin:$$PATH"'
@@ -57,9 +54,6 @@ EVAL_SKILL = plugins/uxd-workshop/skills/uxd-prototype-evaluate
 EVAL_SCRIPTS = $(EVAL_SKILL)/scripts
 EVAL_TESTS = $(EVAL_SKILL)/tests
 LANGFUSE_POC7_URI = https://langfuse-ux-eval.apps.rosa.uxdpoc7.9hji.p3.openshiftapps.com
-LANGFUSE_LOCAL_PORT ?= 3100
-LANGFUSE_LOCAL_URI = http://localhost:$(LANGFUSE_LOCAL_PORT)
-LANGFUSE_LOCAL_ENV = docker/langfuse/.env
 PYTHON_RUN = $(if $(wildcard .venv/bin/python),.venv/bin/python,$(if $(shell command -v uv 2>/dev/null),uv run python3,python3))
 EVAL_RUN = bash scripts/eval-run.sh
 
@@ -83,18 +77,6 @@ langfuse-eval: ## Score eval artifacts locally and log quality to Langfuse
 		--model $(if $(MODEL),$(MODEL),unknown) \
 		--prototype-key $(KEY) \
 		--scorers $(SCORERS)
-
-langfuse-judge-scores: ## Read Qwen scores through public API; exports are fallback only
-	@if [ -z "$(BENCHMARK_DIR)" ] || [ -z "$(CONDITION)" ] || [ -z "$(BENCHMARK_NAME)" ]; then \
-		echo "Usage: make langfuse-judge-scores BENCHMARK_DIR=tmp/benchmarks/KEY CONDITION=legacy BENCHMARK_NAME=designer-phase-costs"; exit 1; fi
-	$(EVAL_RUN) $(PYTHON_RUN) $(EVAL_SCRIPTS)/read-langfuse-judge-scores.py \
-		--benchmark-dir $(BENCHMARK_DIR) --condition $(CONDITION) --benchmark-name $(BENCHMARK_NAME) \
-		$(if $(DATA_MCP_EXPORT),--data-mcp-export $(DATA_MCP_EXPORT),) \
-		$(if $(LOCAL_SCORE_CAPTURE),--local-score-capture $(LOCAL_SCORE_CAPTURE),)
-
-langfuse-benchmark-report: ## Render benchmark reports from public-API score reports
-	@if [ -z "$(BENCHMARK_DIR)" ]; then echo "Usage: make langfuse-benchmark-report BENCHMARK_DIR=tmp/benchmarks/KEY"; exit 1; fi
-	$(EVAL_RUN) $(PYTHON_RUN) $(EVAL_SCRIPTS)/render-benchmark-reports.py --benchmark-dir $(BENCHMARK_DIR)
 
 langfuse-pipeline: ## MCP-staged direct API pipeline with Langfuse
 	@if [ -z "$(KEY)" ] || [ -z "$(URL)" ] || [ -z "$(WORKSPACE)" ] || [ -z "$(JIRA_CONTEXT)" ]; then \
@@ -128,8 +110,7 @@ langfuse-pipeline: ## MCP-staged direct API pipeline with Langfuse
 		$(if $(WARM_CACHE_ROOT),--warm-cache-root $(WARM_CACHE_ROOT),) \
 		$(if $(PAIRED_COLD_STATE),--paired-cold-state $(PAIRED_COLD_STATE),) \
 		$(if $(ENV_FILE),--env-file $(ENV_FILE),) \
-		$(if $(TRACE_SANITIZED_ARTIFACTS),--trace-sanitized-artifacts,) \
-		$(if $(QWEN_QUALITY_JUDGE),--qwen-quality-judge,)
+		$(if $(TRACE_SANITIZED_ARTIFACTS),--trace-sanitized-artifacts,)
 
 langfuse-env: ## Export Langfuse env for UXDPOC7 (eval "$(make langfuse-env)")
 	@echo 'export LANGFUSE_HOST=$(LANGFUSE_POC7_URI)'
@@ -139,25 +120,6 @@ langfuse-env: ## Export Langfuse env for UXDPOC7 (eval "$(make langfuse-env)")
 	@echo '# export LANGFUSE_PUBLIC_KEY=pk-lf-...'
 	@echo '# export LANGFUSE_SECRET_KEY=sk-lf-...'
 
-langfuse-local-env: ## Export Langfuse env for local Docker stack (eval "$(make langfuse-local-env)")
-	@echo 'export LANGFUSE_HOST=$(LANGFUSE_LOCAL_URI)'
-	@echo 'export LANGFUSE_ENABLED=1'
-	@echo 'export LANGFUSE_OBS_COST_PER_RUN=0'
-	@if [ -f $(LANGFUSE_LOCAL_ENV) ]; then \
-		grep -E '^LANGFUSE_INIT_PROJECT_PUBLIC_KEY=' $(LANGFUSE_LOCAL_ENV) | sed 's/LANGFUSE_INIT_PROJECT_PUBLIC_KEY=/export LANGFUSE_PUBLIC_KEY=/'; \
-		grep -E '^LANGFUSE_INIT_PROJECT_SECRET_KEY=' $(LANGFUSE_LOCAL_ENV) | sed 's/LANGFUSE_INIT_PROJECT_SECRET_KEY=/export LANGFUSE_SECRET_KEY=/'; \
-	else \
-		echo 'export LANGFUSE_PUBLIC_KEY=pk-lf-local-uxd-eval'; \
-		echo 'export LANGFUSE_SECRET_KEY=sk-lf-local-uxd-eval-secret'; \
-		echo '# Run make langfuse-local-up first to create $(LANGFUSE_LOCAL_ENV)'; \
-	fi
-
-langfuse-local-up: ## Start Langfuse via Docker Compose (http://localhost:3100)
-	@LANGFUSE_LOCAL_PORT=$(LANGFUSE_LOCAL_PORT) bash scripts/langfuse-local-up.sh
-
-langfuse-local-down: ## Stop local Langfuse Docker stack
-	@bash scripts/langfuse-local-down.sh
-
 langfuse-deps: ## Install Python deps for Langfuse SDK (creates .venv)
 	@python3 -m venv .venv
 	@.venv/bin/pip install -q langfuse
@@ -165,9 +127,6 @@ langfuse-deps: ## Install Python deps for Langfuse SDK (creates .venv)
 
 eval-onboard: ## Read-only first-run setup check for prototype evaluation
 	@bash scripts/eval-onboard.sh $(EVAL_ONBOARD_ARGS)
-
-langfuse-benchmark: ## Phase 3 Langfuse matrix benchmark (4 cells → local Langfuse UI)
-	@bash scripts/run-langfuse-benchmark.sh $(URL)
 
 langfuse-smoke: ## Langfuse SDK smoke trace (dry-run if keys unset)
 	$(EVAL_RUN) $(PYTHON_RUN) $(EVAL_SCRIPTS)/langfuse_trace.py smoke
@@ -192,29 +151,8 @@ langfuse-cost-estimate: ## Zero-spend pre-run cost estimate from Langfuse trace 
 		$(if $(BUDGET_USD),--budget-usd $(BUDGET_USD),) \
 		$(if $(JSON),--json,)
 
-ledger-smoke: ## Append test row to cost ledger from existing artifacts
-	@if [ -z "$(KEY)" ]; then echo "Usage: make ledger-smoke KEY=RHAISTRAT-1492"; exit 1; fi
-	@node $(EVAL_SCRIPTS)/log-cost-ledger.js --artifacts-dir=.artifacts/$(KEY)/eval --payload-file=docs/cost-experiments/fixtures/ledger-smoke-row.json
-
-run-phase0: ## Deploy Langfuse + document CP0 (requires oc login)
-	bash scripts/deploy-langfuse-ux-eval.sh
-
-run-phase1-verify: ## Phase 1 instrumentation checks (ledger + langfuse smoke)
-	@$(MAKE) langfuse-smoke
-	@$(MAKE) ledger-smoke KEY=$(if $(KEY),$(KEY),RHAISTRAT-1492)
-	@python3 scripts/backfill-cost-ledger.py
-
 backfill-ledger: ## Backfill cost ledger from existing artifacts
 	@python3 scripts/backfill-cost-ledger.py
-
-run-golden-baseline: ## Phase 2: run golden Opus baselines (requires URL)
-	@bash scripts/run-golden-baseline.sh $(KEY) $(URL)
-
-run-run-mode-matrix: ## Phase 3: 4-cell run-mode matrix on RHAISTRAT-1492
-	@bash scripts/run-run-mode-matrix.sh $(URL)
-
-run-file-diet-experiments: ## Phase 5: file diet and tier experiments
-	@bash scripts/run-file-diet-experiments.sh $(KEY) $(URL)
 
 test-subskills: ## Run subskill validation tests against fixtures
 	bash $(EVAL_TESTS)/run-script-tests.sh
