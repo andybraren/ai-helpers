@@ -70,38 +70,7 @@ Draft with the designer:
 
 ## Step 5: Write the review
 
-```markdown
-# Experience Review: [Situation]
-
-## Scorecard Summary
-
-| Dimension | Rating |
-|-----------|--------|
-| Narrative clarity | |
-| Problem grounding | |
-| Change demonstrated | |
-| Outcome | |
-| Feasibility | |
-| Visual credibility | |
-
-## Detailed Assessments
-[One short assessment per dimension]
-
-## Improvements
-
-### Must fix
-### Should fix
-### Nice to have
-
-## Presentation Plan
-
-### Demo script
-### Prepared answers
-### Context
-
-## Decisions
-[What experience was shown, the scorecard in brief, feedback, and next step. Duplicate this into the project's design log only when that project already keeps one.]
-```
+Write the review from [references/template.md](references/template.md). Keep every heading. When the project already keeps a design log, add the same Decisions entry there.
 
 ## Step 6: Close
 

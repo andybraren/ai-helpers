@@ -107,37 +107,7 @@ Include a route only when you have read the target app's navigation and the rout
 
 ## Step 8: Write the narrative
 
-```markdown
-# Experience Narrative: [Situation]
-
-## Enabling Context
-Omit this section when Step 1 was skipped.
-
-- **Time horizon:**
-- **[Capability]:** [What the person can do] — [Committed / Being explored / Aspirational]
-
-## The Setup
-[Scene-setter]
-
-## Today: [Name]'s Current Experience
-### Beat 1: [Action]
-[What they do, what happens, how it feels. Cite research when used.]
-
-## The Change
-[Turning point]
-
-## After: [Name]'s New Experience
-### Beat 1: [Action]
-[What they do, what happens, what it enables]
-
-## The Payoff
-[Desired outcome, realized]
-
-## Screen Breakdown
-
-| # | Screen | Placement | Narrative moment | Key elements | User action |
-|---|--------|-----------|------------------|--------------|-------------|
-```
+Write the narrative from [references/template.md](references/template.md). Omit **Enabling Context** when Step 1 was skipped. Repeat the beat headings for each beat.
 
 Read it back. Revise until the before matches the brief, the after is concrete, and someone outside the work can follow the story.
 
