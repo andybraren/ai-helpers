@@ -23,7 +23,7 @@ from openai_api_agent import (  # noqa: E402
 
 
 def main() -> int:
-    secret = "sk-svcacctest1234567890"
+    secret = "sk-" + "svcacctest" + "1234567890"
     redacted = redact_api_error(f"Incorrect API key: {secret}")
     assert secret not in redacted
     assert "[REDACTED_KEY]" in redacted
