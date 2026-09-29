@@ -1,5 +1,5 @@
 ---
-name: uxd-problem-brief
+name: uxd-problem-brief-create
 version: 0.1.0
 description: >-
   Frame a product problem as a brief: who is affected, the current condition,
@@ -90,4 +90,4 @@ Read it back. Revise until the statement has no solution in it, evidence and ass
 - Scope is one situation
 - At least one stakeholder is named by role, with what they care about
 
-When the user wants to show an experience that responds to this problem, the next skill is `uxd-experience-narrative`.
+When the user wants to show an experience that responds to this problem, the next skill is `uxd-experience-narrative-create`.

@@ -21,7 +21,7 @@ A problem, a feature request, or an existing discovery brief, and whatever evide
 
 **Customer profile (about 45 minutes, with a product or engineering partner).** Use the customer side of Alexander Osterwalder’s [Value Proposition Canvas](https://www.strategyzer.com/resources/canvas-tools-guides/the-value-proposition-canvas): jobs, pains, and gains. Put research quotes on the pains. Unaddressed pains mark the edge of scope.
 
-The value-map side of that canvas, where capabilities show up, is input to `uxd-experience-narrative`, not to this brief.
+The value-map side of that canvas, where capabilities show up, is input to `uxd-experience-narrative-create`, not to this brief.
 
 Common miss: writing the feature you want to build as if it were the problem.
 
@@ -29,8 +29,8 @@ Common miss: writing the feature you want to build as if it were the problem.
 
 | Piece | Where it is captured |
 |-------|----------------------|
-| Enabling capabilities and time horizon | `uxd-experience-narrative`, when the story depends on a change that does not exist today |
-| Screens and a prototype | `uxd-experience-narrative`, then `uxd-prototype-create` |
+| Enabling capabilities and time horizon | `uxd-experience-narrative-create`, when the story depends on a change that does not exist today |
+| Screens and a prototype | `uxd-experience-narrative-create`, then `uxd-prototype-create` |
 | Stakeholder demo plan | `uxd-experience-review` |
 
 A vision is those artifacts together. UXD assist keeps the checklist and will ask only for the next one that is missing.

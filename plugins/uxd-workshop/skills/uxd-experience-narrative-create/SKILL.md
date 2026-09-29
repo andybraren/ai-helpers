@@ -1,5 +1,5 @@
 ---
-name: uxd-experience-narrative
+name: uxd-experience-narrative-create
 version: 0.1.0
 description: >-
   Turn a problem brief into a scene-by-scene experience a prototype can show.
@@ -25,7 +25,7 @@ Enabling capabilities and a time horizon are recorded here when the user is desc
 | Persona reference | No | Persona cards in the target project or an installed plugin, when they match the brief |
 | Target codebase | No | Only to learn real navigation. Skip routes when no codebase is available. |
 
-If no problem brief exists, stop and ask the user to run `uxd-problem-brief` or paste the problem.
+If no problem brief exists, stop and ask the user to run `uxd-problem-brief-create` or paste the problem.
 
 ## Outputs
 

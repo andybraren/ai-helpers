@@ -22,7 +22,7 @@ Judges whether a story-driven prototype carries the framed problem, and helps th
 | Experience narrative | **Yes** | `.artifacts/experience-narrative.md` or `.artifacts/{ID}/experience-narrative.md` |
 | Prototype | **Yes** | Path, URL, or running app the user points to |
 
-If the brief or narrative is missing, stop and name the skill that should produce it (`uxd-problem-brief`, `uxd-experience-narrative`). If no prototype is available, stop and ask where it lives. Do not search a default repository.
+If the brief or narrative is missing, stop and name the skill that should produce it (`uxd-problem-brief-create`, `uxd-experience-narrative-create`). If no prototype is available, stop and ask where it lives. Do not search a default repository.
 
 ## Outputs
 
