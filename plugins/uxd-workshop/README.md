@@ -8,6 +8,6 @@ UXD skill incubator — new skills start here before graduating to consumer plug
 
 ### Skills
 
-- **Vision Brief** (`/uxd-workshop:vision-brief`) — Guide a designer through defining a UX vision brief: problem space, target user, new capabilities, scope, and stakeholders.
-- **Vision Narrative** (`/uxd-workshop:vision-narrative`) — Help a designer craft a user journey narrative for a UX vision.
-- **Vision Review** (`/uxd-workshop:vision-review`) — Evaluate a UX vision prototype against quality criteria: narrative clarity, prototype fidelity, strategic alignment, and stakeholder readiness.
+- **UXD Vision Brief** (`/uxd-workshop:uxd-vision-brief`) — Create a structured UX vision brief covering the problem, target user, new capabilities, scope, and stakeholders.
+- **UXD Vision Narrative** (`/uxd-workshop:uxd-vision-narrative`) — Turn a vision brief into a scene-by-scene user journey a prototype can show.
+- **UXD Vision Review** (`/uxd-workshop:uxd-vision-review`) — Score a UX vision prototype for narrative clarity, problem grounding, capability demonstration, and stakeholder readiness.
