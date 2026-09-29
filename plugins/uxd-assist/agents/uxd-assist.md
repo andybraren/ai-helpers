@@ -26,13 +26,15 @@ When the user is moving from a validated design into implementation, these skill
 
 ## Design — canvases
 
-When the user asks to create, export, or publish a journey map, service blueprint, flow, or other JSON Canvas, these skills are available:
+When the user asks to create, update, export, or publish a journey map, service blueprint, flow, Mermaid diagram, or Miro board, these skills are available:
 
 | Skill | What it does |
 |-------|-------------|
-| `/uxd-design:uxd-canvas-create` | Create or refine a JSON Canvas from a brief, research, or structured content |
-| `/uxd-design:uxd-canvas-export` | Export a canvas as a local HTML viewer, or as canvas.json and assets |
+| `/uxd-design:uxd-canvas-create` | Create or revise a canvas as local JSON Canvas, a Miro board, or both. Mermaid is a diagram notation, not a separate skill |
+| `/uxd-design:uxd-canvas-export` | Export a local canvas or a Miro board to an HTML viewer, canvas.json, or Mermaid. Does not write to Miro |
 | `/uxd-design:uxd-canvas-publish` | Publish an exported canvas to a git repo, GitHub Pages, GitLab Pages, or Vercel |
+
+Send "update the Miro board" and "make a flowchart" to create. Send "give me an HTML or Mermaid file" to export. A Miro board is not a publish target.
 
 ## Design Review — evaluating designs or Figma artifacts
 

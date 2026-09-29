@@ -53,6 +53,25 @@ Sticky note:
 
 Drawing nodes use `subtype: "drawing"` and `drawingData.paths[]`; each path has `points` as `[x,y]` pairs plus optional `color` and `strokeWidth`.
 
+Mermaid diagram:
+
+```json
+{
+  "id": "checkout-flow",
+  "type": "text",
+  "subtype": "mermaid",
+  "x": 40,
+  "y": 40,
+  "width": 480,
+  "height": 320,
+  "text": "flowchart LR\n  discover[Discover] --> decide[Decide]"
+}
+```
+
+`text` is the Mermaid source. Use this for a flowchart, sequence diagram, ERD, or class diagram stored in a local canvas. The bundled viewer renders it. Do not use it for a journey map, service blueprint, or affinity map.
+
+Optional `miroId` on a node or edge is the Miro widget id from a board read or write. Preserve it on snapshots so the next board update patches the same widget. Omit it on a local-only canvas.
+
 ## Edges
 
 Every edge requires a unique string `id`, `fromNode`, and `toNode`. Both node IDs must exist.

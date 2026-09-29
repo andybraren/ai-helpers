@@ -1,28 +1,37 @@
 ---
 name: uxd-canvas-create
-version: 0.0.1
+version: 0.1.0
 description: >-
-  Create or refine JSON Canvas artifacts, including journey maps, service
-  blueprints, architecture diagrams, user flows, affinity maps, mind maps, and
-  freeform canvases. Use when turning a brief, research, or structured content
-  into a spatial canvas that works across JSON Canvas tools.
+  Create or refine a canvas as local JSON Canvas, a Miro board, or both.
+  Covers journey maps, service blueprints, architecture diagrams, user flows,
+  affinity maps, mind maps, and Mermaid diagrams. Use when turning a brief,
+  research, an existing canvas, or a Miro board into a spatial artifact.
 ---
 
 # Create Canvas
 
-Create a readable spatial artifact as `canvas.json`, with optional `metadata.json` and local assets. The default output is `.artifacts/{ID}/canvas/`; honor a user-supplied location.
+Author or revise a canvas. JSON Canvas is the working model. It is the stored source of truth only for a local canvas. A Miro board can be the source of truth instead. Mermaid is a diagram notation, not another location.
 
-Family: **create** → `uxd-canvas-export` → `uxd-canvas-publish`.
+Family: **create** → `uxd-canvas-export` → `uxd-canvas-publish`. Publish ships a static copy. It does not create or update Miro.
 
 ## Requirements
 
-- Node.js 18 or later to run the bundled validator.
+- Node.js 18 or later to validate a local `canvas.json`.
+- The Miro connection, when the canvas lives on a board. Load the Miro canvas-composer instructions before any SVG write.
+
+## Where it lives
+
+Read [canvas locations](../../references/canvas-locations.md) before choosing or changing the location.
+
+- **Local** (default when the user does not name a board): write `.artifacts/{ID}/canvas/`, or a path they supply.
+- **Miro:** create or update the board. A local `canvas.json` is optional. When the board is canonical, call that file a snapshot, not the source of truth.
+- **Both:** the board is canonical and the local file is a snapshot with `source.url` and `miroId` on each node and edge.
 
 ## Inputs and outputs
 
-Accept a brief, document, ticket, research source, existing canvas, or direct description. If the purpose, audience, or source content is materially unclear, ask only for the missing information.
+Accept a brief, document, ticket, research, Mermaid source, an existing canvas, a Miro URL, or a direct description. If the purpose, audience, or source content is materially unclear, ask only for the missing information.
 
-Write:
+Local output:
 
 ```text
 canvas/
@@ -31,24 +40,29 @@ canvas/
 └── assets/          # only when the canvas uses local files
 ```
 
-`canvas.json` is the portable source of truth. `metadata.json` contains `title`, `description`, `createdAt`, and `updatedAt`; do not put presentation state or source secrets there.
+`metadata.json` contains `title`, `description`, `createdAt`, and `updatedAt`. A Miro snapshot also contains `source` as defined in the locations reference. Do not put presentation state or secrets there.
 
 ## Canvas modes
 
 - **Journey map:** define the persona, journey scope, phases, and evidence-backed lanes. Common lanes are goals/actions, touchpoints or tools, thoughts or emotions, pain points, and opportunities. Distinguish current-state and future-state journeys. Label assumptions instead of presenting invented observations as research.
 - **Service blueprint:** align customer actions, frontstage activity, backstage activity, support processes, and evidence by phase.
-- **Flow or architecture:** establish a clear reading direction, use short relationship labels, and encode direction with edge endpoints.
+- **Flow or architecture:** establish a clear reading direction, use short relationship labels, and encode direction with edge endpoints. A flowchart, sequence diagram, ERD, or class diagram may stay Mermaid instead of boxes.
 - **Affinity or mind map:** cluster concepts spatially and use groups only when the grouping adds meaning.
 - **Freeform:** choose the structure that best communicates the source material.
 
+## Mermaid
+
+Follow the locations reference. Journey maps, blueprints, and affinity maps stay spatial JSON Canvas. A flowchart, sequence diagram, ERD, or class diagram stays Mermaid: a Miro diagram widget when the board is the destination, or a text node with `subtype: "mermaid"` when the destination is local.
+
 ## Authoring workflow
 
-1. Identify the communication goal, audience, canvas mode, source evidence, and intended reading order.
-2. Sketch the information hierarchy before writing nodes. For journey maps and blueprints, make phases consistent columns and lanes consistent rows.
-3. Read [JSON Canvas fields and extensions](references/canvas-schema.md) before authoring unfamiliar node types or presentation extensions.
-4. Write standards-compatible nodes and edges. Prefer stable, descriptive IDs such as `phase-discover-actions` over random IDs.
-5. Copy local files into `assets/` and use relative paths. Do not embed credentials, authenticated URLs, or inaccessible local absolute paths.
-6. Validate the result:
+1. Resolve location, communication goal, audience, canvas mode, source evidence, and reading order.
+2. If the source is a Miro URL, read that board or one frame and preserve every widget id before editing. Confirm before creating a board, writing widgets, or deleting items.
+3. Sketch the information hierarchy before writing nodes. For journey maps and blueprints, make phases consistent columns and lanes consistent rows.
+4. Read [JSON Canvas fields and extensions](references/canvas-schema.md) before authoring unfamiliar node types or presentation extensions.
+5. Write the working model with stable ids such as `phase-discover-actions`. Copy widget ids onto `miroId` in any snapshot. After a new board write, store the ids the create call returns.
+6. Copy local files into `assets/` and use relative paths. Do not embed credentials, authenticated URLs, or inaccessible local absolute paths.
+7. Validate any `canvas.json` you write:
 
 ```bash
 node "${CLAUDE_SKILL_DIR}/scripts/validate-canvas.mjs" <path-to-canvas.json>
@@ -59,7 +73,7 @@ Fix every error. Review warnings for overlaps, dense text, and edge routing rath
 ## Craft rules
 
 - Keep nodes scannable. A title plus one short supporting line is usually enough; split paragraphs and long lists across nodes.
-- Size nodes to fit their content. Starting points: title `200×80`; title plus a line `250×100–120`; 3–4 short lines `250×160–200`; dense content `320–400×240–400` or multiple nodes.
+- Size nodes to fit their content. Starting points: title `200×80`; title plus a line `250×100–120`; 3–4 short lines `250×160–200`; dense content `320–400×240–400` or multiple nodes. Mermaid nodes need enough height for the rendered diagram, often `480×320` or larger.
 - Use a 20-unit grid and leave at least 30–40 units between neighboring nodes. Avoid overlaps and edges crossing unrelated nodes.
 - Use color semantically and consistently. Do not rely on color alone to communicate status or meaning.
 - Put groups behind their children. The bundled viewer reserves the top 24 units of a group for its label.
@@ -70,6 +84,7 @@ Fix every error. Review warnings for overlaps, dense text, and edge routing rath
 
 - The structure answers the stated communication goal.
 - Research-derived claims are traceable to supplied sources; assumptions are labeled.
-- Node IDs and edge IDs are unique, dimensions are positive, and every edge resolves.
-- Labels are readable, nodes do not overlap unintentionally, and local assets resolve.
-- The validator completes without errors.
+- Local canvases pass the validator: unique ids, positive dimensions, resolved edges, readable labels, no unintended overlap, and local assets resolve.
+- A Miro write names the board URL. Updates reuse existing widget ids. Deletions were confirmed item by item.
+- A snapshot records `source.url` and `miroId` values, and is not described as the source of truth when the board is canonical.
+- Jira cards, reactions, and drawings that could not round-trip to Miro are called out.

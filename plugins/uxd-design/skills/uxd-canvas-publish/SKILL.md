@@ -1,11 +1,11 @@
 ---
 name: uxd-canvas-publish
-version: 0.0.1
+version: 0.1.0
 disable-model-invocation: true
 description: >-
   Publish an exported canvas to a git repository, GitHub Pages, GitLab Pages,
-  or Vercel. Use when sharing a finished journey map or other canvas for review,
-  deploying a static copy, or updating a hosted preview.
+  or Vercel. Use when sharing a finished static copy for review or updating a
+  hosted preview. Creating or updating a Miro board is uxd-canvas-create.
 ---
 
 # Publish Canvas
@@ -14,6 +14,10 @@ Share a completed canvas export on an external host. This skill does not build
 the viewer or rewrite assets — run `uxd-canvas-export` first.
 
 Family: `uxd-canvas-create` → `uxd-canvas-export` → **publish**.
+
+## Not a Miro write
+
+This skill publishes the static export only. Creating or updating a Miro board is `uxd-canvas-create`. A board URL is not a `--target`. If the user wants the board changed, stop and use that skill. Read [canvas locations](../../references/canvas-locations.md) when the request mixes a board with a static host.
 
 ## Requirements
 

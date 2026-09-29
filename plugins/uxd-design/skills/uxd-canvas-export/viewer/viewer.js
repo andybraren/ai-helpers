@@ -248,11 +248,25 @@ function render() {
   transformLayer.innerHTML = html;
   updateTransform();
   updateStatusBar(nodes, edges);
+  renderMermaidDiagrams();
+}
+
+function renderMermaidDiagrams() {
+  var blocks = transformLayer.querySelectorAll('.cv-mermaid');
+  if (!blocks.length || typeof mermaid === 'undefined') return;
+  try {
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+    var pending = mermaid.run({ nodes: blocks });
+    if (pending && typeof pending.catch === 'function') pending.catch(function() {});
+  } catch (err) {
+    // Keep the diagram source visible when Mermaid cannot render it.
+  }
 }
 
 function renderNode(node, theme) {
   var isSticky = node.subtype === 'sticky';
   var isDrawing = node.subtype === 'drawing';
+  var isMermaid = node.subtype === 'mermaid';
   var isWireframe = node.nodeStyle === 'wireframe';
   var isPlaceholder = node.nodeStyle === 'placeholder';
   var isGroup = node.type === 'group';
@@ -312,8 +326,12 @@ function renderNode(node, theme) {
   var contentStyle = 'color:' + (isPlaceholder ? '#8c9baa' : isWireframe ? '#333' : textColor) + ';font-family:' + fontFamily + ';';
   html += '<div class="' + contentClass + '" style="' + contentStyle + '">';
 
+  if (node.type === 'text' && isMermaid) {
+    html += '<pre class="cv-mermaid">' + escapeHtmlInline(node.text || '') + '</pre>';
+  }
+
   // Text node content
-  if (node.type === 'text' && !isSticky && !isDrawing) {
+  if (node.type === 'text' && !isSticky && !isDrawing && !isMermaid) {
     if (isPlaceholder) {
       html += '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;padding:20px;user-select:none">';
       html += '<svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" opacity="0.35"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/></svg>';

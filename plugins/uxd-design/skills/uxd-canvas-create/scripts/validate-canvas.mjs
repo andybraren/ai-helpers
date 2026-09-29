@@ -37,9 +37,19 @@ const nodes = Array.isArray(canvas.nodes) ? canvas.nodes : [];
 const edges = Array.isArray(canvas.edges) ? canvas.edges : [];
 const nodeIds = new Set();
 const edgeIds = new Set();
+const miroIds = new Set();
 
 function finiteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+function recordMiroId(miroId, label) {
+  if (typeof miroId !== 'string' || !miroId.trim()) {
+    errors.push(`${label} miroId must be a non-empty string.`);
+    return;
+  }
+  if (miroIds.has(miroId)) warnings.push(`${label} reuses miroId "${miroId}".`);
+  else miroIds.add(miroId);
 }
 
 function addUniqueId(item, ids, kind, index) {
@@ -65,6 +75,7 @@ nodes.forEach((node, index) => {
   if (finiteNumber(node.width) && node.width <= 0) errors.push(`Node "${node.id || index}" width must be positive.`);
   if (finiteNumber(node.height) && node.height <= 0) errors.push(`Node "${node.id || index}" height must be positive.`);
   if (node.type === 'text' && node.subtype !== 'drawing' && typeof node.text !== 'string') errors.push(`Text node "${node.id || index}" requires text.`);
+  if (node.miroId !== undefined) recordMiroId(node.miroId, `Node "${node.id || index}"`);
   if (node.type === 'file' && typeof node.file !== 'string') errors.push(`File node "${node.id || index}" requires file.`);
   if (node.type === 'link' && typeof node.url !== 'string') errors.push(`Link node "${node.id || index}" requires url.`);
   if (node.colorOpacity !== undefined && (!finiteNumber(node.colorOpacity) || node.colorOpacity < 0 || node.colorOpacity > 100)) {
@@ -99,6 +110,7 @@ edges.forEach((edge, index) => {
   for (const field of ['fromEnd', 'toEnd']) {
     if (edge[field] !== undefined && !allowedEnds.has(edge[field])) errors.push(`Edge "${edge.id || index}" has invalid ${field} "${edge[field]}".`);
   }
+  if (edge.miroId !== undefined) recordMiroId(edge.miroId, `Edge "${edge.id || index}"`);
 });
 
 const ordinaryNodes = nodes.filter((node) => node && node.type !== 'group' && [node.x, node.y, node.width, node.height].every(finiteNumber));

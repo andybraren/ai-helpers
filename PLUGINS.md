@@ -61,8 +61,8 @@ UX design workflow — Figma context, JSON Canvas artifacts, design evaluation, 
 
 <table>
 <tr><th>Skill</th><th>Description</th><th>Eval</th></tr>
-<tr><td nowrap><code>uxd-canvas-create</code></td><td>Create or refine JSON Canvas artifacts, including journey maps, service blueprints, architecture diagrams, user flows, affinity maps, mind maps, and freeform canvases.</td><td>—</td></tr>
-<tr><td nowrap><code>uxd-canvas-export</code></td><td>Export a JSON Canvas as a portable local artifact — a single HTML viewer by default, or canvas.json and assets.</td><td>—</td></tr>
+<tr><td nowrap><code>uxd-canvas-create</code></td><td>Create or refine a canvas as local JSON Canvas, a Miro board, or both.</td><td>—</td></tr>
+<tr><td nowrap><code>uxd-canvas-export</code></td><td>Export a canvas as a local HTML viewer, canvas.json, or Mermaid.</td><td>—</td></tr>
 <tr><td nowrap><code>uxd-canvas-publish</code></td><td>Publish an exported canvas to a git repository, GitHub Pages, GitLab Pages, or Vercel.</td><td>—</td></tr>
 <tr><td nowrap><code>uxd-design-handoff</code></td><td>Produce an implementation-ready design handoff spec from a validated design.</td><td>stable</td></tr>
 <tr><td nowrap><code>uxd-figma-read</code></td><td>Retrieve design context from a Figma file.</td><td>stable</td></tr>
@@ -278,8 +278,8 @@ Generated from skill frontmatter and section headings. Token cost is a relative 
 
 | Skill | Audience | Inputs | Outputs | Token cost |
 |---|---|---|---|---|
-| `uxd-canvas-create` | UXD practitioners | Accept a brief, document, ticket, research source, existing canvas, or direct description. If... | Structured result | M |
-| `uxd-canvas-export` | UXD practitioners | Accept either a canvas directory or a path to canvas.json. A canvas directory can also contai... | Structured result | S |
+| `uxd-canvas-create` | UXD practitioners | Accept a brief, document, ticket, research, Mermaid source, an existing canvas, a Miro URL, o... | Structured result | M |
+| `uxd-canvas-export` | UXD practitioners | Accept a canvas directory, a path to canvas.json, or a Miro board URL. A canvas directory can... | Structured result | M |
 | `uxd-canvas-publish` | UXD practitioners | Input Source Required Export directory .artifacts/{ID}/export/ or --source Yes export-manifes... | Structured result | S |
 | `uxd-design-handoff` | UXD practitioners | Input Required Source Design artifact (prototype files, Figma screenshots, text description) ... | The handoff spec is written to a local file (markdown by default, JSON when --format=json). I... | M |
 | `uxd-figma-read` | UXD practitioners | Task context | Structured result | M |
