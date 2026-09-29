@@ -59,6 +59,7 @@ workspace/
 /.claude/
 /docker/langfuse/
 /docs/cost-experiments/
+/plugins/uxd-workshop/skills/uxd-prototype-evaluate/
 /docs/eval-environment-audit.md
 /docs/evaluator-pipeline-audit.md
 /docs/tracing-guide.md
@@ -69,3 +70,6 @@ workspace/
 /scripts/trace-in-langfuse
 /docs/trace-in-langfuse.md
 /docs/opencode-designer-session-protocol.md
+
+# Local OpenCode overrides (user-specific)
+AGENTS.local.md

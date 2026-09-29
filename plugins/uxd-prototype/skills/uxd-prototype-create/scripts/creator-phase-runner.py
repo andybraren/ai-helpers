@@ -27,7 +27,7 @@ SKILL_DIR = SCRIPT_DIR.parent
 REPO_ROOT = SKILL_DIR.parents[3]
 EVALUATOR_SCRIPTS_DIR = (
     SKILL_DIR.parents[2]
-    / "uxd-workshop"
+    / "uxd-prototype"
     / "skills"
     / "uxd-prototype-evaluate"
     / "scripts"
@@ -36,7 +36,7 @@ CONSISTENCY_CHECK_DIR = (
     SKILL_DIR.parents[2] / "uxd-workshop" / "skills" / "uxd-consistency-check"
 )
 PROTOTYPE_EXPORT_DIR = (
-    SKILL_DIR.parents[2] / "uxd-workshop" / "skills" / "uxd-prototype-export"
+    SKILL_DIR.parents[2] / "uxd-prototype" / "skills" / "uxd-prototype-export"
 )
 sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(EVALUATOR_SCRIPTS_DIR))

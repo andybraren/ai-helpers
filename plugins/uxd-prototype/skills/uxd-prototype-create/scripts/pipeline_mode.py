@@ -42,7 +42,7 @@ CREATOR_LEDGER_FILENAME = "openai-budget-ledger-creator.json"
 CREATOR_ROUTING_PATH = SCRIPT_PATH.parent.parent / "config" / "model-routing.json"
 EVALUATOR_SCRIPTS_DIR = (
     SCRIPT_PATH.parents[4]
-    / "uxd-workshop"
+    / "uxd-prototype"
     / "skills"
     / "uxd-prototype-evaluate"
     / "scripts"

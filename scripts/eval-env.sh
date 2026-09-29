@@ -42,7 +42,7 @@ fi
 if [[ -n "${_uxd_eval_primary}" && -d "${_uxd_eval_primary}/.venv/bin" ]]; then
   export PATH="${_uxd_eval_primary}/.venv/bin:${PATH}"
 fi
-_uxd_eval_node_modules="${_uxd_eval_primary}/plugins/uxd-workshop/skills/uxd-prototype-evaluate/node_modules"
+_uxd_eval_node_modules="${_uxd_eval_primary}/plugins/uxd-prototype/skills/uxd-prototype-evaluate/node_modules"
 if [[ -n "${_uxd_eval_primary}" && -d "${_uxd_eval_node_modules}" ]]; then
   export NODE_PATH="${_uxd_eval_node_modules}${NODE_PATH:+:${NODE_PATH}}"
 fi

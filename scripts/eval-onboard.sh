@@ -75,7 +75,7 @@ run_checks() {
 
   # Langfuse tracing is OPTIONAL — only for cost benchmarking. The pipeline runs fine without it.
   if [[ -n "${LANGFUSE_HOST:-}" && -n "${LANGFUSE_PUBLIC_KEY:-}" && -n "${LANGFUSE_SECRET_KEY:-}" ]]; then
-    langfuse_check="$("${PYTHON_BIN}" "${ROOT}/plugins/uxd-workshop/skills/uxd-prototype-evaluate/scripts/verify-langfuse.py" --read-only 2>&1)"
+    langfuse_check="$("${PYTHON_BIN}" "${ROOT}/plugins/uxd-prototype/skills/uxd-prototype-evaluate/scripts/verify-langfuse.py" --read-only 2>&1)"
     if [[ "$?" -eq 0 ]]; then
       pass "Langfuse tracing enabled and reachable"
     else
@@ -86,7 +86,7 @@ run_checks() {
   fi
 
   # Report the provider/model that will be used by default.
-  default_provider="$(grep -A2 '^  api:' "${ROOT}/plugins/uxd-workshop/skills/uxd-prototype-evaluate/config/model-defaults.yaml" 2>/dev/null | grep -m1 'provider:' | awk '{print $2}')"
+  default_provider="$(grep -A2 '^  api:' "${ROOT}/plugins/uxd-prototype/skills/uxd-prototype-evaluate/config/model-defaults.yaml" 2>/dev/null | grep -m1 'provider:' | awk '{print $2}')"
   info "Default provider/model routing: ${default_provider:-openai} (override with --model or EVAL_PLATFORM; per-phase models in config/model-defaults.yaml)"
 
   if node -e "require('@playwright/test')" >/dev/null 2>&1; then
@@ -94,10 +94,10 @@ run_checks() {
     if node -e "const { chromium } = require('@playwright/test'); process.exit(require('fs').existsSync(chromium.executablePath()) ? 0 : 1)" >/dev/null 2>&1; then
       pass "Playwright Chromium is installed"
     else
-      action "Install Chromium once: cd ${ROOT}/plugins/uxd-workshop/skills/uxd-prototype-evaluate && npm install && npx playwright install chromium"
+      action "Install Chromium once: cd ${ROOT}/plugins/uxd-prototype/skills/uxd-prototype-evaluate && npm install && npx playwright install chromium"
     fi
   else
-    action "Install evaluator dependencies once: cd ${ROOT}/plugins/uxd-workshop/skills/uxd-prototype-evaluate && npm install"
+    action "Install evaluator dependencies once: cd ${ROOT}/plugins/uxd-prototype/skills/uxd-prototype-evaluate && npm install"
   fi
 
   if command -v codex >/dev/null 2>&1 && codex mcp get Atlassian >/dev/null 2>&1; then

@@ -23,7 +23,7 @@ pipeline_mode = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(pipeline_mode)
 
 EVALUATOR_TRACE = (
-    Path(__file__).resolve().parents[4] / "uxd-workshop" / "skills"
+    Path(__file__).resolve().parents[4] / "uxd-prototype" / "skills"
     / "uxd-prototype-evaluate" / "scripts" / "langfuse_trace.py"
 )
 TRACE_SPEC = importlib.util.spec_from_file_location("evaluator_cost_authority", EVALUATOR_TRACE)
