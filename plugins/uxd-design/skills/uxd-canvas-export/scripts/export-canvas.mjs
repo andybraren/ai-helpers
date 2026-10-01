@@ -229,10 +229,8 @@ function clearStaleOutputs(outputPath, exportOptions) {
     const jsonPath = path.join(outputPath, 'canvas.json');
     if (fs.existsSync(jsonPath)) fs.rmSync(jsonPath);
   }
-  if (exportOptions.assetsMode !== 'folder') {
-    const assetsPath = path.join(outputPath, 'assets');
-    if (fs.existsSync(assetsPath)) fs.rmSync(assetsPath, { recursive: true, force: true });
-  }
+  const assetsPath = path.join(outputPath, 'assets');
+  if (fs.existsSync(assetsPath)) fs.rmSync(assetsPath, { recursive: true, force: true });
 }
 
 function canvasWithInlineAssets(canvasData, dataUriByFilename) {
@@ -407,6 +405,7 @@ function buildViewer(options) {
     }
   }
 
+  written.push('export-manifest.json');
   const manifest = {
     title,
     id: path.basename(folderPath) === 'canvas' ? path.basename(path.dirname(folderPath)) : path.basename(folderPath),
@@ -419,7 +418,6 @@ function buildViewer(options) {
     exportedAt: new Date().toISOString()
   };
   fs.writeFileSync(path.join(outputPath, 'export-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
-  written.push('export-manifest.json');
 
   return {
     outputPath,

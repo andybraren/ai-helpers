@@ -90,7 +90,11 @@ function renderMarkdown(text) {
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(_, label, url) {
+      var href = safeHref(url.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"'));
+      if (!href) return label;
+      return '<a href="' + escapeHtmlInline(href) + '" target="_blank" rel="noopener">' + label + '</a>';
+    })
     .replace(/^- (.+)$/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
   // Wrap loose lines in <p>
@@ -160,16 +164,44 @@ function getEdgeMidpoint(from, to) {
 }
 
 // ---- SVG path from drawing points ----
+function finiteNumber(value, fallback) {
+  var n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function safeColor(value, fallback) {
+  var color = String(value || '').trim();
+  if (/^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(color)) return color;
+  if (/^rgba?\(\s*(?:[01]?\d?\d|2[0-4]\d|25[0-5])\s*,\s*(?:[01]?\d?\d|2[0-4]\d|25[0-5])\s*,\s*(?:[01]?\d?\d|2[0-4]\d|25[0-5])\s*(?:,\s*(?:0|1|0?\.\d+)\s*)?\)$/.test(color)) return color;
+  return fallback;
+}
+
+function safeHref(url) {
+  var value = String(url || '').trim();
+  if (!/^(https?:|mailto:)/i.test(value)) return '';
+  if (/[\s"'<>\\]/.test(value)) return '';
+  return value;
+}
+
 function pointsToPath(points) {
   if (!points || points.length < 2) return '';
-  var d = 'M ' + points[0][0] + ' ' + points[0][1];
-  if (points.length === 2) return d + ' L ' + points[1][0] + ' ' + points[1][1];
-  for (var i = 1; i < points.length - 1; i++) {
-    var mx = (points[i][0] + points[i+1][0]) / 2;
-    var my = (points[i][1] + points[i+1][1]) / 2;
-    d += ' Q ' + points[i][0] + ' ' + points[i][1] + ', ' + mx + ' ' + my;
+  var coords = [];
+  for (var i = 0; i < points.length; i++) {
+    var pt = points[i];
+    if (!pt || pt.length < 2) return '';
+    var x = Number(pt[0]);
+    var y = Number(pt[1]);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return '';
+    coords.push([x, y]);
   }
-  var last = points[points.length-1];
+  var d = 'M ' + coords[0][0] + ' ' + coords[0][1];
+  if (coords.length === 2) return d + ' L ' + coords[1][0] + ' ' + coords[1][1];
+  for (var j = 1; j < coords.length - 1; j++) {
+    var mx = (coords[j][0] + coords[j + 1][0]) / 2;
+    var my = (coords[j][1] + coords[j + 1][1]) / 2;
+    d += ' Q ' + coords[j][0] + ' ' + coords[j][1] + ', ' + mx + ' ' + my;
+  }
+  var last = coords[coords.length - 1];
   d += ' L ' + last[0] + ' ' + last[1];
   return d;
 }
@@ -179,6 +211,12 @@ function render() {
   var theme = THEMES[currentTheme] || THEMES.graph;
   var nodes = CANVAS_DATA.nodes || [];
   var edges = CANVAS_DATA.edges || [];
+  nodes.forEach(function(node) {
+    node.x = finiteNumber(node.x, 0);
+    node.y = finiteNumber(node.y, 0);
+    node.width = Math.max(0, finiteNumber(node.width, 0));
+    node.height = Math.max(0, finiteNumber(node.height, 0));
+  });
   var nodeMap = {};
   nodes.forEach(function(n) { nodeMap[n.id] = n; });
 
@@ -350,7 +388,9 @@ function renderNode(node, theme) {
   if (isDrawing && node.drawingData) {
     html += '<svg width="100%" height="100%" viewBox="0 0 ' + node.width + ' ' + node.height + '" style="position:absolute;top:0;left:0;pointer-events:none">';
     (node.drawingData.paths || []).forEach(function(p) {
-      html += '<path d="' + pointsToPath(p.points) + '" stroke="' + (p.color || '#e0e0e0') + '" stroke-width="' + (p.strokeWidth || 2) + '" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+      var strokeWidth = finiteNumber(p.strokeWidth, 2);
+      if (strokeWidth < 0) strokeWidth = 2;
+      html += '<path d="' + pointsToPath(p.points) + '" stroke="' + safeColor(p.color, '#e0e0e0') + '" stroke-width="' + strokeWidth + '" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
     });
     html += '</svg>';
   }
@@ -381,7 +421,12 @@ function renderNode(node, theme) {
       html += '</div>';
     }
     html += '<div style="margin-top:auto;padding:4px;font-size:11px;opacity:0.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">';
-    html += '<a href="' + escapeHtmlInline(node.url || '') + '" target="_blank" rel="noopener" style="color:' + theme.linkColor + '">' + escapeHtmlInline(node.url || '') + '</a>';
+    var href = safeHref(node.url || '');
+    if (href) {
+      html += '<a href="' + escapeHtmlInline(href) + '" target="_blank" rel="noopener" style="color:' + theme.linkColor + '">' + escapeHtmlInline(node.url || '') + '</a>';
+    } else {
+      html += escapeHtmlInline(node.url || '');
+    }
     html += '</div></div>';
   }
 
@@ -415,7 +460,7 @@ function renderNode(node, theme) {
     });
     html += '<div class="reactions-row" style="position:absolute;bottom:-4px;left:8px">';
     Object.values(groups).forEach(function(g) {
-      html += '<span class="reaction-badge" style="background:' + (theme.reactionBg || 'rgba(255,255,255,0.1)') + ';border:1px solid ' + (theme.reactionBorder || 'rgba(255,255,255,0.15)') + ';color:' + (theme.reactionText || '#e0e0e0') + '">' + g.emoji + (g.count > 1 ? '<span style="font-size:10px;margin-left:2px">' + g.count + '</span>' : '') + '</span>';
+      html += '<span class="reaction-badge" style="background:' + (theme.reactionBg || 'rgba(255,255,255,0.1)') + ';border:1px solid ' + (theme.reactionBorder || 'rgba(255,255,255,0.15)') + ';color:' + (theme.reactionText || '#e0e0e0') + '">' + escapeHtmlInline(g.emoji) + (g.count > 1 ? '<span style="font-size:10px;margin-left:2px">' + g.count + '</span>' : '') + '</span>';
     });
     html += '</div>';
   }

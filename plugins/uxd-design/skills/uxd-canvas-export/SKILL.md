@@ -33,9 +33,9 @@ Family: `uxd-canvas-create` → **export** → `uxd-canvas-publish`.
 
 ## Inputs and output
 
-Accept a canvas directory, a path to `canvas.json`, or a Miro board URL. A canvas directory can also contain `metadata.json` and `assets/`.
+Accept a canvas directory or a path to `canvas.json`. A canvas directory can also contain `metadata.json` and `assets/`. The export script accepts only that local path.
 
-If the input is a Miro URL:
+If the input is a Miro board URL, snapshot it locally before running the script:
 
 1. Read the board, or one frame if it is large, into the JSON Canvas working model. The board stays canonical.
 2. Write a snapshot `canvas.json` only as input to the exporter. Keep it when the user wants a snapshot; otherwise use a temporary directory. Preserve `miroId` and metadata `source`.
@@ -118,7 +118,7 @@ node "${CLAUDE_SKILL_DIR}/scripts/export-canvas.mjs" <canvas-path> --mermaid
 - `--json` writes `canvas.json`; it is omitted by default when HTML is included.
 - `--mermaid` writes `diagram.mmd`, or reports that a journey map, blueprint, or affinity map was skipped.
 - Mermaid nodes in the HTML viewer show their source. The export does not load a Mermaid library.
-- `export-manifest.json` records title, flags, and written files.
+- `export-manifest.json` records title, viewer, json, assets, chrome, mermaid, and written files, including itself.
 - All nodes, edges, labels, styles, and local assets render.
 - A Miro input was read only. The board was not written.
 - No unintended internal data, credentials, inaccessible URLs, or local absolute paths are included.
