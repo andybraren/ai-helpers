@@ -2,7 +2,7 @@
 
 Start from `canvas.json` in this folder. People expect one actor's path, read left to right, with phases as columns and the same lanes in every column.
 
-This follows the five parts of a journey map described in Nielsen Norman Group's [Journey Mapping 101](https://www.nngroup.com/articles/journey-mapping-101/): actor, scenario and expectations, phases, actions with mindsets and emotions, and opportunities. Pain points sit just above opportunities.
+This follows the five parts of a journey map: actor, scenario and expectations, phases, actions with mindsets and emotions, and opportunities. Pain points sit just above opportunities.
 
 ## How to fill it
 
