@@ -37,3 +37,7 @@ __pycache__/
 
 # Local OpenCode overrides (user-specific)
 AGENTS.local.md
+
+# Local artifacts
+/.artifacts/
+/artifacts/
