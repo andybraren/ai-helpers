@@ -10,7 +10,8 @@
 
 ## Checklist
 
-- [ ] Ran `make validate` (validates manifests and skills)
+- [ ] Ran `make validate` (validates manifests and skills without regenerating docs)
+- [ ] Left generated docs unchanged (`PLUGINS.md`, README plugin table/badges, CONTRIBUTING-SKILLS plugin table/good-names list, and per-plugin READMEs); CI updates them after merge
 - [ ] Skill name uses the correct prefix (`uxd-` for UXD skills, `pf-` for PF skills)
 - [ ] Frontmatter has `name` and `description` (`name` matches directory name)
 - [ ] Description follows the [formula](https://github.com/rh-uxd/ai-helpers/blob/main/CONTRIBUTING-SKILLS.md#writing-descriptions)

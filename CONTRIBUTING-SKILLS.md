@@ -284,7 +284,8 @@ Once you're happy with the skill:
 
 1. Fork and clone this repo
 2. Copy your `SKILL.md` into the appropriate plugin's `skills/` directory (e.g., `plugins/patternfly/react/skills/your-skill-name/SKILL.md` for PF skills, or `plugins/<uxd-plugin>/skills/your-skill-name/SKILL.md` for UXD skills)
-3. Open a pull request
+3. Run `make validate` to check manifests, skills, and agents without regenerating docs
+4. Open a pull request. Leave generated docs unchanged: `PLUGINS.md`, the README plugin table and badge counts, this file's plugin table and good-names list, and per-plugin READMEs. Do not run `make docs` or `scripts/generate-plugins-md.sh`; CI updates those after merge to main.
 
 Your skill becomes available as `/<plugin-name>:your-skill-name` for anyone who installs the plugin.
 
