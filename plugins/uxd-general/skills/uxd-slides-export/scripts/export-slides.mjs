@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadDeck, validateDeck } from '../../uxd-slides-create/scripts/parse-slides.mjs';
+import { loadDeck, partitionBeat, validateDeck } from '../../uxd-slides-create/scripts/parse-slides.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const VIEWER_DIR = path.join(SCRIPT_DIR, '..', 'viewer');
@@ -103,15 +103,23 @@ export function exportDeck(inputDir, { output, title } = {}) {
     aspectRatio: '16:9',
     status: deck.metadata.status || 'draft',
     canonical: deck.metadata.canonical || null,
-    slides: deck.slides.map((slide) => ({
-      type: slide.type,
-      kicker: slide.kicker,
-      heading: slide.heading,
-      subheading: slide.subheading,
-      blocks: slide.blocks,
-      media: slide.media,
-      notes: slide.notes
-    }))
+    slides: deck.slides.map((slide) => {
+      const compiled = {
+        type: slide.type,
+        kicker: slide.kicker,
+        heading: slide.heading,
+        subheading: slide.subheading,
+        blocks: slide.blocks,
+        media: slide.media,
+        notes: slide.notes
+      };
+      if (slide.type === 'beat') {
+        const parts = partitionBeat(slide);
+        compiled.story = parts.story;
+        compiled.rail = parts.rail;
+      }
+      return compiled;
+    })
   };
 
   const templateCssPath = path.join(TEMPLATES_DIR, deck.metadata.template, 'custom.css');

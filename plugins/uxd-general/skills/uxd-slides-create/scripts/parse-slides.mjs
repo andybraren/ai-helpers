@@ -3,7 +3,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const SLIDE_TYPES = ['title', 'section', 'content', 'split', 'quote', 'closing'];
+export const SLIDE_TYPES = ['title', 'section', 'content', 'split', 'quote', 'closing', 'beat'];
+
+const BEAT_RAILS = [
+  { kind: 'users', label: 'Users', pattern: /^(users|people)\b/i },
+  { kind: 'needs', label: 'Unmet needs', pattern: /^(unmet needs|needs)\b/i },
+  { kind: 'solutions', label: 'Solutions', pattern: /^solutions?\b/i }
+];
+
 export const PUBLISH_TARGETS = ['google-slides', 'figma-slides'];
 
 const TYPE_RE = /^type:\s*([a-z][\w-]*)\s*$/i;
@@ -100,12 +107,15 @@ function parseBody(body) {
     } else if (trimmed.startsWith('### ')) {
       result.blocks.push({ type: 'h3', text: trimmed.slice(4).trim() });
       bullets = null;
-    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+    } else if (/^\s*[-*] +.+$/.test(lines[index])) {
+      const bulletLine = lines[index].match(/^(\s*)[-*] +(.*)$/);
+      const depth = bulletLine[1].replace(/\t/g, '  ').length >= 2 ? 1 : 0;
+      const text = bulletLine[2].trim();
       if (!bullets) {
         bullets = { type: 'bullets', items: [] };
         result.blocks.push(bullets);
       }
-      bullets.items.push(trimmed.slice(2).trim());
+      bullets.items.push(depth ? { text, depth } : text);
     } else if (trimmed.startsWith('> ')) {
       result.blocks.push({ type: 'quote', text: trimmed.slice(2).trim() });
       bullets = null;
@@ -125,6 +135,42 @@ function parseBody(body) {
   }
 
   return result;
+}
+
+export function partitionBeat(slide) {
+  const story = [];
+  const rail = [];
+  let current = null;
+
+  for (const block of slide.blocks || []) {
+    if (block.type === 'h3') {
+      const kind = beatRailKind(block.text);
+      if (kind) {
+        current = { kind, label: block.text, items: [] };
+        rail.push(current);
+        continue;
+      }
+      current = null;
+    }
+    if (current && block.type === 'bullets') {
+      current.items.push(...block.items);
+      continue;
+    }
+    if (current && (block.type === 'paragraph' || block.type === 'quote')) {
+      current.items.push(block.text);
+      continue;
+    }
+    current = null;
+    story.push(block);
+  }
+
+  return { story, rail };
+}
+
+function beatRailKind(label) {
+  const text = String(label || '').trim();
+  const match = BEAT_RAILS.find((entry) => entry.pattern.test(text));
+  return match ? match.kind : '';
 }
 
 export function assetRefs(slide) {
@@ -227,16 +273,28 @@ export function validateDeck(deck, { templatesDir } = {}) {
     slide.warnings.forEach((warning) => warnings.push(`${label}: ${warning}`));
 
     const quote = slide.blocks.find((block) => block.type === 'quote');
-    if (['title', 'section', 'closing', 'content', 'split'].includes(slide.type) && !slide.heading) {
+    if (['title', 'section', 'closing', 'content', 'split', 'beat'].includes(slide.type) && !slide.heading) {
       errors.push(`${label} needs a heading.`);
     }
     if (slide.type === 'quote' && !quote && !slide.heading) errors.push(`${label} needs a quote or a heading.`);
 
     const bulletCount = slide.blocks.filter((block) => block.type === 'bullets').reduce((sum, block) => sum + block.items.length, 0);
-    if (bulletCount > 5) warnings.push(`${label} has ${bulletCount} bullets. Keep a slide to one idea.`);
+    if (slide.type === 'beat') {
+      const parts = partitionBeat(slide);
+      const story = parts.story.filter((block) => block.type === 'paragraph').map((block) => block.text).join(' ');
+      if (!story.trim()) warnings.push(`${label} needs the story on the left.`);
+      if (story.length > 1500) warnings.push(`${label} story is long for the left column. Move detail to notes.`);
+      for (const rail of BEAT_RAILS) {
+        const group = parts.rail.find((entry) => entry.kind === rail.kind);
+        if (!group) warnings.push(`${label} is missing ${rail.label}.`);
+        else if (group.items.filter((item) => itemDepth(item) === 0).length > 6) warnings.push(`${label} ${group.label} has more than six items. Keep that column scannable.`);
+      }
+    } else if (bulletCount > 5) {
+      warnings.push(`${label} has ${bulletCount} bullets. Keep a slide to one idea.`);
+    }
     if (slide.heading && slide.heading.length > 90) warnings.push(`${label} heading is long for a slide.`);
     for (const block of slide.blocks) {
-      if (block.type === 'paragraph' && block.text.length > 280) warnings.push(`${label} has a paragraph that should be split or moved to notes.`);
+      if (slide.type !== 'beat' && block.type === 'paragraph' && block.text.length > 280) warnings.push(`${label} has a paragraph that should be split or moved to notes.`);
       if (block.type === 'paragraph' && block.text.startsWith('|')) warnings.push(`${label} contains a table, which the viewer shows as plain text.`);
     }
 
@@ -261,8 +319,16 @@ export function validateDeck(deck, { templatesDir } = {}) {
   return { errors, warnings };
 }
 
+export function itemText(item) {
+  return typeof item === 'string' ? item : String(item?.text || '');
+}
+
+export function itemDepth(item) {
+  return typeof item === 'string' ? 0 : Number(item?.depth || 0);
+}
+
 export function plainText(value) {
-  return String(value)
+  return String(itemText(value))
     .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '$1')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
@@ -274,7 +340,12 @@ export function slidePlainText(slide) {
   for (const block of slide.blocks) {
     if (block.type === 'h3' || block.type === 'paragraph' || block.type === 'code') lines.push(plainText(block.text));
     if (block.type === 'quote') lines.push(plainText(block.text));
-    if (block.type === 'bullets') block.items.forEach((item) => lines.push(`• ${plainText(item)}`));
+    if (block.type === 'bullets') {
+      block.items.forEach((item) => {
+        const mark = itemDepth(item) ? '  ◦' : '•';
+        lines.push(`${mark} ${plainText(item)}`);
+      });
+    }
     if (block.type === 'image') lines.push(`[Image: ${block.alt || block.src}]`);
   }
   if (slide.media?.src) lines.push(`[Image: ${slide.media.src}]`);

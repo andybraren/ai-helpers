@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { parseSlidesMarkdown, validateDeck, loadDeck } from './parse-slides.mjs';
+import { parseSlidesMarkdown, partitionBeat, validateDeck, loadDeck } from './parse-slides.mjs';
 import { exportDeck } from '../../uxd-slides-export/scripts/export-slides.mjs';
 import { planGooglePublish } from '../../uxd-slides-publish/scripts/publish-google.mjs';
 import { markPublished } from '../../uxd-slides-publish/scripts/mark-published.mjs';
@@ -141,6 +141,66 @@ test('marks a real Google URL and rejects a mismatched one', () => {
   const html = fs.readFileSync(path.join(exported.outputDir, 'index.html'), 'utf8');
   assert.match(html, /docs\.google\.com\/presentation\/d\/abc123/);
   assert.match(html, /"status":"published"/);
+});
+
+const BEAT = `<!-- type: beat -->
+<!-- kicker: Part 1 -->
+<!-- image: assets/sketch.png -->
+# Alex starts without a model
+
+Alex is asked to summarize factory status and cannot call a hosted API.
+
+### Users
+
+- **Alex** — App developer
+- **Sara** — Security operations
+
+### Unmet needs
+
+- [No local path into a model](https://example.com/research)
+
+### Solutions
+
+- [Podman Desktop AI Lab](https://example.com/podman)
+`;
+
+test('splits a journey beat into story and rail', () => {
+  const slide = parseSlidesMarkdown(BEAT)[0];
+  assert.equal(slide.type, 'beat');
+  assert.equal(slide.kicker, 'Part 1');
+  const parts = partitionBeat(slide);
+  assert.equal(parts.story.length, 1);
+  assert.equal(parts.story[0].type, 'paragraph');
+  assert.deepEqual(parts.rail.map((group) => group.kind), ['users', 'needs', 'solutions']);
+  assert.equal(parts.rail[0].items.length, 2);
+  assert.match(parts.rail[1].items[0], /example\.com\/research/);
+});
+
+test('exports a journey beat with the right rail', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uxd-slides-'));
+  fs.mkdirSync(path.join(root, 'assets'));
+  fs.writeFileSync(path.join(root, 'assets', 'sketch.png'), Buffer.from('not-a-real-png'));
+  fs.writeFileSync(path.join(root, 'slides.md'), BEAT);
+  fs.writeFileSync(path.join(root, 'metadata.json'), JSON.stringify({
+    title: 'Golden path',
+    description: 'A user journey for local model setup.',
+    template: 'user-journey',
+    aspectRatio: '16:9',
+    status: 'draft',
+    createdAt: '2026-10-12T12:00:00.000Z',
+    updatedAt: '2026-10-12T12:00:00.000Z'
+  }, null, 2));
+  const report = validateDeck(loadDeck(root), { templatesDir: TEMPLATES });
+  assert.deepEqual(report.errors, []);
+  const exported = exportDeck(root, { output: path.join(root, 'export') });
+  const deck = JSON.parse(fs.readFileSync(path.join(exported.outputDir, 'deck.json'), 'utf8'));
+  assert.equal(deck.slides[0].rail[0].kind, 'users');
+  assert.equal(deck.slides[0].rail[2].items[0].includes('Podman'), true);
+  assert.match(fs.readFileSync(path.join(exported.outputDir, 'custom.css'), 'utf8'), /\.slide-beat/);
+  const plan = planGooglePublish(loadDeck(root), { stamp: 'beat' });
+  const ids = plan.groups[0].map((request) => request.createShape?.objectId).filter(Boolean);
+  assert.ok(ids.includes('uxd_beat_00_r'));
+  assert.equal(plan.imageNotes[0], 'assets/sketch.png');
 });
 
 test('template placeholders fail strict validation', () => {

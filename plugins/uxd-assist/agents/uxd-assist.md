@@ -35,11 +35,11 @@ When Figma URLs are in the conversation, or the user requests design critique, c
 
 ## Slides — local decks and shared copies
 
-When the user asks for a slide deck, a readout presentation, or a design-review deck, these skills are available:
+When the user asks for a slide deck, a readout presentation, a design-review deck, or a user-journey deck, these skills are available:
 
 | Skill | What it does |
 |-------|-------------|
-| `/uxd-general:uxd-slides-create` | Author a markdown deck from a briefing, research-readout, or design-review template |
+| `/uxd-general:uxd-slides-create` | Author a markdown deck from a briefing, research-readout, design-review, or user-journey template |
 | `/uxd-general:uxd-slides-export` | Build the local HTML, CSS, and JavaScript viewer |
 | `/uxd-general:uxd-slides-publish` | Publish the shared copy to Google Slides or Figma Slides |
 

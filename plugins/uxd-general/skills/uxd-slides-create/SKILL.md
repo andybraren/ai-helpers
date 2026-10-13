@@ -3,7 +3,8 @@ name: uxd-slides-create
 version: 0.1.0
 description: >-
   Create or refine a markdown slide deck from a template. Use when turning a
-  brief, research readout, or design review into a local slide deck.
+  brief, research readout, design review, or user journey into a local slide
+  deck.
 audience: UXD practitioners
 inputs: A brief, notes, ticket, research, or an existing slides directory
 outputs: slides.md, metadata.json, and an assets directory
@@ -43,6 +44,7 @@ Read [templates/README.md](templates/README.md). If the user names a type, read 
 | Briefing, stakeholder update, or a general talk | `templates/briefing` |
 | Research readout or findings share-out | `templates/research-readout` |
 | Design review or critique readout | `templates/design-review` |
+| User journey or story-beat walkthrough | `templates/user-journey` |
 
 Any other deck starts from `briefing`. Read [slides format](references/slides-format.md) before adding a slide type.
 

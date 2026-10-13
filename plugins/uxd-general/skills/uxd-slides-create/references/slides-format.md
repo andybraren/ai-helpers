@@ -13,6 +13,7 @@ Put directives in HTML comments at the top of a slide.
 | `<!-- type: content -->` | Heading plus short copy or bullets. |
 | `<!-- type: split -->` | Copy on the left, a local image on the right. |
 | `<!-- type: quote -->` | A quotation, with the heading as attribution when you need one. |
+| `<!-- type: beat -->` | A journey beat. The part label and story on the left, a framed sketch under them, and users, unmet needs, and solutions on the right. The heading is not drawn. |
 | `<!-- type: closing -->` | Same visual role as a title slide. Use it for the last slide. |
 | `<!-- kicker: Findings -->` | Small label above the heading. |
 | `<!-- image: assets/screen.png -->` | Side image for a split slide. |
@@ -33,6 +34,30 @@ Researchers can see model names and still cannot tell which one they can deploy.
 
 - The primary action sits below the fold
 - License and status are easy to miss
+```
+
+A beat uses three `###` headings so the right rail stays in order. Link a need or a solution when the source has a URL.
+
+```markdown
+<!-- type: beat -->
+<!-- kicker: Part 1 -->
+<!-- image: assets/sketch.png -->
+# Alex starts without a model
+
+Alex is asked to add a written summary and cannot send the data to a hosted API.
+
+### Users this serves
+
+- **Alex** — App developer
+
+### Unmet needs this addresses
+
+- [Developers have no local path into a model](https://example.com/research)
+
+### Solutions we deliver
+
+- [Podman Desktop AI Lab](https://example.com/podman)
+  - A local runtime for the sample app
 ```
 
 ## What can go in the body

@@ -7,5 +7,6 @@ If the user names one of these, read that folder's `context.md` and start from i
 | Briefing, stakeholder update, or a general talk | `briefing` |
 | Research readout or findings share-out | `research-readout` |
 | Design review or critique readout | `design-review` |
+| User journey or story-beat walkthrough | `user-journey` |
 
 A deck that is none of these still starts from `briefing`. Keep that sequence unless the user wants a different order.

@@ -131,6 +131,11 @@
       return section;
     }
 
+    if (slide.type === 'beat') {
+      renderBeat(inner, slide);
+      return section;
+    }
+
     if (slide.type === 'quote') {
       appendKicker(inner, slide.kicker);
       const quote = slide.blocks.find((block) => block.type === 'quote');
@@ -191,11 +196,120 @@
     return copy;
   }
 
-  function renderMedia(media) {
+  function renderBeat(inner, slide) {
+    const story = document.createElement('div');
+    story.className = 'story';
+    const label = slide.kicker || slide.heading;
+    if (label) {
+      const part = document.createElement('p');
+      part.className = 'part-label';
+      part.textContent = label;
+      story.appendChild(part);
+    }
+    const storyBlocks = Array.isArray(slide.story) ? slide.story : [];
+    if (storyBlocks.length > 0) story.appendChild(renderBlocks(storyBlocks));
+    story.appendChild(renderMedia(slide.media, 'Concept sketch'));
+
+    const rail = document.createElement('div');
+    rail.className = 'rail';
+    for (const group of slide.rail || []) {
+      const section = document.createElement('section');
+      section.className = `rail-section rail-${group.kind || 'notes'}`;
+      section.appendChild(renderRailLabel(group));
+      const list = document.createElement('ul');
+      for (const item of group.items || []) {
+        list.appendChild(group.kind === 'users' ? renderPersona(itemText(item)) : renderRailItem(item));
+      }
+      section.appendChild(list);
+      rail.appendChild(section);
+    }
+    inner.append(story, rail);
+  }
+
+  function renderRailLabel(group) {
+    const heading = document.createElement('h3');
+    const label = group.label || '';
+    const keywordLength = railKeywordLength(group.kind, label);
+    const keyword = document.createElement('span');
+    keyword.className = 'rail-keyword';
+    keyword.textContent = label.slice(0, keywordLength);
+    heading.appendChild(keyword);
+    if (keywordLength < label.length) heading.appendChild(document.createTextNode(label.slice(keywordLength)));
+    return heading;
+  }
+
+  function railKeywordLength(kind, label) {
+    const text = String(label || '').trim().toLowerCase();
+    if (kind === 'users' && text.startsWith('users')) return 5;
+    if (kind === 'users' && text.startsWith('people')) return 6;
+    if (kind === 'needs' && text.startsWith('unmet needs')) return 'unmet needs'.length;
+    if (kind === 'needs' && text.startsWith('needs')) return 5;
+    if (kind === 'solutions' && text.startsWith('solutions')) return 9;
+    if (kind === 'solutions' && text.startsWith('solution')) return 8;
+    return String(label || '').length;
+  }
+
+  function renderRailItem(item) {
+    const line = textEl('li', itemText(item));
+    if (itemDepth(item)) line.classList.add('is-nested');
+    return line;
+  }
+
+  function itemText(item) {
+    return typeof item === 'string' ? item : String(item && item.text || '');
+  }
+
+  function itemDepth(item) {
+    return typeof item === 'string' ? 0 : Number(item && item.depth || 0);
+  }
+
+  function renderPersona(item) {
+    const line = document.createElement('li');
+    line.className = 'persona';
+    const parts = String(item).match(/^(.*?)\s+[—–-]\s+(.*)$/);
+    const nameText = parts ? parts[1] : item;
+    const avatar = document.createElement('span');
+    avatar.className = 'persona-avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.textContent = initials(nameText);
+    avatar.style.background = avatarColor(nameText);
+    line.appendChild(avatar);
+    const name = document.createElement('span');
+    name.className = 'persona-name';
+    name.innerHTML = inline(nameText);
+    line.appendChild(name);
+    if (parts) {
+      const role = document.createElement('span');
+      role.className = 'persona-role';
+      role.innerHTML = inline(parts[2]);
+      line.appendChild(role);
+    }
+    return line;
+  }
+
+  function initials(name) {
+    const words = plainName(name).split(/\s+/).filter(Boolean);
+    if (words.length === 0) return '';
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return words.slice(0, 2).map((word) => word[0]).join('').toUpperCase();
+  }
+
+  function avatarColor(name) {
+    const palette = ['#f6d7a8', '#c9d7f0', '#f3c1c8', '#d5ead8', '#e4d4f5'];
+    const plain = plainName(name);
+    const index = [...plain].reduce((sum, char) => sum + char.charCodeAt(0), 0) % palette.length;
+    return palette[index];
+  }
+
+  function plainName(name) {
+    return String(name).replace(/\*\*/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  }
+
+  function renderMedia(media, placeholder = 'Add a screenshot in assets/') {
     const figure = document.createElement('figure');
     figure.className = 'media';
     if (media && media.src) figure.appendChild(renderImage(media.src, ''));
-    else figure.textContent = 'Add a screenshot in assets/';
+    else figure.textContent = placeholder;
     return figure;
   }
 

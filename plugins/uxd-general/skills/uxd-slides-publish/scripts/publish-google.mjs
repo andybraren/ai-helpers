@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { loadDeck, plainText, slidePlainText, validateDeck } from '../../uxd-slides-create/scripts/parse-slides.mjs';
+import { itemDepth, loadDeck, partitionBeat, plainText, slidePlainText, validateDeck } from '../../uxd-slides-create/scripts/parse-slides.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.join(SCRIPT_DIR, '..', '..', 'uxd-slides-create', 'templates');
@@ -193,6 +193,50 @@ export function buildSlideRequests(deck, { stamp = 'local' } = {}) {
         text: plainText(slide.subheading),
         fontSize: 18,
         color: subColor
+      }));
+    } else if (slide.type === 'beat') {
+      const parts = partitionBeat(slide);
+      const story = [slide.kicker, plainText(slide.heading), slidePlainText({ blocks: parts.story })]
+        .filter(Boolean)
+        .join('\n\n');
+      const rail = parts.rail
+        .map((group) => [group.label, ...group.items.map((item) => `${itemDepth(item) ? '  ◦' : '•'} ${plainText(item)}`)].join('\n'))
+        .join('\n\n');
+      requests.push(...box({
+        pageId,
+        objectId: `${pageId}_h`,
+        x: inches(0.45),
+        y: inches(0.35),
+        w: inches(5.4),
+        h: slide.media?.src ? inches(3.15) : inches(4.9),
+        text: story,
+        fontSize: 14,
+        color: textColor
+      }));
+      if (slide.media?.src) {
+        imageNotes.push(slide.media.src);
+        requests.push(...box({
+          pageId,
+          objectId: `${pageId}_m`,
+          x: inches(0.45),
+          y: inches(3.6),
+          w: inches(5.4),
+          h: inches(1.6),
+          text: `Concept sketch stays in the local deck:\n${slide.media.src}`,
+          fontSize: 14,
+          color: QUIET
+        }));
+      }
+      requests.push(...box({
+        pageId,
+        objectId: `${pageId}_r`,
+        x: inches(6.05),
+        y: inches(0.35),
+        w: inches(3.5),
+        h: inches(4.9),
+        text: rail,
+        fontSize: 12,
+        color: textColor
       }));
     } else {
       const bodyWidth = slide.type === 'split' ? inches(4.6) : width;
