@@ -116,6 +116,7 @@
   function renderSlide(slide, slideIndex) {
     const section = document.createElement('section');
     section.className = `slide slide-${slide.type || 'content'}`;
+    section.id = `slide-${slide.order || slideIndex + 1}`;
     section.hidden = true;
     section.setAttribute('aria-label', `Slide ${slideIndex + 1} of ${slides.length}: ${slide.heading || slide.type}`);
     const inner = document.createElement('div');

@@ -79,7 +79,7 @@ judges:
       return True, "Asked for a Google Slides or Figma Slides target"
 
   - name: missing_deck_stops
-    description: Stops when slides.md is missing and points at create
+    description: Stops when the deck folder is missing and points at create
     if: "annotations.get('case_type') == 'missing-deck'"
     check: |
       import re
@@ -87,8 +87,8 @@ judges:
       text = outputs.get("conversation", "")
       if not re.search(r"uxd-slides-create", text):
           return False, "Did not send the user to uxd-slides-create"
-      if not re.search(r"slides\.md", text):
-          return False, "Did not name the missing slides.md"
+      if not re.search(r"metadata\.json", text) or not re.search(r"slides/", text):
+          return False, "Did not name the missing metadata.json or slides directory"
       if re.search(r"--apply|figma\.com/slides/", text) and not re.search(r"do not|don't|not |stop|will not", text, re.IGNORECASE):
           return False, "Published without a local deck"
 

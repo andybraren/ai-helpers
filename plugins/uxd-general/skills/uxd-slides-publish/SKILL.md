@@ -7,13 +7,13 @@ description: >-
   sharing a finished deck or updating the shared copy. Local HTML stays in
   uxd-slides-export.
 audience: UXD practitioners
-inputs: A slides directory with slides.md and metadata.json
+inputs: A deck directory with metadata.json and a slides directory
 outputs: A Google Slides or Figma Slides URL recorded on the local deck
 ---
 
 # Publish Slides
 
-Create or replace the shared copy of a finished deck. This skill does not author `slides.md` and does not build the viewer. Run `uxd-slides-create` when the deck does not exist. Run `uxd-slides-export` when the user has not looked at the local viewer yet.
+Create or replace the shared copy of a finished deck. This skill does not author slide folders and does not build the viewer. Run `uxd-slides-create` when the deck does not exist. Run `uxd-slides-export` when the user has not looked at the local viewer yet.
 
 Family: `uxd-slides-create` → `uxd-slides-export` → **publish**.
 
@@ -21,7 +21,7 @@ The local markdown stays the authoring source. After a successful publish, `stat
 
 ## Requirements
 
-- A slides directory with `slides.md` and `metadata.json` that passes validation.
+- A deck directory with `metadata.json` and `slides/` that passes validation.
 - `gws` signed in with the Google Slides scope, for a Google target.
 - The Figma connection and the Figma slides instructions, for a Figma target.
 - Confirmation immediately before any create or replace.
@@ -30,11 +30,11 @@ The local markdown stays the authoring source. After a successful publish, `stat
 
 | Input | Source | Required |
 |---|---|---|
-| Slides directory | `.artifacts/{ID}/slides/` or `--source` | **Yes** |
-| `slides.md` | inside that directory | **Yes** |
-| `metadata.json` | inside that directory | **Yes** |
+| Deck directory | `.artifacts/slides-{name}/` or `--source` | **Yes** |
+| `metadata.json` | deck root | **Yes** |
+| `slides/` | numbered folders inside the deck | **Yes** |
 
-If `slides.md` is missing, **stop** and tell the user to run `uxd-slides-create`. Do not invent a deck here.
+If `metadata.json` or `slides/` is missing, **stop** and tell the user to run `uxd-slides-create`. Do not invent a deck here.
 
 The result is a Google Slides URL or a Figma Slides URL, then an updated `metadata.json`.
 
@@ -42,11 +42,11 @@ The result is a Google Slides URL or a Figma Slides URL, then an updated `metada
 
 $ARGUMENTS
 
-Parse as: `<slides-dir-or-ID> [--target google|figma] [--source <dir>] [--dry-run] [--presentation-id <id>]`.
+Parse as: `<deck-dir> [--target google|figma] [--source <dir>] [--dry-run] [--presentation-id <id>]`.
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `--source` | `.artifacts/{ID}/slides/` | Deck to publish |
+| `--source` | `.artifacts/slides-{name}/` | Deck to publish |
 | `--target` | asked if omitted | `google` or `figma` |
 | `--dry-run` | off | Describe the external write and do not send it |
 | `--presentation-id` | new deck, or the existing Google id after confirmation | Google presentation to replace |
@@ -66,7 +66,7 @@ Do not offer a git host, Pages, or Vercel for the deck itself.
 
 ## Publish
 
-1. Resolve the slides directory. Prefer `--source`, then `.artifacts/{ID}/slides/`.
+1. Resolve the deck directory. Prefer `--source`, then `.artifacts/slides-{name}/`.
 2. Validate. If validation fails, stop and send the user back to `uxd-slides-create`.
 3. Review the text and images for confidential or personal data. Ask before creating a file other people can open.
 4. Honor `--dry-run`. Print the plan and stop. Do not call `gws` with `--apply`, do not write a Figma file, and do not change `metadata.json`.
@@ -79,13 +79,13 @@ Google receives the words. Local images stay in `assets/` and are named on the m
 `--dry-run` is the default check:
 
 ```bash
-node "${CLAUDE_SKILL_DIR}/scripts/publish-google.mjs" <slides-dir> --dry-run
+node "${CLAUDE_SKILL_DIR}/scripts/publish-google.mjs" <deck-dir> --dry-run
 ```
 
 After confirmation, send it:
 
 ```bash
-node "${CLAUDE_SKILL_DIR}/scripts/publish-google.mjs" <slides-dir> --apply
+node "${CLAUDE_SKILL_DIR}/scripts/publish-google.mjs" <deck-dir> --apply
 ```
 
 To replace an existing presentation, pass `--presentation-id` with the id from `canonical.url`. Say that this replaces the slides in that file. A new presentation omits the flag.
@@ -94,7 +94,7 @@ If `gws` reports an auth error, ask the user to run `gws auth login` for Google 
 
 ### Target: figma
 
-Load the Figma slides instructions before any Slides write. Create one Slides file, or edit the existing `canonical` file in place when the user chose to update it. Build the slides from `slides.md`. Do not delete existing slides to rebuild a file unless the user asked to start over. Do not also create a Google deck in the same run.
+Load the Figma slides instructions before any Slides write. Create one Slides file, or edit the existing `canonical` file in place when the user chose to update it. Build the slides from the numbered folders. Do not delete existing slides to rebuild a file unless the user asked to start over. Do not also create a Google deck in the same run.
 
 Use the local images from `assets/` on split slides. Keep speaker notes as speaker notes.
 
@@ -103,10 +103,10 @@ Use the local images from `assets/` on split slides. Keep speaker notes as speak
 Record the shared copy, then rebuild the viewer so the banner matches:
 
 ```bash
-node "${CLAUDE_SKILL_DIR}/scripts/mark-published.mjs" <slides-dir> \
+node "${CLAUDE_SKILL_DIR}/scripts/mark-published.mjs" <deck-dir> \
   --target google-slides|figma-slides \
   --url <https-url>
-node "${CLAUDE_SKILL_DIR}/../uxd-slides-export/scripts/export-slides.mjs" <slides-dir>
+node "${CLAUDE_SKILL_DIR}/../uxd-slides-export/scripts/export-slides.mjs" <deck-dir>
 ```
 
 `mark-published` sets `status` to `published` and writes `canonical.target`, `canonical.url`, and `canonical.publishedAt`. It rejects a URL that does not match the target.
@@ -115,8 +115,8 @@ node "${CLAUDE_SKILL_DIR}/../uxd-slides-export/scripts/export-slides.mjs" <slide
 
 - `--dry-run` did not create a remote deck and did not change metadata.
 - A real publish returned an `https://docs.google.com/presentation/` or `https://www.figma.com/slides/` URL.
-- `metadata.json` in the source slides directory says `published` and `canonical` matches that URL.
-- The export banner names that shared copy.
-- Local `slides.md` still exists and was not described as deleted or deprecated.
+- `metadata.json` in the deck directory says `published` and `canonical` matches that URL.
+- The viewer banner names that shared copy.
+- The local `slides/` folders still exist and were not described as deleted or deprecated.
 - Images that did not transfer to Google were named in the result.
 - The final response identifies the target and the URL.

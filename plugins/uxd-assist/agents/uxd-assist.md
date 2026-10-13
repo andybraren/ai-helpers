@@ -39,7 +39,7 @@ When the user asks for a slide deck, a readout presentation, a design-review dec
 
 | Skill | What it does |
 |-------|-------------|
-| `/uxd-general:uxd-slides-create` | Author a markdown deck from a briefing, research-readout, design-review, or user-journey template |
+| `/uxd-general:uxd-slides-create` | Author a deck from a briefing, research-readout, design-review, or user-journey deck template |
 | `/uxd-general:uxd-slides-export` | Build the local HTML, CSS, and JavaScript viewer |
 | `/uxd-general:uxd-slides-publish` | Publish the shared copy to Google Slides or Figma Slides |
 

@@ -1,6 +1,6 @@
 name: uxd-slides-create-eval
 description: >-
-  Evaluate uxd-slides-create's template choice, markdown file contract, and
+  Evaluate uxd-slides-create's template choice, deck folder contract, and
   the rule that a missing brief stops authoring
 
 skill: uxd-general:uxd-slides-create
@@ -69,10 +69,10 @@ judges:
           if not re.search(part, text, re.IGNORECASE):
               return False, f"Research readout sequence missing {part}"
 
-      if not re.search(r"slides\.md", text) or not re.search(r"metadata\.json", text):
-          return False, "Did not describe slides.md and metadata.json"
-      if not re.search(r"\.artifacts/", text):
-          return False, "Did not place the deck under .artifacts/"
+      if not re.search(r"content\.md", text) or not re.search(r"metadata\.json", text):
+          return False, "Did not describe content.md and metadata.json"
+      if not re.search(r"\.artifacts/slides-", text):
+          return False, "Did not place the deck under .artifacts/slides-"
       if not re.search(r"validate-slides", text):
           return False, "Did not validate the deck"
 

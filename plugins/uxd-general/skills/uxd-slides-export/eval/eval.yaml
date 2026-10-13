@@ -52,7 +52,7 @@ judges:
       for path, content in outputs.get("files", {}).items():
           text += "\n" + content
 
-      for token in ("index.html", "custom.css", "viewer.js", "deck.json", "export-manifest.json", "assets/"):
+      for token in ("index.html", "assets/default.css", "assets/custom.css", "viewer.js", "deck.json", "export-manifest.json"):
           if not re.search(re.escape(token), text):
               return False, f"Export contract missing {token}"
 
@@ -64,8 +64,8 @@ judges:
       if not separate:
           return False, "Did not keep CSS and JavaScript as separate files"
 
-      if not re.search(r"export/", text):
-          return False, "Did not name the export/ output directory"
+      if not re.search(r"into the deck|same directory|deck directory", text, re.IGNORECASE):
+          return False, "Did not write the viewer into the deck directory"
 
       return True, "Described the multi-file local viewer"
 

@@ -5,7 +5,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { parseSlidesMarkdown, partitionBeat, validateDeck, loadDeck } from './parse-slides.mjs';
+import { parseSlidesMarkdown, partitionBeat, validateDeck, loadDeck, SLIDES_SPEC_VERSION } from './parse-slides.mjs';
+import { instantiateDeck } from './instantiate-deck.mjs';
 import { exportDeck } from '../../uxd-slides-export/scripts/export-slides.mjs';
 import { planGooglePublish } from '../../uxd-slides-publish/scripts/publish-google.mjs';
 import { markPublished } from '../../uxd-slides-publish/scripts/mark-published.mjs';
@@ -56,14 +57,50 @@ Researchers still ask which model they can deploy.
 # Decide the next check
 `;
 
-function writeDeck(root) {
+function writeSlide(root, order, { template, kicker = '', image = '', content, notes = '', css = '' }) {
+  const dir = path.join(root, 'slides', String(order));
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'content.md'), content);
+  fs.writeFileSync(path.join(dir, 'speaker-notes.md'), notes);
+  const meta = { template };
+  if (kicker) meta.kicker = kicker;
+  if (image) meta.image = image;
+  fs.writeFileSync(path.join(dir, 'metadata.json'), `${JSON.stringify(meta, null, 2)}\n`);
+  if (css) fs.writeFileSync(path.join(dir, 'custom.css'), css);
+}
+
+function writeDeck(root, { template = 'design-review', title = 'Catalog review', description = 'Design review for the model catalog list.' } = {}) {
   fs.mkdirSync(path.join(root, 'assets'), { recursive: true });
+  fs.copyFileSync(path.join(TEMPLATES, 'theme', 'default.css'), path.join(root, 'assets', 'default.css'));
   fs.writeFileSync(path.join(root, 'assets', 'screen.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="40"><rect width="64" height="40" fill="#ee0000"/></svg>');
-  fs.writeFileSync(path.join(root, 'slides.md'), SAMPLE);
+  writeSlide(root, 1, {
+    template: 'title',
+    notes: 'Open with the decision.',
+    content: '# Catalog review\n\n## A decision for the design team\n'
+  });
+  writeSlide(root, 2, {
+    template: 'content',
+    kicker: 'Today',
+    content: '# One idea\n\nThe list hides the **next** step.\n\n- Primary action is below the fold\n- Status is easy to miss\n'
+  });
+  writeSlide(root, 3, {
+    template: 'split',
+    image: 'assets/screen.svg',
+    content: '# Show the screen\n\nResearchers still ask which model they can deploy.\n'
+  });
+  writeSlide(root, 4, {
+    template: 'quote',
+    content: '# A platform engineer\n\n> I can see the names and still not tell what I can deploy.\n'
+  });
+  writeSlide(root, 5, {
+    template: 'closing',
+    content: '# Decide the next check\n'
+  });
   fs.writeFileSync(path.join(root, 'metadata.json'), JSON.stringify({
-    title: 'Catalog review',
-    description: 'Design review for the model catalog list.',
-    template: 'design-review',
+    title,
+    description,
+    template,
+    specVersion: '0.1.0',
     aspectRatio: '16:9',
     status: 'draft',
     createdAt: '2026-10-12T12:00:00.000Z',
@@ -98,17 +135,29 @@ test('rejects a missing asset and accepts a complete deck', () => {
 test('exports a multi-file viewer and a dry-run does not call Google', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uxd-slides-'));
   const output = path.join(root, 'export');
-  writeDeck(path.join(root, 'slides'));
-  const exported = exportDeck(path.join(root, 'slides'), { output });
-  for (const file of ['index.html', 'viewer.css', 'custom.css', 'viewer.js', 'deck.json', 'assets/screen.svg']) {
+  const deckDir = path.join(root, 'slides');
+  writeDeck(deckDir);
+  fs.writeFileSync(path.join(deckDir, 'assets', 'custom.css'), ':root { --slide-accent: #0066cc; }\n');
+  writeSlide(deckDir, 2, {
+    template: 'content',
+    kicker: 'Today',
+    css: 'h1 { color: navy; }\n',
+    content: '# One idea\n\nThe list hides the **next** step.\n\n- Primary action is below the fold\n- Status is easy to miss\n'
+  });
+  const exported = exportDeck(deckDir, { output });
+  for (const file of ['index.html', 'viewer.css', 'viewer.js', 'deck.json', 'assets/default.css', 'assets/screen.svg', 'assets/custom.css', 'slide-overrides.css']) {
     assert.ok(fs.existsSync(path.join(output, file)), file);
   }
   const html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
   assert.match(html, /Catalog review/);
-  assert.match(html, /href="\.\/custom\.css"/);
+  assert.match(html, /href="\.\/assets\/default\.css"/);
+  assert.match(html, /href="\.\/assets\/custom\.css"/);
+  assert.match(html, /href="\.\/slide-overrides\.css"/);
   assert.match(html, /src="\.\/viewer\.js"/);
   assert.doesNotMatch(html, /function fit\(/);
-  assert.match(fs.readFileSync(path.join(output, 'custom.css'), 'utf8'), /\.slide-title/);
+  assert.doesNotMatch(html, /fonts\.googleapis/);
+  assert.match(fs.readFileSync(path.join(output, 'assets', 'default.css'), 'utf8'), /\.slide-title/);
+  assert.match(fs.readFileSync(path.join(output, 'slide-overrides.css'), 'utf8'), /@scope \(#slide-2\)/);
   assert.equal(exported.manifest.slideCount, 5);
 
   const plan = planGooglePublish(loadDeck(path.join(root, 'slides')), { stamp: 'test' });
@@ -178,13 +227,36 @@ test('splits a journey beat into story and rail', () => {
 
 test('exports a journey beat with the right rail', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uxd-slides-'));
-  fs.mkdirSync(path.join(root, 'assets'));
+  fs.mkdirSync(path.join(root, 'assets'), { recursive: true });
+  fs.copyFileSync(path.join(TEMPLATES, 'theme', 'default.css'), path.join(root, 'assets', 'default.css'));
   fs.writeFileSync(path.join(root, 'assets', 'sketch.png'), Buffer.from('not-a-real-png'));
-  fs.writeFileSync(path.join(root, 'slides.md'), BEAT);
+  writeSlide(root, 1, {
+    template: 'beat',
+    kicker: 'Part 1',
+    image: 'assets/sketch.png',
+    content: `# Alex starts without a model
+
+Alex is asked to summarize factory status and cannot call a hosted API.
+
+### Users
+
+- **Alex** — App developer
+- **Sara** — Security operations
+
+### Unmet needs
+
+- [No local path into a model](https://example.com/research)
+
+### Solutions
+
+- [Podman Desktop AI Lab](https://example.com/podman)
+`
+  });
   fs.writeFileSync(path.join(root, 'metadata.json'), JSON.stringify({
     title: 'Golden path',
     description: 'A user journey for local model setup.',
     template: 'user-journey',
+    specVersion: '0.1.0',
     aspectRatio: '16:9',
     status: 'draft',
     createdAt: '2026-10-12T12:00:00.000Z',
@@ -196,7 +268,7 @@ test('exports a journey beat with the right rail', () => {
   const deck = JSON.parse(fs.readFileSync(path.join(exported.outputDir, 'deck.json'), 'utf8'));
   assert.equal(deck.slides[0].rail[0].kind, 'users');
   assert.equal(deck.slides[0].rail[2].items[0].includes('Podman'), true);
-  assert.match(fs.readFileSync(path.join(exported.outputDir, 'custom.css'), 'utf8'), /\.slide-beat/);
+  assert.match(fs.readFileSync(path.join(exported.outputDir, 'assets', 'default.css'), 'utf8'), /\.slide-beat/);
   const plan = planGooglePublish(loadDeck(root), { stamp: 'beat' });
   const ids = plan.groups[0].map((request) => request.createShape?.objectId).filter(Boolean);
   assert.ok(ids.includes('uxd_beat_00_r'));
@@ -205,11 +277,12 @@ test('exports a journey beat with the right rail', () => {
 
 test('template placeholders fail strict validation', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uxd-slides-'));
-  fs.copyFileSync(path.join(TEMPLATES, 'briefing', 'slides.md'), path.join(root, 'slides.md'));
+  instantiateDeck('briefing', root, { templatesDir: TEMPLATES });
   fs.writeFileSync(path.join(root, 'metadata.json'), JSON.stringify({
     title: 'Placeholder',
     description: 'Template copy',
     template: 'briefing',
+    specVersion: '0.1.0',
     aspectRatio: '16:9',
     status: 'draft',
     createdAt: '2026-10-12T12:00:00.000Z',
@@ -217,7 +290,22 @@ test('template placeholders fail strict validation', () => {
   }));
   const loose = spawnSync(process.execPath, [VALIDATE, root], { encoding: 'utf8' });
   assert.equal(loose.status, 0, loose.stderr);
+  assert.match(loose.stdout, /slides spec 0\.1\.0/);
   assert.match(loose.stderr, /Replace with/);
   const strict = spawnSync(process.execPath, [VALIDATE, root, '--strict'], { encoding: 'utf8' });
   assert.equal(strict.status, 1);
+});
+
+test('records the current slides spec and rejects an unknown one', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uxd-slides-'));
+  instantiateDeck('briefing', root, { templatesDir: TEMPLATES });
+  const metadata = JSON.parse(fs.readFileSync(path.join(root, 'metadata.json'), 'utf8'));
+  assert.equal(metadata.specVersion, SLIDES_SPEC_VERSION);
+
+  writeDeck(root);
+  const deckMeta = JSON.parse(fs.readFileSync(path.join(root, 'metadata.json'), 'utf8'));
+  deckMeta.specVersion = '9.9.9';
+  fs.writeFileSync(path.join(root, 'metadata.json'), JSON.stringify(deckMeta));
+  const report = validateDeck(loadDeck(root), { templatesDir: TEMPLATES });
+  assert.ok(report.errors.some((error) => error.includes('9.9.9')));
 });

@@ -1,5 +1,5 @@
 prompt: >-
   Using the uxd-slides-export skill, describe the default local export for
-  .artifacts/UIESTRAT-220/slides. Do not publish and do not run commands.
+  .artifacts/slides-catalog-review. Do not publish and do not run commands.
   Name the output directory and the files the viewer is made of. Say whether
   the CSS and JavaScript are inlined into index.html.

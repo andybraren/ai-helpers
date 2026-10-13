@@ -27,10 +27,10 @@ function parseArgs(argv) {
 
 function usage() {
   return [
-    'Usage: export-slides.mjs <slides-dir> [--output <dir>] [--title <text>]',
+    'Usage: export-slides.mjs <deck-dir> [--output <dir>] [--title <text>]',
     '',
-    'Writes index.html, viewer.css, custom.css, viewer.js, deck.json, slides.md,',
-    'metadata.json, assets/, and export-manifest.json.'
+    'Writes index.html, viewer.css, viewer.js, deck.json, and export-manifest.json',
+    'into the deck. Layout CSS stays in assets/default.css.'
   ].join('\n');
 }
 
@@ -57,31 +57,40 @@ function replaceOnce(source, token, replacement) {
 }
 
 function defaultOutput(inputDir) {
-  if (path.basename(inputDir) === 'slides') return path.join(path.dirname(inputDir), 'export');
-  return path.join(inputDir, 'export');
+  return inputDir;
+}
+
+function samePath(left, right) {
+  return path.resolve(left) === path.resolve(right);
+}
+
+function listAssets(assetsDir) {
+  if (!fs.existsSync(assetsDir)) return [];
+  const files = [];
+  function walk(current, relative) {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const rel = path.posix.join(relative, entry.name);
+      if (entry.isDirectory()) walk(path.join(current, entry.name), rel);
+      else if (entry.isFile()) files.push(`assets/${rel}`);
+    }
+  }
+  walk(assetsDir, '');
+  return files.sort();
 }
 
 function copyAssets(sourceDir, outputDir) {
   const assetsDir = path.join(sourceDir, 'assets');
+  if (samePath(sourceDir, outputDir)) return listAssets(assetsDir);
   if (!fs.existsSync(assetsDir)) return [];
-  const copied = [];
-  function walk(current, relative) {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      const from = path.join(current, entry.name);
-      const rel = path.posix.join(relative, entry.name);
-      const to = path.join(outputDir, 'assets', rel);
-      if (entry.isDirectory()) {
-        fs.mkdirSync(to, { recursive: true });
-        walk(from, rel);
-      } else if (entry.isFile()) {
-        fs.mkdirSync(path.dirname(to), { recursive: true });
-        fs.copyFileSync(from, to);
-        copied.push(`assets/${rel}`);
-      }
-    }
-  }
-  walk(assetsDir, '');
-  return copied;
+  fs.cpSync(assetsDir, path.join(outputDir, 'assets'), { recursive: true });
+  return listAssets(path.join(outputDir, 'assets'));
+}
+
+function slideOverrideCss(slides) {
+  return slides
+    .filter((slide) => String(slide.customCss || '').trim())
+    .map((slide) => `@scope (#slide-${slide.order}) {\n${slide.customCss.trim()}\n}`)
+    .join('\n\n');
 }
 
 export function exportDeck(inputDir, { output, title } = {}) {
@@ -93,18 +102,25 @@ export function exportDeck(inputDir, { output, title } = {}) {
     throw error;
   }
 
+  if (!fs.existsSync(path.join(deck.dir, 'assets', 'default.css'))) {
+    throw new Error('assets/default.css is missing.');
+  }
+
   const outputDir = path.resolve(output || defaultOutput(deck.dir));
+  const inPlace = samePath(outputDir, deck.dir);
   fs.mkdirSync(outputDir, { recursive: true });
   const deckTitle = title || deck.metadata.title;
   const compiled = {
     title: deckTitle,
     description: deck.metadata.description || '',
+    specVersion: deck.metadata.specVersion,
     template: deck.metadata.template,
     aspectRatio: '16:9',
     status: deck.metadata.status || 'draft',
     canonical: deck.metadata.canonical || null,
     slides: deck.slides.map((slide) => {
-      const compiled = {
+      const compiledSlide = {
+        order: slide.order,
         type: slide.type,
         kicker: slide.kicker,
         heading: slide.heading,
@@ -115,39 +131,47 @@ export function exportDeck(inputDir, { output, title } = {}) {
       };
       if (slide.type === 'beat') {
         const parts = partitionBeat(slide);
-        compiled.story = parts.story;
-        compiled.rail = parts.rail;
+        compiledSlide.story = parts.story;
+        compiledSlide.rail = parts.rail;
       }
-      return compiled;
+      return compiledSlide;
     })
   };
 
-  const templateCssPath = path.join(TEMPLATES_DIR, deck.metadata.template, 'custom.css');
-  const templateCss = fs.existsSync(templateCssPath) ? fs.readFileSync(templateCssPath, 'utf8') : '';
-  const customCss = `${fs.readFileSync(path.join(VIEWER_DIR, 'deck-base.css'), 'utf8').trim()}\n\n${templateCss.trim()}\n`;
+  const overrides = slideOverrideCss(deck.slides);
+  const overrideFile = 'slide-overrides.css';
+  const customLinks = [];
+  if (fs.existsSync(path.join(deck.dir, 'assets', 'custom.css'))) {
+    customLinks.push('  <link rel="stylesheet" href="./assets/custom.css">');
+  }
+  if (overrides) customLinks.push(`  <link rel="stylesheet" href="./${overrideFile}">`);
   let html = fs.readFileSync(path.join(VIEWER_DIR, 'index.html'), 'utf8');
   html = replaceOnce(html, '__TITLE__', escapeHtml(deckTitle));
   html = replaceOnce(html, '__TEMPLATE_CLASS__', `template-${deck.metadata.template}`);
+  html = replaceOnce(html, '__CUSTOM_CSS__', customLinks.length ? `${customLinks.join('\n')}\n` : '');
   html = replaceOnce(html, '__DECK_JSON__', jsonForScript(compiled));
 
   fs.writeFileSync(path.join(outputDir, 'index.html'), html);
   fs.copyFileSync(path.join(VIEWER_DIR, 'viewer.css'), path.join(outputDir, 'viewer.css'));
   fs.copyFileSync(path.join(VIEWER_DIR, 'viewer.js'), path.join(outputDir, 'viewer.js'));
-  fs.writeFileSync(path.join(outputDir, 'custom.css'), customCss);
+  const overridePath = path.join(outputDir, overrideFile);
+  if (overrides) fs.writeFileSync(overridePath, `${overrides}\n`);
+  else if (fs.existsSync(overridePath)) fs.rmSync(overridePath);
   fs.writeFileSync(path.join(outputDir, 'deck.json'), `${JSON.stringify(compiled, null, 2)}\n`);
-  fs.copyFileSync(deck.slidesPath, path.join(outputDir, 'slides.md'));
-  fs.copyFileSync(deck.metaPath, path.join(outputDir, 'metadata.json'));
+  if (!inPlace) {
+    fs.cpSync(deck.slidesDir, path.join(outputDir, 'slides'), { recursive: true });
+    fs.copyFileSync(deck.metaPath, path.join(outputDir, 'metadata.json'));
+  }
   const assets = copyAssets(deck.dir, outputDir);
 
   const files = [
     'index.html',
     'viewer.css',
-    'custom.css',
     'viewer.js',
     'deck.json',
-    'slides.md',
     'metadata.json',
     ...assets,
+    ...(overrides ? [overrideFile] : []),
     'export-manifest.json'
   ];
   const manifest = {

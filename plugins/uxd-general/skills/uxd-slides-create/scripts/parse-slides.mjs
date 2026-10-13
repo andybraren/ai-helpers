@@ -2,6 +2,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const SPECIFICATIONS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', '..', 'specifications', 'slides');
+const CURRENT_SPEC = JSON.parse(fs.readFileSync(path.join(SPECIFICATIONS_DIR, 'current.json'), 'utf8'));
+
+export const SLIDES_SPEC_VERSION = String(CURRENT_SPEC.version || '');
+export const SLIDES_SPEC_VERSIONS = Array.isArray(CURRENT_SPEC.versions) ? CURRENT_SPEC.versions.map(String) : [SLIDES_SPEC_VERSION];
 
 export const SLIDE_TYPES = ['title', 'section', 'content', 'split', 'quote', 'closing', 'beat'];
 
@@ -192,25 +199,91 @@ export function classifyAsset(src) {
   return 'local';
 }
 
-export function listTemplates(templatesDir) {
-  if (!templatesDir || !fs.existsSync(templatesDir)) return [];
-  return fs.readdirSync(templatesDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(templatesDir, entry.name, 'context.md')))
+function listNamedDirs(parent) {
+  if (!parent || !fs.existsSync(parent)) return [];
+  return fs.readdirSync(parent, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
 }
 
+export function listDeckTemplates(templatesDir) {
+  return listNamedDirs(templatesDir && path.join(templatesDir, 'decks'));
+}
+
+export function listSlideTemplates(templatesDir) {
+  return listNamedDirs(templatesDir && path.join(templatesDir, 'slides'));
+}
+
+export function listTemplates(templatesDir) {
+  return listDeckTemplates(templatesDir);
+}
+
+function readObject(file, label) {
+  let loaded;
+  try {
+    loaded = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    throw new Error(`Could not parse ${label}.`);
+  }
+  if (!loaded || typeof loaded !== 'object' || Array.isArray(loaded)) {
+    throw new Error(`${label} must be an object.`);
+  }
+  return loaded;
+}
+
+function loadSlide(deckDir, orderName) {
+  const slideDir = path.join(deckDir, 'slides', orderName);
+  const contentPath = path.join(slideDir, 'content.md');
+  const notesPath = path.join(slideDir, 'speaker-notes.md');
+  const metaPath = path.join(slideDir, 'metadata.json');
+  const cssPath = path.join(slideDir, 'custom.css');
+  if (!fs.existsSync(contentPath)) throw new Error(`Slide ${orderName} is missing content.md.`);
+  if (!fs.existsSync(metaPath)) throw new Error(`Slide ${orderName} is missing metadata.json.`);
+  const rawContent = fs.readFileSync(contentPath, 'utf8');
+  const meta = readObject(metaPath, `slides/${orderName}/metadata.json`);
+  const notesMissing = !fs.existsSync(notesPath);
+  const parsed = parseBody(rawContent);
+  const image = String(meta.image || '').trim();
+  return {
+    order: Number(orderName),
+    type: String(meta.template || '').trim().toLowerCase(),
+    inferredType: false,
+    kicker: String(meta.kicker || '').trim(),
+    heading: parsed.heading,
+    subheading: parsed.subheading,
+    blocks: parsed.blocks,
+    media: image ? { type: 'image', src: image } : null,
+    notes: notesMissing ? '' : fs.readFileSync(notesPath, 'utf8').trim(),
+    notesMissing,
+    customCss: fs.existsSync(cssPath) ? fs.readFileSync(cssPath, 'utf8') : '',
+    rawContent,
+    warnings: []
+  };
+}
+
 export function loadDeck(dir) {
   const deckDir = path.resolve(dir);
-  const slidesPath = path.join(deckDir, 'slides.md');
-  if (!fs.existsSync(slidesPath)) {
-    throw new Error(`No slides.md in ${deckDir}`);
+  const slidesDir = path.join(deckDir, 'slides');
+  if (!fs.existsSync(slidesDir) || !fs.statSync(slidesDir).isDirectory()) {
+    throw new Error(`No slides directory in ${deckDir}`);
   }
-  const markdown = fs.readFileSync(slidesPath, 'utf8');
+  const entries = fs.readdirSync(slidesDir, { withFileTypes: true });
+  const ignoredSlideFolders = entries
+    .filter((entry) => entry.isDirectory() && !/^[1-9]\d*$/.test(entry.name))
+    .map((entry) => entry.name);
+  const slides = entries
+    .filter((entry) => entry.isDirectory() && /^[1-9]\d*$/.test(entry.name))
+    .map((entry) => entry.name)
+    .sort((left, right) => Number(left) - Number(right))
+    .map((name) => loadSlide(deckDir, name));
+  slides.forEach((slide, index) => { slide.index = index; });
+
   let metadata = {
     title: path.basename(deckDir),
     description: '',
     template: 'briefing',
+    specVersion: '',
     aspectRatio: '16:9',
     status: 'draft',
     createdAt: '',
@@ -220,31 +293,36 @@ export function loadDeck(dir) {
   let metadataPresent = false;
   if (fs.existsSync(metaPath)) {
     metadataPresent = true;
-    const loaded = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-    if (!loaded || typeof loaded !== 'object' || Array.isArray(loaded)) {
-      throw new Error('metadata.json must be an object.');
-    }
-    metadata = { ...metadata, ...loaded };
+    metadata = { ...metadata, ...readObject(metaPath, 'metadata.json') };
   }
   return {
     dir: deckDir,
-    markdown,
-    slides: parseSlidesMarkdown(markdown),
+    slides,
+    text: slides.map((slide) => `${slide.rawContent}\n${slide.notes}`).join('\n'),
     metadata,
     metadataPresent,
     metaPath,
-    slidesPath
+    slidesDir,
+    ignoredSlideFolders
   };
 }
 
 export function validateDeck(deck, { templatesDir } = {}) {
   const errors = [];
   const warnings = [];
-  const { metadata, slides, markdown, dir, metadataPresent } = deck;
+  const { metadata, slides, text, dir, metadataPresent, ignoredSlideFolders = [] } = deck;
 
   if (!metadataPresent) errors.push('metadata.json is missing.');
   for (const field of ['title', 'description', 'template', 'createdAt', 'updatedAt']) {
     if (!metadata[field] || !String(metadata[field]).trim()) errors.push(`metadata.${field} is required.`);
+  }
+  const specVersion = String(metadata.specVersion || '').trim();
+  if (!/^\d+\.\d+\.\d+$/.test(specVersion)) {
+    errors.push('metadata.specVersion must be the slides spec version, for example 0.1.0.');
+  } else if (specVersion !== SLIDES_SPEC_VERSION && SLIDES_SPEC_VERSIONS.includes(specVersion)) {
+    errors.push(`metadata.specVersion is ${specVersion}. Current slides spec is ${SLIDES_SPEC_VERSION}. Upgrade with specifications/slides/upgrades/${specVersion}-to-${SLIDES_SPEC_VERSION}.mjs.`);
+  } else if (specVersion !== SLIDES_SPEC_VERSION) {
+    errors.push(`metadata.specVersion "${specVersion}" is not a known slides spec. Known versions: ${SLIDES_SPEC_VERSIONS.join(', ')}.`);
   }
   if (metadata.aspectRatio && metadata.aspectRatio !== '16:9') {
     warnings.push(`aspectRatio "${metadata.aspectRatio}" is not supported; use 16:9.`);
@@ -260,15 +338,25 @@ export function validateDeck(deck, { templatesDir } = {}) {
   }
 
   const templates = listTemplates(templatesDir);
+  const slideTemplates = listSlideTemplates(templatesDir);
   if (templatesDir && metadata.template && !templates.includes(metadata.template)) {
-    errors.push(`Unknown template "${metadata.template}". Known templates: ${templates.join(', ') || 'none'}.`);
+    errors.push(`Unknown deck template "${metadata.template}". Known deck templates: ${templates.join(', ') || 'none'}.`);
   }
+  if (!fs.existsSync(path.join(dir, 'assets', 'default.css'))) {
+    warnings.push('assets/default.css is missing, so the deck has no slide layout CSS.');
+  }
+  ignoredSlideFolders.forEach((name) => {
+    warnings.push(`Ignored slides/${name}. Name slide folders 1, 2, 3.`);
+  });
 
-  if (slides.length === 0) errors.push('slides.md has no slides. Separate slides with a line containing only ---.');
+  if (slides.length === 0) errors.push('The slides directory has no numbered slide folders.');
 
   slides.forEach((slide, index) => {
-    const label = `Slide ${index + 1}`;
-    if (!SLIDE_TYPES.includes(slide.type)) errors.push(`${label} has unknown type "${slide.type}".`);
+    const label = `Slide ${slide.order || index + 1}`;
+    if (slide.order !== index + 1) warnings.push(`${label} is out of sequence. Number folders 1, 2, 3 with no gaps.`);
+    if (!SLIDE_TYPES.includes(slide.type)) errors.push(`${label} has unknown slide template "${slide.type}".`);
+    else if (templatesDir && !slideTemplates.includes(slide.type)) errors.push(`${label} uses unknown slide template "${slide.type}".`);
+    if (slide.notesMissing) warnings.push(`${label} is missing speaker-notes.md.`);
     if (slide.inferredType) warnings.push(`${label} has no type directive and was treated as ${slide.type}.`);
     slide.warnings.forEach((warning) => warnings.push(`${label}: ${warning}`));
 
@@ -314,7 +402,7 @@ export function validateDeck(deck, { templatesDir } = {}) {
     }
   });
 
-  if (/replace with/i.test(markdown)) warnings.push('Placeholder text "Replace with" is still in slides.md.');
+  if (/replace with/i.test(text || '')) warnings.push('Placeholder text "Replace with" is still in the deck.');
 
   return { errors, warnings };
 }
