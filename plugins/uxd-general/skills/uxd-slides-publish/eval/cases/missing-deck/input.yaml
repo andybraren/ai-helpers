@@ -1,0 +1,4 @@
+prompt: >-
+  Using the uxd-slides-publish skill, publish .artifacts/UIESTRAT-404/slides
+  to Google Slides. That directory does not exist and there is no slides.md.
+  Do not invent a deck and do not run commands. Say what you will do.

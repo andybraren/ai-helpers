@@ -1,0 +1,282 @@
+#!/usr/bin/env node
+
+import fs from 'node:fs';
+import path from 'node:path';
+
+export const SLIDE_TYPES = ['title', 'section', 'content', 'split', 'quote', 'closing'];
+export const PUBLISH_TARGETS = ['google-slides', 'figma-slides'];
+
+const TYPE_RE = /^type:\s*([a-z][\w-]*)\s*$/i;
+const IMAGE_RE = /^image:\s*(\S.*?)\s*$/i;
+const KICKER_RE = /^kicker:\s*(\S.*?)\s*$/i;
+const NOTES_RE = /^notes:?\s*([\s\S]*)$/i;
+
+export function parseSlidesMarkdown(markdown) {
+  const normalized = String(markdown).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
+  const chunks = normalized.split(/^\s*---\s*$/m).map((chunk) => chunk.trim()).filter(Boolean);
+
+  return chunks.map((chunk, index) => {
+    const comments = [];
+    const body = chunk.replace(/<!--([\s\S]*?)-->/g, (_, inner) => {
+      comments.push(inner.trim());
+      return '';
+    });
+    const slide = {
+      index,
+      type: '',
+      inferredType: false,
+      kicker: '',
+      heading: '',
+      subheading: '',
+      blocks: [],
+      media: null,
+      notes: '',
+      warnings: []
+    };
+
+    for (const comment of comments) {
+      const typeMatch = comment.match(TYPE_RE);
+      const imageMatch = comment.match(IMAGE_RE);
+      const kickerMatch = comment.match(KICKER_RE);
+      const notesMatch = comment.match(NOTES_RE);
+      if (typeMatch) slide.type = typeMatch[1].toLowerCase();
+      else if (imageMatch) slide.media = { type: 'image', src: imageMatch[1].trim() };
+      else if (kickerMatch) slide.kicker = kickerMatch[1].trim();
+      else if (notesMatch) {
+        const notes = notesMatch[1].trim();
+        slide.notes = slide.notes ? `${slide.notes}\n${notes}` : notes;
+      } else if (/^iframe:/i.test(comment)) {
+        slide.warnings.push('iframe directives are not rendered; use an image in assets/');
+      }
+    }
+
+    Object.assign(slide, parseBody(body), { type: slide.type, notes: slide.notes, media: slide.media, kicker: slide.kicker || '' });
+
+    if (!slide.type) {
+      const titleLike = slide.heading && slide.blocks.length === 0;
+      slide.type = titleLike ? 'title' : 'content';
+      slide.inferredType = true;
+    }
+
+    return slide;
+  });
+}
+
+function parseBody(body) {
+  const result = { heading: '', subheading: '', blocks: [] };
+  const lines = body.split('\n');
+  let bullets = null;
+  let index = 0;
+
+  while (index < lines.length) {
+    const trimmed = lines[index].trim();
+    if (!trimmed) {
+      bullets = null;
+      index += 1;
+      continue;
+    }
+
+    if (trimmed.startsWith('```')) {
+      const code = [];
+      index += 1;
+      while (index < lines.length && !lines[index].trim().startsWith('```')) {
+        code.push(lines[index]);
+        index += 1;
+      }
+      if (index < lines.length) index += 1;
+      result.blocks.push({ type: 'code', text: code.join('\n') });
+      bullets = null;
+      continue;
+    }
+
+    if (trimmed.startsWith('# ') && !trimmed.startsWith('## ')) {
+      const text = trimmed.slice(2).trim();
+      if (!result.heading) result.heading = text;
+      else result.blocks.push({ type: 'paragraph', text });
+    } else if (trimmed.startsWith('## ') && !trimmed.startsWith('### ')) {
+      const text = trimmed.slice(3).trim();
+      if (!result.subheading) result.subheading = text;
+      else result.blocks.push({ type: 'h3', text });
+    } else if (trimmed.startsWith('### ')) {
+      result.blocks.push({ type: 'h3', text: trimmed.slice(4).trim() });
+      bullets = null;
+    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      if (!bullets) {
+        bullets = { type: 'bullets', items: [] };
+        result.blocks.push(bullets);
+      }
+      bullets.items.push(trimmed.slice(2).trim());
+    } else if (trimmed.startsWith('> ')) {
+      result.blocks.push({ type: 'quote', text: trimmed.slice(2).trim() });
+      bullets = null;
+    } else if (trimmed.startsWith('![')) {
+      const image = trimmed.match(/^!\[(.*?)\]\((.+?)\)$/);
+      if (image) result.blocks.push({ type: 'image', alt: image[1], src: image[2].trim() });
+      else result.blocks.push({ type: 'paragraph', text: trimmed });
+      bullets = null;
+    } else if (trimmed.startsWith('|')) {
+      result.blocks.push({ type: 'paragraph', text: trimmed });
+      bullets = null;
+    } else {
+      result.blocks.push({ type: 'paragraph', text: trimmed });
+      bullets = null;
+    }
+    index += 1;
+  }
+
+  return result;
+}
+
+export function assetRefs(slide) {
+  const refs = [];
+  if (slide.media?.src) refs.push(slide.media.src);
+  for (const block of slide.blocks) {
+    if (block.type === 'image' && block.src) refs.push(block.src);
+  }
+  return refs;
+}
+
+export function classifyAsset(src) {
+  const value = String(src || '').trim();
+  if (!value) return 'empty';
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return 'remote';
+  if (value.startsWith('/') || value.startsWith('\\')) return 'absolute';
+  const normalized = path.posix.normalize(value.replace(/\\/g, '/'));
+  if (normalized === '..' || normalized.startsWith('../') || normalized.includes('/../')) return 'escape';
+  return 'local';
+}
+
+export function listTemplates(templatesDir) {
+  if (!templatesDir || !fs.existsSync(templatesDir)) return [];
+  return fs.readdirSync(templatesDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(templatesDir, entry.name, 'context.md')))
+    .map((entry) => entry.name)
+    .sort();
+}
+
+export function loadDeck(dir) {
+  const deckDir = path.resolve(dir);
+  const slidesPath = path.join(deckDir, 'slides.md');
+  if (!fs.existsSync(slidesPath)) {
+    throw new Error(`No slides.md in ${deckDir}`);
+  }
+  const markdown = fs.readFileSync(slidesPath, 'utf8');
+  let metadata = {
+    title: path.basename(deckDir),
+    description: '',
+    template: 'briefing',
+    aspectRatio: '16:9',
+    status: 'draft',
+    createdAt: '',
+    updatedAt: ''
+  };
+  const metaPath = path.join(deckDir, 'metadata.json');
+  let metadataPresent = false;
+  if (fs.existsSync(metaPath)) {
+    metadataPresent = true;
+    const loaded = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+    if (!loaded || typeof loaded !== 'object' || Array.isArray(loaded)) {
+      throw new Error('metadata.json must be an object.');
+    }
+    metadata = { ...metadata, ...loaded };
+  }
+  return {
+    dir: deckDir,
+    markdown,
+    slides: parseSlidesMarkdown(markdown),
+    metadata,
+    metadataPresent,
+    metaPath,
+    slidesPath
+  };
+}
+
+export function validateDeck(deck, { templatesDir } = {}) {
+  const errors = [];
+  const warnings = [];
+  const { metadata, slides, markdown, dir, metadataPresent } = deck;
+
+  if (!metadataPresent) errors.push('metadata.json is missing.');
+  for (const field of ['title', 'description', 'template', 'createdAt', 'updatedAt']) {
+    if (!metadata[field] || !String(metadata[field]).trim()) errors.push(`metadata.${field} is required.`);
+  }
+  if (metadata.aspectRatio && metadata.aspectRatio !== '16:9') {
+    warnings.push(`aspectRatio "${metadata.aspectRatio}" is not supported; use 16:9.`);
+  }
+  if (metadata.status && !['draft', 'published'].includes(metadata.status)) {
+    errors.push('metadata.status must be "draft" or "published".');
+  }
+  if (metadata.status === 'published') {
+    const target = metadata.canonical?.target;
+    const url = metadata.canonical?.url;
+    if (!PUBLISH_TARGETS.includes(target)) errors.push('A published deck needs canonical.target of google-slides or figma-slides.');
+    if (!url || !/^https:\/\//.test(url)) errors.push('A published deck needs an https canonical.url.');
+  }
+
+  const templates = listTemplates(templatesDir);
+  if (templatesDir && metadata.template && !templates.includes(metadata.template)) {
+    errors.push(`Unknown template "${metadata.template}". Known templates: ${templates.join(', ') || 'none'}.`);
+  }
+
+  if (slides.length === 0) errors.push('slides.md has no slides. Separate slides with a line containing only ---.');
+
+  slides.forEach((slide, index) => {
+    const label = `Slide ${index + 1}`;
+    if (!SLIDE_TYPES.includes(slide.type)) errors.push(`${label} has unknown type "${slide.type}".`);
+    if (slide.inferredType) warnings.push(`${label} has no type directive and was treated as ${slide.type}.`);
+    slide.warnings.forEach((warning) => warnings.push(`${label}: ${warning}`));
+
+    const quote = slide.blocks.find((block) => block.type === 'quote');
+    if (['title', 'section', 'closing', 'content', 'split'].includes(slide.type) && !slide.heading) {
+      errors.push(`${label} needs a heading.`);
+    }
+    if (slide.type === 'quote' && !quote && !slide.heading) errors.push(`${label} needs a quote or a heading.`);
+
+    const bulletCount = slide.blocks.filter((block) => block.type === 'bullets').reduce((sum, block) => sum + block.items.length, 0);
+    if (bulletCount > 5) warnings.push(`${label} has ${bulletCount} bullets. Keep a slide to one idea.`);
+    if (slide.heading && slide.heading.length > 90) warnings.push(`${label} heading is long for a slide.`);
+    for (const block of slide.blocks) {
+      if (block.type === 'paragraph' && block.text.length > 280) warnings.push(`${label} has a paragraph that should be split or moved to notes.`);
+      if (block.type === 'paragraph' && block.text.startsWith('|')) warnings.push(`${label} contains a table, which the viewer shows as plain text.`);
+    }
+
+    for (const src of assetRefs(slide)) {
+      const kind = classifyAsset(src);
+      if (kind === 'local') {
+        if (!src.startsWith('assets/')) warnings.push(`${label} image "${src}" should live under assets/.`);
+        const full = path.resolve(dir, src);
+        const root = path.resolve(dir);
+        if (full !== root && !full.startsWith(`${root}${path.sep}`)) errors.push(`${label} image "${src}" escapes the deck directory.`);
+        else if (!fs.existsSync(full)) errors.push(`${label} image "${src}" was not found.`);
+      } else if (kind === 'remote') {
+        warnings.push(`${label} uses a remote image. Copy it into assets/ before publishing.`);
+      } else {
+        errors.push(`${label} image "${src}" must be a relative path inside the deck.`);
+      }
+    }
+  });
+
+  if (/replace with/i.test(markdown)) warnings.push('Placeholder text "Replace with" is still in slides.md.');
+
+  return { errors, warnings };
+}
+
+export function plainText(value) {
+  return String(value)
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/(^|[\s(])\*([^*]+)\*(?=[\s).,;:!?]|$)/g, '$1$2');
+}
+
+export function slidePlainText(slide) {
+  const lines = [];
+  for (const block of slide.blocks) {
+    if (block.type === 'h3' || block.type === 'paragraph' || block.type === 'code') lines.push(plainText(block.text));
+    if (block.type === 'quote') lines.push(plainText(block.text));
+    if (block.type === 'bullets') block.items.forEach((item) => lines.push(`• ${plainText(item)}`));
+    if (block.type === 'image') lines.push(`[Image: ${block.alt || block.src}]`);
+  }
+  if (slide.media?.src) lines.push(`[Image: ${slide.media.src}]`);
+  return lines.filter(Boolean).join('\n');
+}
