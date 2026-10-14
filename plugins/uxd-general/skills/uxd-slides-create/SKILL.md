@@ -63,13 +63,15 @@ Any other deck starts from `briefing`. To add a slide, copy `templates/slides/{t
 
 When a person opens this skill with no brief, no source, and no flags, greet them and ask for three decisions in one message. Do not create a folder yet.
 
-> Hello. I can help you create a slide deck from a template, using whatever context you have. It can stay on your machine, or I can publish it to Google Slides or Figma Slides when it's ready.
+> Hello! This is version <x> of the Slides Creator skill.
 >
-> A few questions before I start. A short note, a paste, or a link is enough:
+> This skill turns context you provide into a slide deck either locally as HTML, in Google Slides, or in Figma Slides. It can also create slide decks based on preconfigured templates.
 >
-> 1. What should the deck be about, and what should I use as the source?
-> 2. Who is it for? Briefing, research readout, design review, user journey, or vision?
-> 3. Where should it live: locally, in Google Slides, or in Figma Slides?
+> A few questions to start:
+>
+> 1. What should the deck be about? Do you have any links to relevant context sources?
+> 2. What type of deck should this be (e.g. a briefing, research readout, design review, user journey, vision, etc.)
+> 3. Where should it live? Locally, in Google Slides, or in Figma Slides?
 
 Accept a messy answer. Pull the goal, audience, template, source, and destination out of it. A doc, ticket, or notes link is source material. A Google Slides or Figma Slides link is the shared copy to create or update. Ask once more only for a gap that blocks the deck. If they already answered one of the three, do not ask for that one again.
 
