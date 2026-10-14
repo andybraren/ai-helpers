@@ -18,6 +18,7 @@ Add a later slide by copying `templates/slides/{template}/` to the next numbered
 | Research readout or findings share-out | `decks/research-readout` |
 | Design review or critique readout | `decks/design-review` |
 | User journey or story-beat walkthrough | `decks/user-journey` |
+| Vision brief or connected-experience narrative | `decks/vision` |
 
 Read that folder's `context.md` before filling the slides. A deck that is none of these still starts from `briefing`.
 
@@ -32,5 +33,10 @@ Read that folder's `context.md` before filling the slides. A deck that is none o
 | Quotation | `slides/quote` |
 | Journey beat | `slides/beat` |
 | Closing cover | `slides/closing` |
+| Cover with a numbered side rail | `slides/agenda` |
+| Person, goal, count, and team lanes | `slides/persona` |
+| Four stages, current or proposed | `slides/stages` |
+| Callout beside a console frame | `slides/scene` |
+| Today and proposed columns | `slides/compare` |
 
 Layout CSS for every slide template lives in `theme/default.css` and is snapshotted into the deck as `assets/default.css`. A deck template's `theme.css` is appended to that snapshot. It is not a separate file in the deck.

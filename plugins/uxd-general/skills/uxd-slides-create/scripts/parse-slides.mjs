@@ -10,7 +10,7 @@ const CURRENT_SPEC = JSON.parse(fs.readFileSync(path.join(SPECIFICATIONS_DIR, 'c
 export const SLIDES_SPEC_VERSION = String(CURRENT_SPEC.version || '');
 export const SLIDES_SPEC_VERSIONS = Array.isArray(CURRENT_SPEC.versions) ? CURRENT_SPEC.versions.map(String) : [SLIDES_SPEC_VERSION];
 
-export const SLIDE_TYPES = ['title', 'section', 'content', 'split', 'quote', 'closing', 'beat'];
+export const SLIDE_TYPES = ['title', 'section', 'content', 'split', 'quote', 'closing', 'beat', 'agenda', 'persona', 'stages', 'scene', 'compare'];
 
 const BEAT_RAILS = [
   { kind: 'users', label: 'Users', pattern: /^(users|people)\b/i },
@@ -111,6 +111,9 @@ function parseBody(body) {
       const text = trimmed.slice(3).trim();
       if (!result.subheading) result.subheading = text;
       else result.blocks.push({ type: 'h3', text });
+    } else if (trimmed.startsWith('#### ')) {
+      result.blocks.push({ type: 'h4', text: trimmed.slice(5).trim() });
+      bullets = null;
     } else if (trimmed.startsWith('### ')) {
       result.blocks.push({ type: 'h3', text: trimmed.slice(4).trim() });
       bullets = null;
@@ -307,6 +310,25 @@ export function loadDeck(dir) {
   };
 }
 
+function validateContributors(metadata, field, errors) {
+  if (metadata[field] == null) return;
+  if (!Array.isArray(metadata[field])) {
+    errors.push(`metadata.${field} must be a list.`);
+    return;
+  }
+  metadata[field].forEach((entry, index) => {
+    const label = `metadata.${field}[${index}]`;
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      errors.push(`${label} must be an object with an id.`);
+      return;
+    }
+    if (!String(entry.id || '').trim()) errors.push(`${label}.id is required.`);
+    if (entry.description != null && typeof entry.description !== 'string') {
+      errors.push(`${label}.description must be a string.`);
+    }
+  });
+}
+
 export function validateDeck(deck, { templatesDir } = {}) {
   const errors = [];
   const warnings = [];
@@ -336,6 +358,8 @@ export function validateDeck(deck, { templatesDir } = {}) {
     if (!PUBLISH_TARGETS.includes(target)) errors.push('A published deck needs canonical.target of google-slides or figma-slides.');
     if (!url || !/^https:\/\//.test(url)) errors.push('A published deck needs an https canonical.url.');
   }
+  validateContributors(metadata, 'models', errors);
+  validateContributors(metadata, 'agents', errors);
 
   const templates = listTemplates(templatesDir);
   const slideTemplates = listSlideTemplates(templatesDir);
@@ -361,7 +385,7 @@ export function validateDeck(deck, { templatesDir } = {}) {
     slide.warnings.forEach((warning) => warnings.push(`${label}: ${warning}`));
 
     const quote = slide.blocks.find((block) => block.type === 'quote');
-    if (['title', 'section', 'closing', 'content', 'split', 'beat'].includes(slide.type) && !slide.heading) {
+    if (['title', 'section', 'closing', 'content', 'split', 'beat', 'agenda', 'persona', 'stages', 'scene', 'compare'].includes(slide.type) && !slide.heading) {
       errors.push(`${label} needs a heading.`);
     }
     if (slide.type === 'quote' && !quote && !slide.heading) errors.push(`${label} needs a quote or a heading.`);
@@ -377,7 +401,7 @@ export function validateDeck(deck, { templatesDir } = {}) {
         if (!group) warnings.push(`${label} is missing ${rail.label}.`);
         else if (group.items.filter((item) => itemDepth(item) === 0).length > 6) warnings.push(`${label} ${group.label} has more than six items. Keep that column scannable.`);
       }
-    } else if (bulletCount > 5) {
+    } else if (!['agenda', 'persona', 'stages', 'scene', 'compare'].includes(slide.type) && bulletCount > 5) {
       warnings.push(`${label} has ${bulletCount} bullets. Keep a slide to one idea.`);
     }
     if (slide.heading && slide.heading.length > 90) warnings.push(`${label} heading is long for a slide.`);

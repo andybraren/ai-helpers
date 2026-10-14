@@ -137,6 +137,31 @@
       return section;
     }
 
+    if (slide.type === 'agenda') {
+      renderAgenda(inner, slide, slideIndex);
+      return section;
+    }
+
+    if (slide.type === 'persona') {
+      renderPersona(inner, slide, slideIndex);
+      return section;
+    }
+
+    if (slide.type === 'stages') {
+      renderStages(inner, slide, slideIndex);
+      return section;
+    }
+
+    if (slide.type === 'scene') {
+      renderScene(inner, slide, slideIndex);
+      return section;
+    }
+
+    if (slide.type === 'compare') {
+      renderCompare(inner, slide, slideIndex);
+      return section;
+    }
+
     if (slide.type === 'quote') {
       appendKicker(inner, slide.kicker);
       const quote = slide.blocks.find((block) => block.type === 'quote');
@@ -325,6 +350,530 @@
       image.replaceWith(fallback);
     });
     return image;
+  }
+
+  function renderAgenda(inner, slide, slideIndex) {
+    const body = document.createElement('div');
+    body.className = 'agenda-body';
+    const copy = document.createElement('div');
+    copy.className = 'agenda-copy';
+    appendKicker(copy, slide.kicker);
+    if (slide.heading) copy.appendChild(textEl('h1', slide.heading));
+    if (slide.subheading) copy.appendChild(textEl('h2', slide.subheading));
+    const rail = document.createElement('div');
+    rail.className = 'agenda-rail';
+    const { sections } = sectionBlocks(slide.blocks);
+    sections.forEach((section) => {
+      const step = document.createElement('div');
+      step.className = 'agenda-step';
+      step.appendChild(textEl('p', section.title, 'agenda-num'));
+      const title = section.blocks.find((block) => block.type === 'paragraph');
+      if (title) step.appendChild(textEl('p', title.text, 'agenda-name'));
+      rail.appendChild(step);
+    });
+    body.append(copy, rail);
+    inner.append(body, renderFooter(slideIndex));
+  }
+
+  function renderPersona(inner, slide, slideIndex) {
+    const head = document.createElement('div');
+    head.className = 'persona-head';
+    appendKicker(head, slide.kicker);
+    if (slide.heading) head.appendChild(textEl('h1', slide.heading));
+    inner.appendChild(head);
+
+    const { sections } = sectionBlocks(slide.blocks);
+    const goal = sections.find((section) => /goal/i.test(section.title));
+    const stat = sections.find((section) => /^\d+\s+of\s+\d+$/i.test(section.title));
+    const flow = sections.find((section) => section !== goal && section !== stat && !reservedTitle(section.title));
+    const lanes = sections.filter((section) => section !== goal && section !== stat && section !== flow && !reservedTitle(section.title));
+    const note = sections.find((section) => reservedTitle(section.title) === 'caption');
+
+    const layout = document.createElement('div');
+    layout.className = 'persona-layout';
+    const identity = document.createElement('div');
+    identity.className = 'persona-identity';
+    if (slide.subheading) identity.appendChild(textEl('h2', slide.subheading));
+    const roleBlocks = [];
+    for (const block of slide.blocks) {
+      if (block.type === 'h3') break;
+      if (block.type === 'paragraph') roleBlocks.push(block);
+    }
+    if (roleBlocks.length) {
+      const role = document.createElement('p');
+      role.className = 'persona-role';
+      role.innerHTML = roleBlocks.map((block) => inline(block.text)).join('<br>');
+      identity.appendChild(role);
+    }
+    if (goal) {
+      identity.appendChild(textEl('p', goal.title, 'persona-goal-label'));
+      const goalText = goal.blocks.find((block) => block.type === 'paragraph');
+      if (goalText) identity.appendChild(textEl('p', goalText.text, 'persona-goal'));
+    }
+    if (stat) {
+      identity.appendChild(textEl('p', stat.title, 'persona-stat'));
+      identity.appendChild(renderStatGrid(stat.title));
+      const caption = stat.blocks.find((block) => block.type === 'paragraph');
+      if (caption) identity.appendChild(textEl('p', caption.text, 'persona-stat-caption'));
+    }
+    const work = document.createElement('div');
+    work.className = 'persona-work';
+    if (flow) {
+      work.appendChild(textEl('h3', flow.title));
+      const steps = document.createElement('div');
+      steps.className = 'persona-steps';
+      for (const item of bulletItems(flow.blocks)) {
+        const step = document.createElement('div');
+        step.className = 'persona-step';
+        const parts = itemText(item).match(/^(\d+)\s+(.*)$/);
+        step.appendChild(textEl('span', parts ? parts[1] : '', 'persona-pill'));
+        step.appendChild(textEl('p', parts ? parts[2] : itemText(item)));
+        steps.appendChild(step);
+      }
+      work.appendChild(steps);
+    }
+    for (const lane of lanes) {
+      const row = document.createElement('div');
+      row.className = `persona-lane ${laneClass(lane.title)}`.trim();
+      row.appendChild(textEl('h4', lane.title));
+      const actions = document.createElement('div');
+      actions.className = 'persona-actions';
+      for (const item of bulletItems(lane.blocks)) {
+        const pieces = itemText(item).split(/\s*(?:→|->)\s*/);
+        pieces.forEach((piece, index) => {
+          if (index > 0) {
+            const arrow = document.createElement('span');
+            arrow.className = 'persona-arrow';
+            arrow.setAttribute('aria-hidden', 'true');
+            arrow.textContent = '→';
+            actions.appendChild(arrow);
+          }
+          actions.appendChild(textEl('p', piece));
+        });
+      }
+      row.appendChild(actions);
+      work.appendChild(row);
+    }
+    if (note) {
+      const caption = note.blocks.find((block) => block.type === 'paragraph');
+      if (caption) work.appendChild(textEl('p', caption.text, 'persona-note'));
+    }
+    layout.append(identity, work);
+    inner.append(layout, renderFooter(slideIndex));
+  }
+
+  function renderStages(inner, slide, slideIndex) {
+    const { lead, sections } = sectionBlocks(slide.blocks);
+    const columns = sections.filter((section) => !reservedTitle(section.title));
+    const current = columns.some((column) => column.blocks.some((block) => block.type === 'quote' && /^pain\b/i.test(block.text)));
+    if (current) inner.closest('.slide').classList.add('is-current');
+    appendKicker(inner, slide.kicker);
+    if (slide.heading) inner.appendChild(textEl('h1', slide.heading));
+    if (slide.subheading) inner.appendChild(textEl('h2', slide.subheading));
+    for (const block of lead) {
+      if (block.type === 'paragraph') inner.appendChild(textEl('p', block.text, 'stages-lead'));
+    }
+    const path = sections.find((section) => reservedTitle(section.title) === 'path');
+    if (path) {
+      const trail = path.blocks.find((block) => block.type === 'paragraph');
+      if (trail) inner.appendChild(renderPath(trail.text));
+    }
+    const grid = document.createElement('div');
+    grid.className = 'stages-grid';
+    for (const column of columns) grid.appendChild(renderStageColumn(column, current));
+    inner.appendChild(grid);
+    appendReserved(inner, sections);
+    inner.appendChild(renderFooter(slideIndex));
+  }
+
+  function renderStageColumn(column, current) {
+    const cell = document.createElement('div');
+    cell.className = 'stage-col';
+    cell.appendChild(textEl('h3', column.title));
+    const { intro, groups } = panels(column.blocks);
+    const introNodes = consumeCards(intro);
+    for (const node of introNodes) cell.appendChild(renderStageNode(node, current));
+    for (const group of groups) {
+      cell.appendChild(textEl('h4', group.title));
+      for (const node of consumeCards(group.blocks)) cell.appendChild(renderStageNode(node, current));
+    }
+    return cell;
+  }
+
+  function renderStageNode(node, current) {
+    if (node.type === 'card') {
+      const card = document.createElement('div');
+      card.className = current || /^pain\b/i.test(node.label) ? 'stage-card is-pain' : 'stage-card is-gain';
+      card.appendChild(textEl('p', node.label, 'stage-card-label'));
+      if (node.body) card.appendChild(textEl('p', node.body, 'stage-card-body'));
+      return card;
+    }
+    if (node.type === 'bullets') {
+      const list = document.createElement('ul');
+      list.className = 'stage-meta';
+      for (const item of node.items) {
+        const line = document.createElement('li');
+        const parts = itemText(item).split(/\s+[—–]\s+/);
+        if (parts.length > 1) {
+          const name = document.createElement('strong');
+          name.innerHTML = inline(parts[0]);
+          const detail = document.createElement('span');
+          detail.className = 'meta-detail';
+          detail.innerHTML = inline(parts.slice(1).join(' — '));
+          line.append(name, detail);
+        } else line.innerHTML = inline(itemText(item));
+        list.appendChild(line);
+      }
+      return list;
+    }
+    if (node.type === 'paragraph') return textEl('p', node.text, 'stage-copy');
+    return textEl('p', node.text || '');
+  }
+
+  function renderScene(inner, slide, slideIndex) {
+    appendKicker(inner, slide.kicker);
+    if (slide.heading) inner.appendChild(textEl('h1', slide.heading));
+    const { lead, sections } = sectionBlocks(slide.blocks);
+    const frameSection = sections.find((section) => !reservedTitle(section.title));
+    const row = document.createElement('div');
+    row.className = 'scene-row';
+    const callout = document.createElement('div');
+    callout.className = 'scene-callout';
+    if (slide.subheading) callout.appendChild(textEl('p', slide.subheading, 'scene-label'));
+    for (const block of lead) {
+      if (block.type === 'paragraph') callout.appendChild(textEl('p', block.text, 'scene-statement'));
+    }
+    row.appendChild(callout);
+    if (frameSection) row.appendChild(renderConsole(frameSection));
+    inner.appendChild(row);
+    appendReserved(inner, sections);
+    inner.appendChild(renderFooter(slideIndex));
+  }
+
+  function renderConsole(section) {
+    const frame = document.createElement('div');
+    frame.className = 'console';
+    const bar = document.createElement('div');
+    bar.className = 'console-bar';
+    bar.appendChild(textEl('p', section.title, 'console-crumb'));
+    const { intro, groups } = panels(section.blocks);
+    const rest = [];
+    for (const block of intro) {
+      if (block.type === 'paragraph' && !bar.querySelector('.console-tag') && block.text.length < 42) {
+        bar.appendChild(textEl('p', block.text, 'console-tag'));
+      } else rest.push(block);
+    }
+    frame.appendChild(bar);
+    const body = document.createElement('div');
+    body.className = 'console-body';
+    const mains = [];
+    const cards = [];
+    const asides = [];
+    const below = [];
+    for (const group of groups) {
+      if (group.title.includes('|')) {
+        const host = cards[cards.length - 1] || mains[mains.length - 1] || asides[asides.length - 1];
+        if (host) host.table = group;
+        continue;
+      }
+      if (/^below$/i.test(group.title)) {
+        below.push(...group.blocks);
+        continue;
+      }
+      const aside = /^aside:\s*/i.test(group.title);
+      const card = /^card:\s*/i.test(group.title);
+      const panel = {
+        title: group.title.replace(/^(aside|card):\s*/i, ''),
+        blocks: group.blocks,
+        aside,
+        table: null
+      };
+      if (aside) asides.push(panel);
+      else if (card) cards.push(panel);
+      else mains.push(panel);
+    }
+    const primary = document.createElement('div');
+    primary.className = 'console-primary';
+    for (const block of rest) primary.appendChild(renderRichBlock(block));
+    mains.forEach((panel, index) => primary.appendChild(renderPanel(panel, index)));
+    if (cards.length) {
+      const pair = document.createElement('div');
+      pair.className = 'console-primary is-pair';
+      cards.forEach((panel, index) => pair.appendChild(renderPanel(panel, index)));
+      primary.appendChild(pair);
+    }
+    body.appendChild(primary);
+    if (asides.length) {
+      const side = document.createElement('div');
+      side.className = 'console-side';
+      for (const panel of asides) side.appendChild(renderPanel(panel, 0));
+      body.appendChild(side);
+    }
+    frame.appendChild(body);
+    if (below.length) {
+      const foot = document.createElement('div');
+      foot.className = 'console-below';
+      for (const block of below) foot.appendChild(renderRichBlock(block));
+      frame.appendChild(foot);
+    }
+    return frame;
+  }
+
+  function renderPanel(panel, index) {
+    const node = document.createElement('section');
+    const warn = /scan|flag/i.test(panel.title);
+    node.className = panel.aside ? 'console-panel is-aside' : `console-panel${warn ? ' is-warn' : ''}${index === 1 && !panel.aside ? ' is-second' : ''}`;
+    const head = document.createElement('div');
+    head.className = 'panel-head';
+    if (panel.title) head.appendChild(textEl('h4', panel.title));
+    const edit = panel.blocks.find((block) => block.type === 'paragraph' && /^edit$/i.test(block.text.trim()));
+    if (edit) head.appendChild(textEl('p', edit.text, 'panel-edit'));
+    if (head.childNodes.length) node.appendChild(head);
+    let titled = false;
+    for (const block of panel.blocks) {
+      if (block === edit) continue;
+      if (!titled && block.type === 'paragraph' && /^\*\*[^*]+\*\*$/.test(block.text.trim())) {
+        node.appendChild(textEl('p', block.text, 'panel-title'));
+        titled = true;
+        continue;
+      }
+      node.appendChild(renderRichBlock(block));
+    }
+    if (panel.table) node.appendChild(renderTable(panel.table));
+    return node;
+  }
+
+  function renderTable(group) {
+    const headers = group.title.split('|').map((cell) => cell.trim());
+    const table = document.createElement('table');
+    const head = document.createElement('tr');
+    for (const header of headers) head.appendChild(textEl('th', header));
+    table.appendChild(head);
+    for (const item of bulletItems(group.blocks)) {
+      const row = document.createElement('tr');
+      for (const cell of itemText(item).split('|').map((part) => part.trim())) {
+        const data = textEl('td', cell);
+        if (/affected/i.test(cell)) data.classList.add('is-affected');
+        row.appendChild(data);
+      }
+      table.appendChild(row);
+    }
+    return table;
+  }
+
+  function renderCompare(inner, slide, slideIndex) {
+    appendKicker(inner, slide.kicker);
+    if (slide.heading) inner.appendChild(textEl('h1', slide.heading));
+    if (slide.subheading) inner.appendChild(textEl('h2', slide.subheading));
+    const { sections } = sectionBlocks(slide.blocks);
+    const cols = document.createElement('div');
+    cols.className = 'compare-cols';
+    sections.filter((section) => !reservedTitle(section.title)).forEach((section, index) => {
+      const col = document.createElement('div');
+      col.className = `compare-col ${index === 0 ? 'is-today' : 'is-next'}`;
+      col.appendChild(textEl('h3', section.title));
+      let lede = false;
+      let pending = null;
+      const steps = [];
+      for (const block of section.blocks) {
+        if (!lede && block.type === 'paragraph') {
+          col.appendChild(textEl('p', block.text, 'compare-lede'));
+          lede = true;
+          continue;
+        }
+        if (block.type === 'quote') {
+          if (pending) steps.push(pending);
+          pending = { label: block.text, body: '' };
+          continue;
+        }
+        if (pending && block.type === 'paragraph' && !pending.body) {
+          pending.body = block.text;
+          steps.push(pending);
+          pending = null;
+        }
+      }
+      if (pending) steps.push(pending);
+      const list = document.createElement('div');
+      list.className = 'compare-steps';
+      for (const step of steps) {
+        const outcome = /case submitted/i.test(step.label);
+        const card = document.createElement('div');
+        card.className = outcome ? 'compare-outcome' : 'compare-step';
+        card.appendChild(textEl('p', step.label, outcome ? 'compare-outcome-label' : 'compare-label'));
+        if (step.body && !outcome) card.appendChild(textEl('p', step.body, 'compare-body'));
+        list.appendChild(card);
+      }
+      col.appendChild(list);
+      cols.appendChild(col);
+    });
+    inner.append(cols, renderFooter(slideIndex));
+  }
+
+  function renderRichBlock(block) {
+    if (block.type === 'quote') return textEl('blockquote', block.text);
+    if (block.type === 'h4') return textEl('h4', block.text);
+    if (block.type === 'bullets') {
+      const list = document.createElement('ul');
+      const items = block.items.map(itemText);
+      if (items.every((item) => /^(\[[ xX]\]|\d+)\b/.test(item))) list.className = 'check-list';
+      for (const item of items) {
+        const line = document.createElement('li');
+        const check = item.match(/^\[([ xX])\]\s*(.*)$/);
+        const numbered = item.match(/^(\d+)\s+(.*)$/);
+        if (check) {
+          line.className = 'is-check';
+          const box = document.createElement('span');
+          box.className = check[1].toLowerCase() === 'x' ? 'check is-on' : 'check';
+          box.setAttribute('aria-hidden', 'true');
+          line.appendChild(box);
+          const body = document.createElement('span');
+          body.innerHTML = inline(check[2]);
+          line.appendChild(body);
+        } else if (numbered && list.className === 'check-list') {
+          line.className = 'is-num';
+          const badge = document.createElement('span');
+          badge.className = 'num-badge';
+          badge.textContent = numbered[1];
+          line.appendChild(badge);
+          const body = document.createElement('span');
+          body.innerHTML = inline(numbered[2]);
+          line.appendChild(body);
+        } else {
+          line.innerHTML = inline(item);
+        }
+        list.appendChild(line);
+      }
+      return list;
+    }
+    if (block.type === 'paragraph' && /\.[a-z]{2,}/i.test(block.text) && !block.text.includes('**') && block.text.length < 90) {
+      return textEl('p', block.text, 'domain-line');
+    }
+    if (block.type === 'paragraph' && /^\*\*[^*]+\*\*$/.test(block.text.trim())) {
+      return textEl('p', block.text, buttonClass(block.text));
+    }
+    if (block.type === 'paragraph' && /vendor verification needed/i.test(block.text)) {
+      return textEl('p', block.text, 'vendor-label');
+    }
+    return textEl('p', block.text);
+  }
+
+  function buttonClass(text) {
+    const label = text.replace(/\*/g, '').trim().toLowerCase();
+    if (/edit/.test(label) && !/submit/.test(label)) return 'text-btn is-secondary';
+    return 'text-btn is-primary';
+  }
+
+  function renderPath(text) {
+    const path = document.createElement('p');
+    path.className = 'stages-path';
+    const parts = text.split(/\s+\/\s+/);
+    parts.forEach((part, index) => {
+      if (index > 0) {
+        const slash = document.createElement('span');
+        slash.className = 'path-slash';
+        slash.textContent = '/';
+        path.appendChild(slash);
+      }
+      const item = document.createElement('span');
+      item.textContent = part;
+      if (index === 0) item.className = 'is-strong';
+      path.appendChild(item);
+    });
+    return path;
+  }
+
+  function appendReserved(parent, sections) {
+    const banner = sections.find((section) => reservedTitle(section.title) === 'banner');
+    const caption = sections.find((section) => reservedTitle(section.title) === 'caption');
+    if (banner) {
+      const text = banner.blocks.find((block) => block.type === 'paragraph');
+      if (text) parent.appendChild(textEl('p', text.text, 'slide-banner'));
+    }
+    if (caption) {
+      const text = caption.blocks.find((block) => block.type === 'paragraph');
+      if (text) parent.appendChild(textEl('p', text.text, 'slide-caption'));
+    }
+  }
+
+  function renderFooter(slideIndex) {
+    const footer = document.createElement('footer');
+    footer.className = 'slide-footer';
+    footer.appendChild(textEl('p', '', 'slide-footer-label'));
+    footer.appendChild(textEl('p', String(slideIndex + 1).padStart(2, '0'), 'slide-footer-num'));
+    return footer;
+  }
+
+  function renderStatGrid(title) {
+    const match = String(title).match(/^(\d+)\s+of\s+(\d+)$/i);
+    const filled = match ? Number(match[1]) : 0;
+    const total = match ? Number(match[2]) : 0;
+    const grid = document.createElement('div');
+    grid.className = 'stat-grid';
+    grid.style.setProperty('--stat-cols', '10');
+    for (let index = 0; index < total; index += 1) {
+      const cell = document.createElement('span');
+      if (index < filled) cell.className = 'is-on';
+      grid.appendChild(cell);
+    }
+    return grid;
+  }
+
+  function sectionBlocks(blocks) {
+    const lead = [];
+    const sections = [];
+    let current = null;
+    for (const block of blocks || []) {
+      if (block.type === 'h3') {
+        current = { title: block.text, blocks: [] };
+        sections.push(current);
+      } else if (current) current.blocks.push(block);
+      else lead.push(block);
+    }
+    return { lead, sections };
+  }
+
+  function panels(blocks) {
+    const intro = [];
+    const groups = [];
+    let current = null;
+    for (const block of blocks || []) {
+      if (block.type === 'h4') {
+        current = { title: block.text, blocks: [] };
+        groups.push(current);
+      } else if (current) current.blocks.push(block);
+      else intro.push(block);
+    }
+    return { intro, groups };
+  }
+
+  function consumeCards(blocks) {
+    const nodes = [];
+    for (let index = 0; index < blocks.length; index += 1) {
+      const block = blocks[index];
+      if (block.type === 'quote') {
+        const next = blocks[index + 1];
+        const body = next && next.type === 'paragraph' ? next.text : '';
+        if (body) index += 1;
+        nodes.push({ type: 'card', label: block.text, body });
+      } else nodes.push(block);
+    }
+    return nodes;
+  }
+
+  function bulletItems(blocks) {
+    return (blocks || []).filter((block) => block.type === 'bullets').flatMap((block) => block.items);
+  }
+
+  function reservedTitle(title) {
+    const name = String(title || '').trim().toLowerCase();
+    if (name === 'path' || name === 'banner' || name === 'caption') return name;
+    return '';
+  }
+
+  function laneClass(title) {
+    if (/support/i.test(title)) return 'is-support';
+    if (/security/i.test(title)) return 'is-security';
+    return '';
   }
 
   function textEl(tag, value, className) {

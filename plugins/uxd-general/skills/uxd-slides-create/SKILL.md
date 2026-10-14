@@ -37,7 +37,7 @@ Default location is `.artifacts/slides-{name}/`. `{name}` is a kebab-case slug f
         └── …
 ```
 
-Deck `metadata.json` contains `specVersion` (`0.1.0`), `title`, `description`, `template` (the deck template name), `aspectRatio` (`16:9`), `status`, `createdAt`, and `updatedAt`. `specVersion` is the slides artifact spec in `specifications/slides/`. `status` is `draft` until publish. Do not put secrets in metadata. Do not change `specVersion` by hand.
+Deck `metadata.json` contains `specVersion` (`0.1.0`), `title`, `description`, `template` (the deck template name), `aspectRatio` (`16:9`), `status`, `createdAt`, and `updatedAt`. `specVersion` is the slides artifact spec in `specifications/slides/`. `status` is `draft` until publish. Optional `models` and `agents` record who made the deck: each entry is `{ "id", "description" }`. `id` is the model, agent, or skill identifier this session reports. `description` is one line on what it did. Omit a list when the identifier is unknown. Do not invent names. Do not put secrets in metadata. Do not change `specVersion` by hand.
 
 `assets/default.css` is the layout snapshot. Deck-wide theme changes, such as a new highlight color, go in `assets/custom.css`. A slide that must diverge from its slide template gets `slides/{n}/custom.css`. Omit both files until there is a real override.
 
@@ -53,6 +53,7 @@ Read [templates/README.md](templates/README.md). If the user names a type, read 
 | Research readout or findings share-out | `research-readout` |
 | Design review or critique readout | `design-review` |
 | User journey or story-beat walkthrough | `user-journey` |
+| Vision brief or connected-experience narrative | `vision` |
 
 Any other deck starts from `briefing`. To add a slide, copy `templates/slides/{template}/` into `slides/{next-number}/`. Read [slides format](references/slides-format.md) before adding a slide template.
 
@@ -69,7 +70,7 @@ node "${CLAUDE_SKILL_DIR}/scripts/instantiate-deck.mjs" <deck-template> .artifac
 4. Copy local images into `assets/` and set a split or beat slide's `image` to `assets/file.png`. Do not embed credentials, authenticated URLs, or absolute local paths.
 5. Reorder by renaming the numbered folders. Do not edit slide content just to change order.
 6. Label assumptions. Do not present invented observations as research. Remove every "Replace with" placeholder.
-7. Fill deck `metadata.json`. New decks use `"status": "draft"`. A revision of a published deck returns `status` to `draft` and keeps `canonical`.
+7. Fill deck `metadata.json`. New decks use `"status": "draft"`. Add a `models` entry for each model that authored or revised the deck, and an `agents` entry for each agent or skill, using the identifier this session reports and a one-line `description` of what it did. Keep earlier entries when a later model revises the deck. A revision of a published deck returns `status` to `draft` and keeps `canonical`.
 8. Validate, then build the viewer into the same folder:
 
 ```bash
@@ -83,6 +84,7 @@ Fix every error. Review warnings for dense slides and missing assets. Serve the 
 
 - The sequence still follows the requested deck template.
 - Placeholder copy is gone. Claims trace to the supplied sources, and assumptions are labeled.
+- `models` lists each model that did the work, with what it did. Earlier models remain after a revision. `agents` does the same when an agent or skill identifier is known.
 - Validation passes: known slide templates, headings, relative asset paths, and required metadata.
 - The viewer was built in the deck folder and checked locally.
 - A published deck that was edited is `draft` again, with the previous shared URL still in `canonical`.

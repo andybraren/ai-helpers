@@ -35,11 +35,25 @@ A deck is a folder. Slide order is the numbered folder name under `slides/`. Reo
   "status": "draft",
   "createdAt": "",
   "updatedAt": "",
-  "canonical": null
+  "canonical": null,
+  "models": [
+    {
+      "id": "claude-sonnet-4.6",
+      "description": "Drafted the slide copy and speaker notes from the readout."
+    }
+  ],
+  "agents": [
+    {
+      "id": "uxd-slides-create",
+      "description": "Built the deck from the research-readout template."
+    }
+  ]
 }
 ```
 
-`specVersion` is the slides artifact spec this folder complies with. The current spec is 0.1.0, defined in `specifications/slides/`. `template` here is the deck template (`briefing`, `research-readout`, `design-review`, or `user-journey`). `status` is `draft` while the folder is the working copy. After Google Slides or Figma Slides publish succeeds, set `status` to `published` and set `canonical` to `{ "target", "url", "publishedAt" }`. Editing the deck again sets `status` back to `draft` and keeps `canonical`.
+`specVersion` is the slides artifact spec this folder complies with. The current spec is 0.1.0, defined in `specifications/slides/`. `template` here is the deck template (`briefing`, `research-readout`, `design-review`, `user-journey`, or `vision`). `status` is `draft` while the folder is the working copy. After Google Slides or Figma Slides publish succeeds, set `status` to `published` and set `canonical` to `{ "target", "url", "publishedAt" }`. Editing the deck again sets `status` back to `draft` and keeps `canonical`.
+
+`models` lists every model that authored or revised the deck. `agents` lists every agent or skill that did the same. Each entry has `id` (the identifier the tool reports) and `description` (one line on what it did). Omit a list when you do not know the identifiers. Keep earlier entries when a later model revises the deck.
 
 ## Slide folder
 
@@ -77,6 +91,11 @@ Do not use tables. Do not use a remote or absolute image path. Copy files into t
 | `quote` | A quotation. The heading is the attribution when you need one. |
 | `beat` | Journey beat. Story and sketch on the left. Users, unmet needs, and solutions on the right. The heading is not drawn. |
 | `closing` | Same visual role as a title slide. Use it for the last slide. |
+| `agenda` | Cover. Heading, subheading, and numbered steps in a side rail. Each step is a `###` number and one paragraph. |
+| `persona` | One person, a goal, a count such as `5 of 30`, a numbered task, and team lanes. `### Caption` is the footnote. |
+| `stages` | Four columns. A quote starting with `Pain` uses the current treatment. A quote starting with `Addresses` uses the proposed treatment. `### Path`, `### Banner`, and `### Caption` are not columns. |
+| `scene` | Left callout and a console frame. `#### Aside:` is the side panel. A `####` title containing `\|` is a table. `### Caption` sits above the footer. |
+| `compare` | `Today` and `Proposed` columns. A quote plus the next paragraph is a step. |
 
 `kicker` is the small label above the heading. Omit it when the slide has none. `image` is the side image for `split` and `beat`. Omit it when the slide has no image.
 

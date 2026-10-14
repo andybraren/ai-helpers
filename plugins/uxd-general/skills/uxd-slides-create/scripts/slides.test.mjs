@@ -296,6 +296,27 @@ test('template placeholders fail strict validation', () => {
   assert.equal(strict.status, 1);
 });
 
+test('accepts model and agent records and rejects a bad list', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uxd-slides-'));
+  writeDeck(root);
+  const metaPath = path.join(root, 'metadata.json');
+  const metadata = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+  metadata.models = [
+    { id: 'claude-sonnet-4.6', description: 'Drafted the slide copy.' }
+  ];
+  metadata.agents = [
+    { id: 'uxd-slides-create', description: 'Built the deck from the design-review template.' }
+  ];
+  fs.writeFileSync(metaPath, JSON.stringify(metadata));
+  const valid = validateDeck(loadDeck(root), { templatesDir: TEMPLATES });
+  assert.deepEqual(valid.errors, []);
+
+  metadata.models = [{ description: 'Missing the model id.' }];
+  fs.writeFileSync(metaPath, JSON.stringify(metadata));
+  const invalid = validateDeck(loadDeck(root), { templatesDir: TEMPLATES });
+  assert.ok(invalid.errors.some((error) => error.includes('metadata.models[0].id')));
+});
+
 test('records the current slides spec and rejects an unknown one', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uxd-slides-'));
   instantiateDeck('briefing', root, { templatesDir: TEMPLATES });
