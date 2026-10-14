@@ -59,9 +59,23 @@ Read [templates/README.md](templates/README.md). If the user names a type, read 
 
 Any other deck starts from `briefing`. To add a slide, copy `templates/slides/{template}/` into `slides/{next-number}/`. Read [slides format](references/slides-format.md) before adding a slide template.
 
+## Starting with nothing
+
+When a person opens this skill with no brief, no source, and no flags, greet them and ask for three decisions in one message. Do not create a folder yet.
+
+> Hello. I can help you create a slide deck from a template, using whatever context you have. It can stay on your machine, or I can publish it to Google Slides or Figma Slides when it's ready.
+>
+> A few questions before I start. A short note, a paste, or a link is enough:
+>
+> 1. What should the deck be about, and what should I use as the source?
+> 2. Who is it for? Briefing, research readout, design review, user journey, or vision?
+> 3. Where should it live: locally, in Google Slides, or in Figma Slides?
+
+Accept a messy answer. Pull the goal, audience, template, source, and destination out of it. A doc, ticket, or notes link is source material. A Google Slides or Figma Slides link is the shared copy to create or update. Ask once more only for a gap that blocks the deck. If they already answered one of the three, do not ask for that one again.
+
 ## Authoring workflow
 
-1. Resolve the deck name, communication goal, audience, deck template, source evidence, and destination. The destination is the local viewer unless the user asks for Google Slides or Figma Slides. If the goal, audience, or source is materially unclear, ask only for the missing information. A named destination still starts as a local deck.
+1. If the invocation has no brief, no source, and no flags, use [Starting with nothing](#starting-with-nothing) and wait. Otherwise resolve the deck name, communication goal, audience, deck template, source evidence, and destination. The destination is the local viewer unless the user asks for Google Slides or Figma Slides. If the goal, audience, or source is materially unclear, ask only for the missing information. A named destination still starts as a local deck.
 2. Read the deck `context.md`, then create the folder:
 
 ```bash

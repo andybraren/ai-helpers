@@ -100,6 +100,12 @@ judges:
       )
       if not asks:
           return False, "Did not ask for the missing brief"
+      if not re.search(r"google slides", text, re.IGNORECASE):
+          return False, "Did not offer Google Slides"
+      if not re.search(r"figma slides", text, re.IGNORECASE):
+          return False, "Did not offer Figma Slides"
+      if not re.search(r"local|on your machine", text, re.IGNORECASE):
+          return False, "Did not offer a local deck"
 
       type_directives = re.findall(r"<!--\s*type:", text, re.IGNORECASE)
       if type_directives.length >= 3:
