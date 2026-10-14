@@ -39,11 +39,11 @@ When the user asks for a slide deck, a readout presentation, a design-review dec
 
 | Skill | What it does |
 |-------|-------------|
-| `/uxd-general:uxd-slides-create` | Author a deck from a briefing, research-readout, design-review, user-journey, or vision deck template |
+| `/uxd-general:uxd-slides-create` | Author a local deck from a briefing, research-readout, design-review, user-journey, or vision deck template. When the user wants Google Slides or Figma Slides, continue into publish in the same session |
 | `/uxd-general:uxd-slides-export` | Build the local HTML, CSS, and JavaScript viewer |
 | `/uxd-general:uxd-slides-publish` | Publish the shared copy to Google Slides or Figma Slides |
 
-Create and export stay local. Publish is the step that writes `canonical` and marks the deck published.
+Create writes the local deck first. When the user already wants Google Slides or Figma Slides, create continues into publish in that same session. Export stays local. Publish writes `canonical` and marks the deck published.
 
 ## Prototyping — building, refining, exporting, or publishing prototypes
 

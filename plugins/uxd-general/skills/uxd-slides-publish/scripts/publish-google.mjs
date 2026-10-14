@@ -315,6 +315,12 @@ function gws(args) {
   }
 }
 
+export function presentationIdFromInput(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/\/presentation\/d\/([^/?#]+)/);
+  return match ? match[1] : text;
+}
+
 function presentationUrl(id) {
   return `https://docs.google.com/presentation/d/${id}/edit`;
 }
@@ -397,6 +403,7 @@ function main() {
     console.log('Usage: publish-google.mjs <slides-dir> [--dry-run] [--apply] [--presentation-id <id>] [--out <file>]');
     process.exit(options.help ? 0 : 2);
   }
+  if (options.presentationId) options.presentationId = presentationIdFromInput(options.presentationId);
   const deck = loadDeck(options.input);
   const report = validateDeck(deck, { templatesDir: TEMPLATES_DIR });
   for (const warning of report.warnings) console.error(`WARNING: ${warning}`);

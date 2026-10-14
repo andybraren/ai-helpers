@@ -8,13 +8,15 @@ import { fileURLToPath } from 'node:url';
 import { parseSlidesMarkdown, partitionBeat, validateDeck, loadDeck, SLIDES_SPEC_VERSION } from './parse-slides.mjs';
 import { instantiateDeck } from './instantiate-deck.mjs';
 import { exportDeck } from '../../uxd-slides-export/scripts/export-slides.mjs';
-import { planGooglePublish } from '../../uxd-slides-publish/scripts/publish-google.mjs';
+import { planGooglePublish, presentationIdFromInput } from '../../uxd-slides-publish/scripts/publish-google.mjs';
+import { fileKeyFromSlidesUrl, planFigmaPublish } from '../../uxd-slides-publish/scripts/publish-figma.mjs';
 import { markPublished } from '../../uxd-slides-publish/scripts/mark-published.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES = path.join(HERE, '..', 'templates');
 const VALIDATE = path.join(HERE, 'validate-slides.mjs');
 const PUBLISH = path.join(HERE, '..', '..', 'uxd-slides-publish', 'scripts', 'publish-google.mjs');
+const PUBLISH_FIGMA = path.join(HERE, '..', '..', 'uxd-slides-publish', 'scripts', 'publish-figma.mjs');
 
 const SAMPLE = `<!-- type: title -->
 # Catalog review
@@ -170,6 +172,55 @@ test('exports a multi-file viewer and a dry-run does not call Google', () => {
   assert.match(dry.stdout, /mode: dry-run/);
   assert.match(dry.stdout, /No Google Slides request was sent/);
   assert.doesNotMatch(dry.stdout, /^url:/m);
+
+  const googleUrl = spawnSync(process.execPath, [
+    PUBLISH,
+    path.join(root, 'slides'),
+    '--dry-run',
+    '--presentation-id',
+    'https://docs.google.com/presentation/d/abc123/edit'
+  ], { encoding: 'utf8' });
+  assert.equal(googleUrl.status, 0, googleUrl.stderr);
+  assert.match(googleUrl.stdout, /presentation: abc123/);
+  assert.equal(presentationIdFromInput('https://docs.google.com/presentation/d/abc123/edit?usp=sharing'), 'abc123');
+});
+
+test('plans a Figma deck without writing a file', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'uxd-slides-'));
+  writeDeck(root);
+  const created = planFigmaPublish(loadDeck(root));
+  assert.equal(created.action, 'create');
+  assert.equal(created.fileKey, null);
+  assert.equal(created.slides.length, 5);
+  assert.equal(created.slides[2].image, 'assets/screen.svg');
+  assert.equal(created.slides[2].imagePath, path.join(root, 'assets', 'screen.svg'));
+  assert.match(created.slides[1].body, /next/);
+  assert.doesNotMatch(created.slides[1].body, /\*\*/);
+  assert.equal(created.slides[0].notes, 'Open with the decision.');
+
+  const metaPath = path.join(root, 'metadata.json');
+  const metadata = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+  metadata.canonical = {
+    target: 'figma-slides',
+    url: 'https://www.figma.com/slides/Abcd1234Efgh5678Ijkl90/Catalog',
+    publishedAt: '2026-10-12T15:00:00.000Z'
+  };
+  fs.writeFileSync(metaPath, JSON.stringify(metadata));
+  const update = planFigmaPublish(loadDeck(root));
+  assert.equal(update.action, 'update');
+  assert.equal(update.fileKey, 'Abcd1234Efgh5678Ijkl90');
+  assert.equal(fileKeyFromSlidesUrl(metadata.canonical.url), 'Abcd1234Efgh5678Ijkl90');
+
+  const out = path.join(root, 'plan.json');
+  const planned = spawnSync(process.execPath, [PUBLISH_FIGMA, root, '--out', out], { encoding: 'utf8' });
+  assert.equal(planned.status, 0, planned.stderr);
+  assert.match(planned.stdout, /mode: plan/);
+  assert.match(planned.stdout, /action: update/);
+  assert.doesNotMatch(planned.stdout, /^url:/m);
+  const written = JSON.parse(fs.readFileSync(out, 'utf8'));
+  assert.equal(written.slides[2].template, 'split');
+  const after = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+  assert.equal(after.status, 'draft');
 });
 
 test('marks a real Google URL and rejects a mismatched one', () => {
@@ -273,6 +324,10 @@ Alex is asked to summarize factory status and cannot call a hosted API.
   const ids = plan.groups[0].map((request) => request.createShape?.objectId).filter(Boolean);
   assert.ok(ids.includes('uxd_beat_00_r'));
   assert.equal(plan.imageNotes[0], 'assets/sketch.png');
+  const figma = planFigmaPublish(loadDeck(root));
+  assert.equal(figma.slides[0].template, 'beat');
+  assert.deepEqual(figma.slides[0].rail.map((group) => group.kind), ['users', 'needs', 'solutions']);
+  assert.equal(figma.slides[0].imagePath, path.join(root, 'assets', 'sketch.png'));
 });
 
 test('template placeholders fail strict validation', () => {

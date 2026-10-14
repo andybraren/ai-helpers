@@ -106,3 +106,23 @@ judges:
           return False, "Wrote a deck before the brief was clear"
 
       return True, "Asked for the missing brief before authoring"
+
+  - name: shared_destination_keeps_local_deck
+    description: A Figma or Google request still authors the local deck, then hands off to publish
+    if: "annotations.get('case_type') == 'wants-shared-copy'"
+    check: |
+      import re
+
+      text = outputs.get("conversation", "")
+      if not re.search(r"\.artifacts/slides-", text):
+          return False, "Did not keep a local deck under .artifacts/slides-"
+      if not re.search(r"content\.md", text) or not re.search(r"metadata\.json", text):
+          return False, "Did not describe the local slide files"
+      if not re.search(r"uxd-slides-publish", text):
+          return False, "Did not continue into uxd-slides-publish"
+      if not re.search(r"figma slides", text, re.IGNORECASE):
+          return False, "Did not name Figma Slides as the shared copy"
+      if re.search(r"skip the local|without a local deck|only in figma", text, re.IGNORECASE):
+          return False, "Skipped the local deck"
+
+      return True, "Planned a local deck and a Figma Slides handoff"

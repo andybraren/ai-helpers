@@ -4,8 +4,9 @@ version: 0.1.0
 disable-model-invocation: true
 description: >-
   Publish a markdown slide deck to Google Slides or Figma Slides. Use when
-  sharing a finished deck or updating the shared copy. Local HTML stays in
-  uxd-slides-export.
+  sharing a finished deck, updating the shared copy, or when uxd-slides-create
+  was asked to land the deck in Google Slides or Figma Slides. Local HTML stays
+  in uxd-slides-export.
 audience: UXD practitioners
 inputs: A deck directory with metadata.json and a slides directory
 outputs: A Google Slides or Figma Slides URL recorded on the local deck
@@ -13,7 +14,7 @@ outputs: A Google Slides or Figma Slides URL recorded on the local deck
 
 # Publish Slides
 
-Create or replace the shared copy of a finished deck. This skill does not author slide folders and does not build the viewer. Run `uxd-slides-create` when the deck does not exist. Run `uxd-slides-export` when the user has not looked at the local viewer yet.
+Create or replace the shared copy of a finished deck. This skill does not author slide folders and does not build the viewer. Run `uxd-slides-create` when the deck does not exist. When create was asked for Google Slides or Figma Slides, it authors the local deck and then continues here. Run `uxd-slides-export` when the user has not looked at the local viewer yet.
 
 Family: `uxd-slides-create` → `uxd-slides-export` → **publish**.
 
@@ -23,7 +24,7 @@ The local markdown stays the authoring source. After a successful publish, `stat
 
 - A deck directory with `metadata.json` and `slides/` that passes validation.
 - `gws` signed in with the Google Slides scope, for a Google target.
-- The Figma connection and the Figma slides instructions, for a Figma target.
+- The Figma connection, the instructions for creating a new Figma file, and the Figma slides instructions, for a Figma target. See [Figma publish](references/figma-publish.md).
 - Confirmation immediately before any create or replace.
 
 ## Inputs and output
@@ -88,15 +89,21 @@ After confirmation, send it:
 node "${CLAUDE_SKILL_DIR}/scripts/publish-google.mjs" <deck-dir> --apply
 ```
 
-To replace an existing presentation, pass `--presentation-id` with the id from `canonical.url`. Say that this replaces the slides in that file. A new presentation omits the flag.
+To replace an existing presentation, pass `--presentation-id` with the id or the full `canonical.url`. The script accepts either. Say that this replaces the slides in that file. A new presentation omits the flag.
 
 If `gws` reports an auth error, ask the user to run `gws auth login` for Google Slides. Do not invent credentials. Do not upload images to a public Drive link.
 
 ### Target: figma
 
-Load the Figma slides instructions before any Slides write. Create one Slides file, or edit the existing `canonical` file in place when the user chose to update it. Build the slides from the numbered folders. Do not delete existing slides to rebuild a file unless the user asked to start over. Do not also create a Google deck in the same run.
+Follow [Figma publish](references/figma-publish.md). Build the plan first. It does not write a Figma file:
 
-Use the local images from `assets/` on split slides. Keep speaker notes as speaker notes.
+```bash
+node "${CLAUDE_SKILL_DIR}/scripts/publish-figma.mjs" <deck-dir> --out <plan.json>
+```
+
+Load the instructions for creating a new Figma file before creating a Slides file. Load the Figma slides instructions before any Slides write. Create one Slides file, or edit the existing `canonical` file in place when the user chose to update it. Build the slides from the plan, which comes from the numbered folders. Do not delete existing slides to rebuild a file unless the user asked to start over. Do not also create a Google deck in the same run.
+
+Place each `imagePath` from the plan on its split or beat slide by uploading that local file into the Slides file. Keep speaker notes as speaker notes. Write the plan outside the deck directory.
 
 ## After the URL exists
 
@@ -114,6 +121,7 @@ node "${CLAUDE_SKILL_DIR}/../uxd-slides-export/scripts/export-slides.mjs" <deck-
 ## Completion check
 
 - `--dry-run` did not create a remote deck and did not change metadata.
+- The Figma plan did not create a remote file. The Slides file was created or updated only after confirmation.
 - A real publish returned an `https://docs.google.com/presentation/` or `https://www.figma.com/slides/` URL.
 - `metadata.json` in the deck directory says `published` and `canonical` matches that URL.
 - The viewer banner names that shared copy.

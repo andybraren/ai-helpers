@@ -3,7 +3,9 @@ name: uxd-slides-create
 version: 0.1.0
 description: >-
   Create or refine a local slide deck from a deck template. Use when turning a
-  brief, research readout, design review, or user journey into slides.
+  brief, research readout, design review, or user journey into slides. When the
+  user wants Google Slides or Figma Slides, author the local deck and continue
+  into uxd-slides-publish.
 audience: UXD practitioners
 inputs: A brief, notes, ticket, research, or an existing slide deck directory
 outputs: A deck folder with metadata.json, assets, and numbered slide folders
@@ -59,7 +61,7 @@ Any other deck starts from `briefing`. To add a slide, copy `templates/slides/{t
 
 ## Authoring workflow
 
-1. Resolve the deck name, communication goal, audience, deck template, and source evidence. If the goal, audience, or source is materially unclear, ask only for the missing information.
+1. Resolve the deck name, communication goal, audience, deck template, source evidence, and destination. The destination is the local viewer unless the user asks for Google Slides or Figma Slides. If the goal, audience, or source is materially unclear, ask only for the missing information. A named destination still starts as a local deck.
 2. Read the deck `context.md`, then create the folder:
 
 ```bash
@@ -78,7 +80,8 @@ node "${CLAUDE_SKILL_DIR}/scripts/validate-slides.mjs" .artifacts/slides-{name}
 node "${CLAUDE_SKILL_DIR}/../uxd-slides-export/scripts/export-slides.mjs" .artifacts/slides-{name}
 ```
 
-Fix every error. Review warnings for dense slides and missing assets. Serve the deck and check the sequence, template, and images. Suggest `uxd-slides-publish` only when the user wants a Google Slides or Figma Slides copy.
+Fix every error. Review warnings for dense slides and missing assets. Serve the deck and check the sequence, template, and images.
+9. When the destination is Google Slides or Figma Slides, continue in this session with `uxd-slides-publish` and that target. The local deck is the source the shared copy is built from. Publish confirms before it writes the external file and records the URL on this deck. When the destination is the local viewer, suggest `uxd-slides-publish` only if the user later wants a Google Slides or Figma Slides copy.
 
 ## Completion check
 
@@ -87,4 +90,5 @@ Fix every error. Review warnings for dense slides and missing assets. Serve the 
 - `models` lists each model that did the work, with what it did. Earlier models remain after a revision. `agents` does the same when an agent or skill identifier is known.
 - Validation passes: known slide templates, headings, relative asset paths, and required metadata.
 - The viewer was built in the deck folder and checked locally.
+- A request for Google Slides or Figma Slides continued into `uxd-slides-publish` after the local deck validated. The local `slides/` folders are still the source.
 - A published deck that was edited is `draft` again, with the previous shared URL still in `canonical`.
