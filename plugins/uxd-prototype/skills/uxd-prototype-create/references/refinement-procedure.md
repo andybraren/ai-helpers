@@ -54,6 +54,8 @@ For each item determine severity (critical/major/minor), effort (small/medium/la
 
 Plan 3–7 refinements per iteration: critical FAILs first, then major usability, then minor.
 
+For UI changes, follow [patternfly-compliance.md](patternfly-compliance.md): look up new or changed interactions in `pf-catalog-interaction-patterns`, and verify the target version's APIs and wrappers before editing.
+
 ### Step 5: Handle Decision Level
 
 If `--decisions=human` and any refinement involves a non-trivial design choice:
@@ -100,7 +102,7 @@ Append a refinement section to `.artifacts/{ID}/changeset.md`:
 - `src/pages/ApiKeys/ApiKeyDetail.tsx` — Fixed drawer close, added keyboard nav
 ```
 
-For workspace mode, re-run post-change verification (lint + build).
+Re-run the PatternFly structure, reuse, CSS, and affected interaction checks from [patternfly-compliance.md](patternfly-compliance.md) in both modes. Briefly mention the result and any unresolved issues in the refinement summary. For workspace mode, also re-run post-change verification (lint + build) after fixes.
 
 ### Step 9: Report
 

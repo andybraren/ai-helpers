@@ -165,7 +165,7 @@ Journey and scenario rules (canonical schemas in `uxd-prototype-export`):
 
 ## Step 5: Resolve Workspace
 
-**Standalone:** create `.artifacts/{ID}/prototype/` and skip to Step 6.
+**Standalone:** create `.artifacts/{ID}/prototype/` and continue with **PatternFly preparation** below (skip workspace analysis).
 
 **Workspace:** clone into `.artifacts/{ID}/code/`. A separate `--target` only affects later push — do not clone the target. Needs elevated git permissions (`required_permissions: ["all"]` in Cursor):
 
@@ -184,6 +184,10 @@ Preserve `branch`, `target_branch`, `clone_url`, and `upstream_url` from the JSO
 *Workspace mode only. Run inline — Steps 7–10 depend on it.*
 
 Detect tech stack, conventions, navigation, design system, and verification commands (`AGENTS.md`, package scripts). Save to `.artifacts/{ID}/workspace-analysis.json` with `clone_url`, `branch`, `workspace_path`, and when publishing: `upstream_url` / `target_branch`.
+
+### PatternFly preparation (both modes, before Step 7)
+
+Follow [references/patternfly-compliance.md](references/patternfly-compliance.md): load `pf-catalog-interaction-patterns` and its interaction catalog, map journey interactions to components, then verify APIs/examples for the target PatternFly version. Read the relevant `pf-component-check` hierarchy references before composing those components. Apply this preparation even when `--decisions=skip`; no separate compliance artifact is needed.
 
 ## Step 7: Design Decisions
 
@@ -207,7 +211,7 @@ Decision pages use [references/decision-page-template.html](references/decision-
 <link rel="stylesheet" href="https://unpkg.com/@patternfly/patternfly@6/patternfly-addons.min.css" />
 ```
 
-Use PatternFly docs MCP if available. Same scenario wiring as above.
+Implement the component mapping from PatternFly preparation. Use documented PatternFly components and wrappers; prefer supported props, layout utilities, and tokens before custom CSS. Standalone HTML must follow documented PatternFly HTML markup and implement its interactions — CDN styles alone do not supply behavior. Same scenario wiring as above.
 
 **Reachability self-check** (a minute or two, then move on):
 
@@ -240,9 +244,11 @@ Re-run after evaluate so the Eval tab gets the report (`public/evals/{ID}/`). Pa
 
 ## Step 11: Post-Change Verification
 
-*Workspace mode only. Mandatory.*
+*Mandatory in both modes, before export or handoff.*
 
-Install deps if needed, lint/build/type-check changed files, fix failures introduced by the prototype, update `changeset.md`, record pass/fail in `.artifacts/{ID}/verification.json`.
+1. Follow the compliance reference's **Post-generation checks**: run `pf-component-check` and `pf-component-reuse-check` on scoped React changes, plus the CSS review. For standalone HTML, perform the documented HTML equivalent. Fix issues within the authorized scope and recheck.
+2. **Workspace:** install deps if needed, lint/build/type-check changed files, fix failures introduced by the prototype, update `changeset.md`, record pass/fail in `.artifacts/{ID}/verification.json`.
+3. **Standalone:** serve the prototype and verify the affected journeys/scenarios, interaction behavior, and keyboard access. Mention any blocked checks in the final summary.
 
 ## Step 12: Journey export (when `--export`)
 
@@ -283,6 +289,8 @@ Print ID, title, decisions, screens, journeys, bar, exports, workspace, status, 
 3. Re-invoke this skill to refine from FAIL / refinement-suggestions
 4. `uxd-prototype-publish`
 
+Briefly mention that PatternFly checks ran and flag any necessary custom CSS exceptions or unresolved findings. Do not generate a separate compliance report. Never describe skipped or blocked checks as passed.
+
 If `--pipeline` / `--speedrun`, continue with [references/pipeline-mode.md](references/pipeline-mode.md).
 
 ---
@@ -306,12 +314,14 @@ Reads `.artifacts/{ID}/eval/evaluation-report.csv` + `refinement-suggestions.jso
 - **Do not invent journeys or scenarios** that the source does not support — record assumptions instead.
 - **Scenarios must be visually distinct** on load; interaction states belong in journey `actions`, not scenarios.
 - **Workspace verification is mandatory** — lint/build failures introduced by the prototype must be fixed.
+- **PatternFly selection and checks are mandatory** for PatternFly prototypes in both modes, including refinement and `--decisions=skip`. Follow the compliance reference for missing helpers or a workspace using another design system.
 
 ## Reference Docs
 
 | Doc | When to load |
 |-----|-------------|
 | [output-formats.md](references/output-formats.md) | Writing create artifact files |
+| [patternfly-compliance.md](references/patternfly-compliance.md) | Before component selection and during post-change verification |
 | [journeys-schema.md](../uxd-prototype-export/references/journeys-schema.md) | `journeys.json` shape (owned by export) |
 | [scenarios-schema.md](../uxd-prototype-export/references/scenarios-schema.md) | `scenarios.json` shape (owned by export) |
 | [scenario-brainstorm.md](references/scenario-brainstorm.md) | Planning page scenarios |
