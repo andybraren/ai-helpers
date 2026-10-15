@@ -156,6 +156,9 @@ test('exports a multi-file viewer and a dry-run does not call Google', () => {
   assert.match(html, /href="\.\/assets\/custom\.css"/);
   assert.match(html, /href="\.\/slide-overrides\.css"/);
   assert.match(html, /src="\.\/viewer\.js"/);
+  const viewer = fs.readFileSync(path.join(output, 'viewer.js'), 'utf8');
+  const helperNames = [...viewer.matchAll(/^  function (\w+)\(/gm)].map((match) => match[1]);
+  assert.equal(new Set(helperNames).size, helperNames.length, 'viewer helpers must not shadow one another');
   assert.doesNotMatch(html, /function fit\(/);
   assert.doesNotMatch(html, /fonts\.googleapis/);
   assert.match(fs.readFileSync(path.join(output, 'assets', 'default.css'), 'utf8'), /\.slide-title/);

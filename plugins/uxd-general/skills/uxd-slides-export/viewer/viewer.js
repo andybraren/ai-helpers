@@ -244,7 +244,7 @@
       section.appendChild(renderRailLabel(group));
       const list = document.createElement('ul');
       for (const item of group.items || []) {
-        list.appendChild(group.kind === 'users' ? renderPersona(itemText(item)) : renderRailItem(item));
+        list.appendChild(group.kind === 'users' ? renderBeatPersona(itemText(item)) : renderRailItem(item));
       }
       section.appendChild(list);
       rail.appendChild(section);
@@ -289,7 +289,7 @@
     return typeof item === 'string' ? 0 : Number(item && item.depth || 0);
   }
 
-  function renderPersona(item) {
+  function renderBeatPersona(item) {
     const line = document.createElement('li');
     line.className = 'persona';
     const parts = String(item).match(/^(.*?)\s+[—–-]\s+(.*)$/);
