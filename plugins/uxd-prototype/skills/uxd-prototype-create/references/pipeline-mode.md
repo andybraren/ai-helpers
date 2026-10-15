@@ -47,7 +47,7 @@ pipeline:
   workspace: https://gitlab.example.com/user/fork.git
   workspace_branch: main          # optional; clone branch for --workspace
   decisions: skip
-  # depth: normal          # only when decisions is auto or human
+  # depth: normal          # optional explicit exploration effort, not a count
   url: http://localhost:3000
   target: repo
   target_repo_url: https://gitlab.example.com/org/canonical.git
@@ -66,7 +66,7 @@ When `--target` is a git URL, normalize `target` to `repo` and store the URL in 
 | Flag | Default |
 |------|---------|
 | `--decisions` | `skip` |
-| `--depth` | `normal` (ignored when `--decisions=skip`) |
+| `--depth` | `normal` exploration effort; no count quota or onboarding question (ignored with `skip`) |
 | `--target` | `none` |
 | `--max-refine-cycles` | `3` |
 | `--headless` | off |

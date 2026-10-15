@@ -189,8 +189,8 @@ prototype_summary:
   # How the prototype was built
   build_mode: existing-codebase  # standalone-html | existing-codebase
   decision_mode: skip            # skip | auto | human (legacy: decide/interactive → human)
-  # decision_depth: normal       # under | normal | over — only when decision_mode is auto or human
-  # decisions_count: 5           # only when decision_mode is auto or human
+  # decision_depth: normal       # optional explicit exploration effort; never a decision quota
+  # decisions_count: 2           # actual surfaced tradeoffs, possibly zero; auto or human only
 
   # What was produced
   files_created: 3
@@ -236,8 +236,8 @@ prototype_summary:
 | `source.reference` | string | The Jira key, Figma URL, or omitted when the source was freeform text |
 | `source.rfe_count` | int | Number of RFEs merged into this prototype (1 for single-ticket, 2+ for composed features) |
 | `build_mode` | enum | `standalone-html` — self-contained HTML/CSS/JS with PatternFly CDN. `existing-codebase` — modifications to a cloned product repo |
-| `decision_mode` | enum | `skip` — no decision kit; design calls made while building. `auto` — AI resolved decisions with batch summary override. `human` — user picked from HTML comparison pages one at a time. Maps 1:1 from `--decisions`. |
-| `decision_depth` | enum | `under` (2–3), `normal` (4–7), or `over` (8–12). Only present when `decision_mode` is `auto` or `human` |
+| `decision_mode` | enum | `skip` — no decision kit; design calls made while building. `auto` — AI resolved decisions with batch summary override. `human` — user chooses independent decisions together on the review page or in chat. Maps 1:1 from `--decisions`. |
+| `decision_depth` | enum | Optional exploration effort (`under`, `normal`, `over`), not a count. Record when explicitly supplied and `decision_mode` is `auto` or `human` |
 | `status` | enum | `draft` (initial creation), `refined` (after refinement pass), `reviewed` (after evaluation), `submitted` (pushed to repo) |
 | `verification` | object | Post-change verification results. Only present for `existing-codebase` builds. Omit entirely for `standalone-html` |
 | `prototype_path` | string | Relative path to the prototype files |
