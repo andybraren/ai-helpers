@@ -1,5 +1,5 @@
 name: uxd-prototype-create-eval
-description: Evaluate approachable onboarding, experience plans, and meaningful design choices
+description: Evaluate onboarding, meaningful design choices, and code-check versus browser-review boundaries
 
 skill: uxd-prototype:uxd-prototype-create
 
@@ -152,6 +152,27 @@ judges:
       {{ outputs }}
       {{ tool_trace }}
 
+  - name: keeps_browser_review_at_handoff
+    description: Keeps Create checks in source and opens the prototype only for user handoff
+    if: "annotations.get('case_type') == 'code-checks-before-handoff'"
+    feedback_type: bool
+    prompt: |
+      The prototype is already generated in a PatternFly React workspace. This
+      is ordinary Create, with no requested evaluation, pipeline, or export.
+      Pass if the assistant keeps scoped PatternFly structure/reuse/CSS checks
+      and applicable lint/build/type checks, then plans to launch or reuse the
+      server and open only the entry page at final handoff for the user to review.
+      Fail if it plans to browse routes, execute journeys/scenarios, test keyboard
+      behavior, run browser/E2E commands, take verification screenshots, or call
+      Evaluate before handoff. Also fail if it drops code-level checks entirely
+      or claims those establish runtime behavior or acceptance-criteria passes.
+      The exercise explicitly requests a description only, so no tool actions
+      that start a server, browser, build, or file writes should occur.
+
+      {{ conversation }}
+      {{ outputs }}
+      {{ tool_trace }}
+
 thresholds:
   asks_before_building:
     min_pass_rate: 1.0
@@ -162,4 +183,6 @@ thresholds:
   avoids_manufactured_choices:
     min_pass_rate: 1.0
   records_without_rebuilding:
+    min_pass_rate: 1.0
+  keeps_browser_review_at_handoff:
     min_pass_rate: 1.0

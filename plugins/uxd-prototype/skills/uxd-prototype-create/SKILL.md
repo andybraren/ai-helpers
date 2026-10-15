@@ -19,6 +19,8 @@ Family: **create → evaluate → publish** (optional export along the way). Pip
 
 **Workspace vs target:** `--workspace` is the codebase you build in (clone, generate, verify). `--target` is only where the MR/PR lands. Never clone or generate against the target repo.
 
+**Create and hand off:** use code-level checks during creation and ordinary refinement. Start the prototype server and open its entry page only at the final handoff for the user to review; do not browse routes, exercise journeys/scenarios, or run interaction/keyboard tests as part of Create. Opening the design-choice report for user input is separate from testing the prototype. Browser evaluation belongs to `uxd-prototype-evaluate` when explicitly requested, including an explicit pipeline or headless run; `--export` may also use the browser for requested captures.
+
 ## Inputs
 
 | Input | Required | Source |
@@ -202,11 +204,7 @@ Follow [references/decision-workflow.md](references/decision-workflow.md). Reuse
 
 Implement the component mapping from PatternFly preparation. Use documented PatternFly components and wrappers; prefer supported props, layout utilities, and tokens before custom CSS. Standalone HTML must follow documented PatternFly HTML markup and implement its interactions — CDN styles alone do not supply behavior. Same scenario wiring as above.
 
-**Reachability self-check** (a minute or two, then move on):
-
-- Every new route is registered and linked from nav/CTAs — no orphan screens
-- Every `journeys.json` route is reachable; steps with `actions` have matching stable selectors
-- Every non-default scenario is selectable via `?scenario=<id>` and visually distinct from `default`
+**Source consistency check:** review route registrations, navigation links, journey action selectors, and scenario/mock mappings in the changed code. Keep `journeys.json` and `scenarios.json` aligned with the implementation. This is a code review; leave runtime walkthroughs and visual confirmation to the user at handoff.
 
 ## Step 9: Write Prototype Artifacts
 
@@ -231,13 +229,15 @@ bash "${EXPORT_SKILL}/scripts/install-prototype-bar.sh" \
 
 Re-run after evaluate so the Eval tab gets the report (`public/evals/{ID}/`). Pass `--no-eval-copy` if the report is not needed.
 
-## Step 11: Post-Change Verification
+## Step 11: Code-Level Checks
 
-*Mandatory in both modes, before export or handoff.*
+*Apply in both modes before handoff.*
 
-1. Follow the compliance reference's **Post-generation checks**: run `pf-component-check` and `pf-component-reuse-check` on scoped React changes, plus the CSS review. For standalone HTML, perform the documented HTML equivalent. Fix issues within the authorized scope and recheck.
-2. **Workspace:** install deps if needed, lint/build/type-check changed files, fix failures introduced by the prototype, update `changeset.md`, record pass/fail in `.artifacts/{ID}/verification.json`.
-3. **Standalone:** serve the prototype and verify the affected journeys/scenarios, interaction behavior, and keyboard access. Mention any blocked checks in the final summary.
+1. Follow the compliance reference's **Post-generation code checks**: run `pf-component-check` and `pf-component-reuse-check` on scoped React changes, plus the CSS review. For standalone HTML, inspect the documented HTML structure and event wiring in source. Fix issues within the authorized scope and recheck changed code.
+2. **Workspace:** install deps if needed and run applicable lint/build/type checks. Fix failures introduced by the prototype, update `changeset.md`, and record results in `.artifacts/{ID}/verification.json`.
+3. **Standalone:** review the generated HTML/CSS/JavaScript for syntax, documented component structure, and scenario wiring. No server or browser is needed for this step.
+
+Keep these checks scoped to the changed code. Do not start the dev server, open the prototype, or run browser/E2E tests for verification. Report the code checks actually performed; runtime review is deferred to handoff rather than treated as a blocked check.
 
 ## Step 12: Journey export (when `--export`)
 
@@ -271,14 +271,13 @@ node "${EXPORT_SKILL}/scripts/export-helper.mjs" \
 
 ## Step 13: Summary and Next Steps
 
-Lead with what people can try and a link to the prototype. Briefly explain the chosen approach, assumptions, and verification results. Link relevant artifacts without dumping internal flags or empty fields. Suggest applicable next steps:
+At this final handoff, start the prototype with its documented launch command if needed, or reuse its existing server. Open the prototype's entry page once for the user to review and confirm. Do not click through routes, test scenarios, or begin an evaluation. If launching is unavailable, provide the entry file or launch command and explain the specific limitation.
 
-1. Serve the prototype — Prototype Bar **Export**, or `uxd-prototype-export`
-2. `uxd-prototype-evaluate {ID} <URL> [--workspace=…]`
-3. Re-invoke this skill to refine from FAIL / refinement-suggestions
-4. `uxd-prototype-publish`
+Lead with what people can try and the prototype link. Briefly describe what was built, assumptions, and the code checks performed, including relevant PatternFly structure/reuse/CSS findings or exceptions. Make clear that the user will review the running experience; do not imply that browser behavior or acceptance criteria have been evaluated. Keep artifact links and next steps relevant:
 
-Briefly mention that PatternFly checks ran and flag any necessary custom CSS exceptions or unresolved findings. Do not generate a separate compliance report. Never describe skipped or blocked checks as passed.
+1. Invite the user to try the prototype and share changes they want
+2. Offer `uxd-prototype-evaluate {ID} <URL> [--workspace=…]` for a separate evaluation
+3. Offer export or publishing when useful
 
 If `--pipeline` / `--speedrun`, continue with [references/pipeline-mode.md](references/pipeline-mode.md).
 
@@ -286,9 +285,9 @@ If `--pipeline` / `--speedrun`, continue with [references/pipeline-mode.md](refe
 
 ## Refinement
 
-After evaluate, apply targeted fixes from failed ACs — do not rewrite the prototype. Full procedure: [references/refinement-procedure.md](references/refinement-procedure.md).
+Apply targeted changes from user feedback or existing evaluation findings — do not rewrite the prototype. Full procedure: [references/refinement-procedure.md](references/refinement-procedure.md).
 
-Reads `.artifacts/{ID}/eval/evaluation-report.csv` + `refinement-suggestions.json`. Pass = zero FAIL. Default max: 3 cycles.
+Reads `.artifacts/{ID}/eval/evaluation-report.csv` + `refinement-suggestions.json`. For explicitly requested evaluation loops, pass = zero FAIL and default max = 3 cycles. Ordinary refinement applies feedback, runs code-level checks, and hands back the prototype without re-evaluating.
 
 ```
 /uxd-prototype-create refine {ID} [--decisions skip|auto|human] [--headless] [--max-cycles 3]
@@ -302,7 +301,7 @@ Reads `.artifacts/{ID}/eval/evaluation-report.csv` + `refinement-suggestions.jso
 - **Do not clone the target.** Build only in `--workspace`.
 - **Do not invent journeys or scenarios** that the source does not support — record assumptions instead.
 - **Scenarios must be visually distinct** on load; interaction states belong in journey `actions`, not scenarios.
-- **Workspace verification is mandatory** — lint/build failures introduced by the prototype must be fixed.
+- **Workspace code checks are mandatory** — lint/build failures introduced by the prototype must be fixed. Prototype launch is for the final user handoff; browser walkthroughs require a separate evaluation request.
 - **PatternFly selection and checks are mandatory** for PatternFly prototypes in both modes, including refinement and `--decisions=skip`. Follow the compliance reference for missing helpers or a workspace using another design system.
 
 ## Reference Docs
@@ -310,7 +309,7 @@ Reads `.artifacts/{ID}/eval/evaluation-report.csv` + `refinement-suggestions.jso
 | Doc | When to load |
 |-----|-------------|
 | [output-formats.md](references/output-formats.md) | Writing create artifact files |
-| [patternfly-compliance.md](references/patternfly-compliance.md) | Before component selection and during post-change verification |
+| [patternfly-compliance.md](references/patternfly-compliance.md) | Before component selection and during code-level checks |
 | [journeys-schema.md](../uxd-prototype-export/references/journeys-schema.md) | `journeys.json` shape (owned by export) |
 | [scenarios-schema.md](../uxd-prototype-export/references/scenarios-schema.md) | `scenarios.json` shape (owned by export) |
 | [scenario-brainstorm.md](references/scenario-brainstorm.md) | Planning page scenarios |

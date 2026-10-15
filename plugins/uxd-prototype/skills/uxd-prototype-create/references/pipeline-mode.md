@@ -6,6 +6,8 @@ End-to-end orchestration: create → evaluate → optional refine → publish.
 
 User asks for a full pipeline, "speedrun", "create and evaluate and publish", or passes `--pipeline` / `--speedrun`.
 
+Create itself performs source checks and ends at the user handoff. An explicit pipeline request additionally authorizes the separate serving/evaluation stages below; do not add a browser smoke test inside the Create stage.
+
 ## Onboarding extras (pipeline only)
 
 After normal create questions, also ask:

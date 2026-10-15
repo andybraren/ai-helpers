@@ -1,4 +1,4 @@
-# PatternFly Selection and Compliance
+# PatternFly Selection and Code Checks
 
 Apply during initial creation and refinement. Standalone uses PatternFly 6; workspace mode uses the project's installed version. If the workspace uses another design system, preserve its conventions and briefly mention that PatternFly checks are not applicable and why. Do not migrate the workspace implicitly.
 
@@ -30,19 +30,19 @@ Do not assume separately installed plugins are siblings of this skill. If a help
 - If custom CSS is necessary for an unsupported requirement, keep it narrowly scoped. Verify why supported props, composition, utilities, or tokens are insufficient, and briefly explain the exception in the final summary. Using a token alone does not justify an override.
 - For standalone HTML, use documented PatternFly HTML component structures/classes for the selected version. Supply JavaScript, ARIA state updates, focus management, and keyboard behavior required by those examples. Do not emit React-only props into HTML or treat styled markup as a working control.
 
-## Post-generation checks
+## Post-generation code checks
 
-Run after prototype generation and bar installation, before final build/export/handoff, and after each refinement that changes UI.
+Review changed source after prototype generation and bar installation, before final build/export/handoff, and after refinements that change UI. These are code-level checks. Keep the prototype server and browser for the final user handoff; do not run journey, scenario, interaction, or keyboard walkthroughs here.
 
 1. **Scope:** supply an explicit list of files created/modified by this prototype, including associated styles. In a git workspace, intersect the changeset with staged, unstaged, and untracked changes; exclude unrelated pre-existing edits and generated/vendor files. For standalone or a non-git workspace, use the explicit prototype file list rather than a whole-repository scan.
 2. **Structure:** apply `pf-component-check` to scoped PatternFly React files, reading the relevant family references. Check required wrappers, parent/child placement, slots, labels, and semantic structure. Follow the target version's documented examples when a reference differs.
 3. **Reuse:** apply `pf-component-reuse-check` to scoped new/changed React controls. Verify matches by role, interaction, and prop coverage. Preserve valid PatternFly compositions and domain wrappers. Honor the helper's replacement approval rules: apply replacements when already authorized; otherwise report the proposed change and request the required choice. Do not expand into untouched committed components.
 4. **CSS:** inspect all scoped styles affecting PatternFly components, even when no structural violation was found. Remove compensating overrides after fixing structure; replace unnecessary overrides with supported APIs/utilities. Document necessary exceptions as above.
-5. **Standalone equivalent:** the React audits do not scan plain HTML. Manually check the selected HTML examples for wrapper hierarchy, reuse of shipped controls, CSS exceptions, and implemented behavior. Label this as a manual HTML review, not a React skill pass.
-6. **Fix and recheck:** correct unambiguous issues introduced by this run within the authorized scope; preserve handlers, mocks, routes, and scenarios. Resolve behavior-changing choices through the existing decision flow or report them as pending. Re-run affected checks and project verification after fixes. Exercise affected journeys/scenarios, including keyboard activation, focus return, and dismissal for changed interactive controls.
+5. **Standalone equivalent:** the React audits do not scan plain HTML. Compare generated source with the selected HTML examples for wrapper hierarchy, shipped controls, CSS exceptions, event handlers, and ARIA attributes. Label this as an HTML source review, not a React skill pass or browser test.
+6. **Fix and recheck:** correct unambiguous issues introduced by this run within the authorized scope; preserve handlers, mocks, routes, and scenarios. Resolve behavior-changing choices through the existing decision flow or report them as pending. Re-run affected source checks and applicable lint/build/type checks after fixes. Leave runtime behavior and visual confirmation for the user to review at handoff or for a separately requested evaluation.
 
 ## Completion
 
-Briefly mention that PatternFly structure, reuse, CSS, and interaction checks ran. Flag unresolved findings, blocked checks, missing-helper fallbacks, pending replacement decisions, and necessary custom CSS/components only when relevant. Do not generate a separate compliance artifact or full report.
+Briefly mention the PatternFly structure, reuse, and CSS source checks actually performed. Flag unresolved findings, blocked checks, missing-helper fallbacks, pending replacement decisions, and necessary custom CSS/components only when relevant. Do not generate a separate compliance artifact or full report.
 
-Do not claim PatternFly compliance while checks are blocked or violations remain unresolved, even if the prototype builds or its acceptance criteria pass. Distinguish manual inspection from browser checks and never describe an unperformed check as passed.
+Describe the scope as a code-level review. Do not claim full PatternFly compliance or runtime verification from source inspection or a successful build. Deferred browser review is an expected handoff step, not a failed or blocked code check; never describe an unperformed check as passed.
