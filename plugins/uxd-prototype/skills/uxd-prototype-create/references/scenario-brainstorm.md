@@ -1,6 +1,6 @@
 # Scenario brainstorm checklist
 
-Required during Step 4 **before** writing `.artifacts/{ID}/scenarios.json`.
+Required during Step 4 **before** writing `artifacts/{ID}/scenarios.json`.
 Do not stop at “happy path + one error.” Walk each page/route through the
 condition axes below and keep every axis that produces a **distinct on-load
 visual**.

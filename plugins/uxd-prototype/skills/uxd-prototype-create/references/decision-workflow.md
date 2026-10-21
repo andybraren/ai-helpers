@@ -14,10 +14,10 @@ Group independent decisions in one review. When one answer changes the viable op
 
 ## Data first, one reusable report
 
-Write `.artifacts/{ID}/decisions/decisions.json` as the authoritative record. Use Python 3 (standard library only) and the bundled renderer instead of hand-building page chrome:
+Write `artifacts/{ID}/decisions/decisions.json` as the authoritative record. Use Python 3 (standard library only) and the bundled renderer instead of hand-building page chrome:
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/decision_kit.py" render ".artifacts/{ID}/decisions/decisions.json"
+python3 "${CLAUDE_SKILL_DIR}/scripts/decision_kit.py" render "artifacts/{ID}/decisions/decisions.json"
 ```
 
 The renderer reuses [decision-page-template.html](decision-page-template.html) and creates only `index.html`: one report containing every decision, preview, and choice control. Do not create individual comparison pages, a top navigation strip, or cross-page links. No package install, server, JSON fetch, or browser storage is required. Legacy `htmlFile` fields are ignored by the renderer; new records may point to `index.html#<decision-id>` if a downstream artifact needs a link.
@@ -111,7 +111,7 @@ Partial responses are allowed. Record them and ask only about remaining choices.
 The assistant saves the pasted or normalized response to a temporary JSON file and applies it:
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/decision_kit.py" apply ".artifacts/{ID}/decisions/decisions.json" --response /path/to/response.json
+python3 "${CLAUDE_SKILL_DIR}/scripts/decision_kit.py" apply "artifacts/{ID}/decisions/decisions.json" --response /path/to/response.json
 ```
 
 The helper validates the whole response before updating JSON atomically, preserves unanswered records, and does not regenerate pages. Acknowledge recorded choices in a sentence; do not repeat the complete options, links, and instructions after each answer. Show a compact recap after the batch is complete.

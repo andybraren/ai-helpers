@@ -8,10 +8,10 @@ Refine a prototype from user feedback or existing evaluation findings. Ordinary 
 
 Find the existing prototype artifacts:
 
-1. Check `.artifacts/{ID}/workspace-analysis.json` — if present, this is workspace mode. Read `workspace_path` (`.artifacts/{ID}/code`).
-2. Check `.artifacts/{ID}/changeset.md` — parse for the list of created/modified files.
-3. Check `.artifacts/{ID}/prototype/` — if present, this is standalone mode with HTML files.
-4. Read `.artifacts/{ID}/metadata.json` for iteration count and decision history.
+1. Check `artifacts/{ID}/workspace-analysis.json` — if present, this is workspace mode. Read `workspace_path` (`artifacts/{ID}/code`).
+2. Check `artifacts/{ID}/changeset.md` — parse for the list of created/modified files.
+3. Check `artifacts/{ID}/prototype/` — if present, this is standalone mode with HTML files.
+4. Read `artifacts/{ID}/metadata.json` for iteration count and decision history.
 
 If none exist, stop: "I can't find prototype artifacts for {ID}. Run uxd-prototype-create first."
 
@@ -21,14 +21,14 @@ Use the user’s requested changes and any existing `uxd-prototype-evaluate` out
 
 | Artifact | Use |
 |----------|-----|
-| `.artifacts/{ID}/eval/evaluation-report.csv` | AC verdicts (PASS / FAIL / FLAGGED) and usability scores |
-| `.artifacts/{ID}/eval/refinement-suggestions.json` | Actionable fix suggestions from Phase A / consistency |
-| `.artifacts/{ID}/eval/iteration-log.json` | Prior fix-loop history |
-| `.artifacts/{ID}/eval/usability-thinkaloud-*.md` | Phase B persona findings (optional) |
+| `artifacts/{ID}/eval/evaluation-report.csv` | AC verdicts (PASS / FAIL / FLAGGED) and usability scores |
+| `artifacts/{ID}/eval/refinement-suggestions.json` | Actionable fix suggestions from Phase A / consistency |
+| `artifacts/{ID}/eval/iteration-log.json` | Prior fix-loop history |
+| `artifacts/{ID}/eval/usability-thinkaloud-*.md` | Phase B persona findings (optional) |
 
 **For the explicit evaluation loop only, pass condition for stopping refinement:** zero `FAIL` verdicts in Section 1 of `evaluation-report.csv`. `FLAGGED` items need human review but do not block the loop by themselves.
 
-If those files are missing but `.artifacts/{ID}/reviews/summary.md` exists (legacy rubric), use its findings as a fallback. A fresh AC-level evaluation is optional and separate from ordinary refinement.
+If those files are missing but `artifacts/{ID}/reviews/summary.md` exists (legacy rubric), use its findings as a fallback. A fresh AC-level evaluation is optional and separate from ordinary refinement.
 
 An evaluation is not a prerequisite for applying user feedback. If neither findings nor a requested change are available, ask what the user would like to change; do not require them to start a server or run Evaluate first.
 
@@ -73,7 +73,7 @@ If `--decisions=skip` (default), apply the refinement without a decision kit.
 Apply targeted edits (not full rewrites):
 
 - **Workspace mode**: Edit files in the workspace with precise string replacements/insertions.
-- **Standalone mode**: Edit HTML files in `.artifacts/{ID}/prototype/`.
+- **Standalone mode**: Edit HTML files in `artifacts/{ID}/prototype/`.
 
 For each refinement, read the target file, make the specific change, and review the affected source and call sites.
 
@@ -82,7 +82,7 @@ For each refinement, read the target file, make the specific change, and review 
 Increment iteration and record history:
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/frontmatter.py" set ".artifacts/{ID}/rfe-snapshot.md" \
+python3 "${CLAUDE_SKILL_DIR}/scripts/frontmatter.py" set "artifacts/{ID}/rfe-snapshot.md" \
   status="refined" iteration="{N+1}" updated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 ```
 
@@ -90,9 +90,11 @@ Update `metadata.json` with new iteration count and `refinement_history` array e
 
 Update `prototype-summary.yaml` with the new `iteration`, `status: refined`, `updated_at`, updated file counts, and append a `refinements` entry (see output-formats.md for schema).
 
+When screens, journeys, scenarios, or visible copy changed, rewrite `artifacts/{ID}/{ID}-design-spec.md` from the updated prototype and those JSON files. Follow [design-spec.md](design-spec.md). Leave the file unchanged when the refinement did not change UI content.
+
 ### Step 8: Update Changeset
 
-Append a refinement section to `.artifacts/{ID}/changeset.md`:
+Append a refinement section to `artifacts/{ID}/changeset.md`:
 
 ```markdown
 ## Refinement {N} ({date})
