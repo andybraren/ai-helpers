@@ -16,7 +16,7 @@ Do not assume separately installed plugins are siblings of this skill. If a help
 
 ## Before generation: select by interaction
 
-1. Extract UI roles and interactions from `journeys.json` and `scenarios.json`, including empty, loading, and error states. Include keyboard, focus, selection, and dismissal behavior rather than matching visual appearance alone.
+1. Extract UI roles and interactions from `journeys.json` and `states.json`, including empty, loading, and error states. Include keyboard, focus, selection, and dismissal behavior rather than matching visual appearance alone.
 2. Load the catalog and look up each distinct interaction. For example, choosing one item from a menu points to Select; revealing contextual help by click points to Popover, while brief help on hover/focus points to Tooltip. Verify the specific variant and behavior in documentation.
 3. Use the PatternFly docs MCP when available to verify candidate components, props, examples, and required wrappers for the project's version. Otherwise use official PatternFly documentation or installed package source/types/examples. The catalog narrows the search; it does not establish API compatibility.
 4. Check existing workspace components for a suitable PatternFly composition before adding a new one. Prefer documented components and compositions over custom controls. Preserve domain-specific orchestration wrappers.
@@ -32,14 +32,14 @@ Do not assume separately installed plugins are siblings of this skill. If a help
 
 ## Post-generation code checks
 
-Review changed source after prototype generation and bar installation, before final build/export/handoff, and after refinements that change UI. These are code-level checks. Keep the prototype server and browser for the final user handoff; do not run journey, scenario, interaction, or keyboard walkthroughs here.
+Review changed source after prototype generation and bar installation, before final build/export/handoff, and after refinements that change UI. These are code-level checks. Keep the prototype server and browser for the final user handoff; do not run journey, state, interaction, or keyboard walkthroughs here.
 
 1. **Scope:** supply an explicit list of files created/modified by this prototype, including associated styles. In a git workspace, intersect the changeset with staged, unstaged, and untracked changes; exclude unrelated pre-existing edits and generated/vendor files. For standalone or a non-git workspace, use the explicit prototype file list rather than a whole-repository scan.
 2. **Structure:** apply `pf-component-check` to scoped PatternFly React files, reading the relevant family references. Check required wrappers, parent/child placement, slots, labels, and semantic structure. Follow the target version's documented examples when a reference differs.
 3. **Reuse:** apply `pf-component-reuse-check` to scoped new/changed React controls. Verify matches by role, interaction, and prop coverage. Preserve valid PatternFly compositions and domain wrappers. Honor the helper's replacement approval rules: apply replacements when already authorized; otherwise report the proposed change and request the required choice. Do not expand into untouched committed components.
 4. **CSS:** inspect all scoped styles affecting PatternFly components, even when no structural violation was found. Remove compensating overrides after fixing structure; replace unnecessary overrides with supported APIs/utilities. Document necessary exceptions as above.
 5. **Standalone equivalent:** the React audits do not scan plain HTML. Compare generated source with the selected HTML examples for wrapper hierarchy, shipped controls, CSS exceptions, event handlers, and ARIA attributes. Label this as an HTML source review, not a React skill pass or browser test.
-6. **Fix and recheck:** correct unambiguous issues introduced by this run within the authorized scope; preserve handlers, mocks, routes, and scenarios. Resolve behavior-changing choices through the existing decision flow or report them as pending. Re-run affected source checks and applicable lint/build/type checks after fixes. Leave runtime behavior and visual confirmation for the user to review at handoff or for a separately requested evaluation.
+6. **Fix and recheck:** correct unambiguous issues introduced by this run within the authorized scope; preserve handlers, mocks, routes, and states. Resolve behavior-changing choices through the existing decision flow or report them as pending. Re-run affected source checks and applicable lint/build/type checks after fixes. Leave runtime behavior and visual confirmation for the user to review at handoff or for a separately requested evaluation.
 
 ## Completion
 

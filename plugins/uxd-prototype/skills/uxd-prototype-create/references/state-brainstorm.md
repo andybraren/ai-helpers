@@ -1,12 +1,13 @@
-# Scenario brainstorm checklist
+# State brainstorm checklist
 
-Required during Step 4 **before** writing `artifacts/{ID}/scenarios.json`.
+Required during Step 4 **before** writing `artifacts/{ID}/states.json`.
 Do not stop at “happy path + one error.” Walk each page/route through the
 condition axes below and keep every axis that produces a **distinct on-load
 visual**.
 
-Catalog schema: `uxd-prototype-export/references/scenarios-schema.md`.
-Mock wiring (end-state on load): [scenario-mocks.md](scenario-mocks.md).
+Field rules (`id`, `name`, `description`, `default`): `uxd-prototype-export/references/scenarios-schema.md`.
+Write the file as `states.json` and name each page's collection `states`.
+Mock wiring (end-state on load): [state-mocks.md](state-mocks.md).
 
 ## Condition axes
 
@@ -28,13 +29,13 @@ are easy to miss and must still be considered.
 
 ## Selection rules
 
-1. Prefer **3–7 scenarios per page** that change visible state.
+1. Prefer **3–7 states per page** that change what is visible on load.
 2. Skip duplicates that would look identical after load (same prompt, model,
    alerts, empty state, etc.).
-3. Keep modal/drawer/open overlays in journey step `actions` — not as scenarios.
-4. Every scenario entry must name the **end-state the page should render on
+3. Keep modal/drawer/open overlays in journey step `actions`.
+4. Every state entry must name the **end-state the page should render on
    load** in one line (use `description` for this).
-5. Always include a `default` scenario (or mark exactly one `default: true`).
+5. Always include a `default` state (or mark exactly one `default: true`).
 
 ## Description format
 
@@ -45,9 +46,9 @@ Good: "Prompt loaded; associated model exact-selected; info toast visible"
 Bad:  "User opens Load prompt, picks a row, and confirms"
 ```
 
-## Quick self-check before writing scenarios.json
+## Quick self-check before writing states.json
 
 - [ ] Walked every axis above for each page (not only AC bullets)
-- [ ] Each scenario has a one-line on-load end-state in `description`
-- [ ] No two scenarios would render the same UI after load
-- [ ] Interaction-only states (modal open) are journey `actions`, not scenarios
+- [ ] Each state has a one-line on-load end-state in `description`
+- [ ] No two states would render the same UI after load
+- [ ] Modal and drawer open belong in journey `actions`

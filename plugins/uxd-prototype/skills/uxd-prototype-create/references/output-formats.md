@@ -10,8 +10,8 @@ artifacts/{ID}/
   prototype/            # standalone HTML
   decisions/            # decision pages + decisions.json
   eval/                 # evaluate outputs (report, screenshots, Playwright scripts)
-  exports/              # optional journey × scenario captures
-  *.json / *.md / …     # snapshots, metadata, journeys, scenarios
+  exports/              # optional journey × state captures
+  *.json / *.md / …     # snapshots, metadata, journeys, states
   {ID}-design-spec.md   # QE companion (screens, journeys, roles, sample data)
 ```
 
@@ -85,7 +85,7 @@ Written during Step 9. Tracks prototype state across creation and refinement. Us
   "workspace_path": "artifacts/PROJ-298/code",
   "screens": ["ApiKeyList", "ApiKeyDetail", "CreateApiKeyWizard"],
   "journeys_path": "artifacts/PROJ-298/journeys.json",
-  "scenarios_path": "artifacts/PROJ-298/scenarios.json",
+  "states_path": "artifacts/PROJ-298/states.json",
   "design_spec_path": "artifacts/PROJ-298/PROJ-298-design-spec.md",
   "prototype_bar": true,
   "exports": {
@@ -101,7 +101,7 @@ Written during Step 9. Tracks prototype state across creation and refinement. Us
 
 Status values: `"draft"`, `"refined"`, `"reviewed"`, `"submitted"`.
 
-Optional fields: `journeys_path`, `scenarios_path`, `design_spec_path`, `prototype_bar`, `exports` (populated when `--export` runs), `source_rfes` (multi-RFE compose), `sources` (normalized provenance for the Prototype Bar), `figma_url`.
+Optional fields: `journeys_path`, `states_path`, `design_spec_path`, `prototype_bar`, `exports` (populated when `--export` runs), `source_rfes` (multi-RFE compose), `sources` (normalized provenance for the Prototype Bar), `figma_url`.
 
 ## artifacts/{ID}/prototype-bar.json
 
@@ -139,7 +139,7 @@ Or write it directly from `metadata.json` fields. Schema: see `uxd-prototype-exp
 }
 ```
 
-`sources` is a single list for all provenance (outcome, RFE, strat, Figma, description). Outcome / strat entries are usually added later by evaluate when `outcome-context.json` exists. `views.eval` uses the conventional static path `/evals/{ID}/` so Pages hosting works once the report is copied there. `scenarios` is a slim flatten of `scenarios.json` (synced by `sync-prototype-bar-config.mjs`) for the bar Scenario menu.
+`sources` is a single list for all provenance (outcome, RFE, strat, Figma, description). Outcome / strat entries are usually added later by evaluate when `outcome-context.json` exists. `views.eval` uses the conventional static path `/evals/{ID}/` so Pages hosting works once the report is copied there. `scenarios` is a slim flatten of `states.json` (synced by `sync-prototype-bar-config.mjs`) for the bar menu. The active state is `?state=<id>`.
 
 ## artifacts/{ID}/changeset.md
 
@@ -202,7 +202,7 @@ prototype_summary:
     - ApiKeyDetail
     - CreateApiKeyWizard
   journeys_path: artifacts/PROJ-298/journeys.json
-  scenarios_path: artifacts/PROJ-298/scenarios.json
+  states_path: artifacts/PROJ-298/states.json
   design_spec_path: artifacts/PROJ-298/PROJ-298-design-spec.md
   prototype_bar: true
   prototype_path: artifacts/PROJ-298/code  # or artifacts/PROJ-298/prototype/ for standalone
@@ -273,19 +273,44 @@ Written during Step 4 (kept in sync if flows change). Drives implementation reac
 
 Also keep the flat `screens` list in `metadata.json` / `prototype-summary.yaml` as a convenience index of screen names.
 
-## artifacts/{ID}/scenarios.json
+## artifacts/{ID}/states.json
 
-Written during Step 4 (kept in sync if pages/conditions change). Sibling to `journeys.json`. Catalog of **data/condition variants** per page. Interaction states (modal open) stay in journey `actions` — not scenarios.
+Written during Step 4 (kept in sync if pages/conditions change). Sibling to `journeys.json`. Catalog of **data/condition variants** per page. Modal and drawer open stay in journey `actions`.
 
-**Canonical schema:** [scenarios-schema.md](../../uxd-prototype-export/references/scenarios-schema.md) in `uxd-prototype-export`.
+```json
+{
+  "prototype_id": "PROJ-298",
+  "pages": [
+    {
+      "route": "/api-keys",
+      "screen": "ApiKeyList",
+      "states": [
+        {
+          "id": "default",
+          "name": "Populated list",
+          "description": "Happy path with several API keys",
+          "default": true
+        },
+        {
+          "id": "empty",
+          "name": "Empty list",
+          "description": "No API keys yet"
+        }
+      ]
+    }
+  ]
+}
+```
 
-Brainstorm checklist: [scenario-brainstorm.md](scenario-brainstorm.md). Mock wiring: [scenario-mocks.md](scenario-mocks.md). Every journey route needs at least a `default` scenario.
+The active state is `?state=<id>` (`default` when absent). Field rules for each entry (`id`, `name`, `description`, `default`): [scenarios-schema.md](../../uxd-prototype-export/references/scenarios-schema.md). The file name is `states.json` and the page collection key is `states`.
+
+Brainstorm checklist: [state-brainstorm.md](state-brainstorm.md). Mock wiring: [state-mocks.md](state-mocks.md). Every journey route needs at least a `default` state.
 
 ## artifacts/{ID}/{ID}-design-spec.md
 
-Written during Step 9 and refreshed on refinement when UI content changes. Markdown companion for QE test-plan ingest. `journeys.json` and `scenarios.json` stay the export schemas; this file projects them into `SCR-*` screens (with built HTML), `J-*` journeys, `TU-*` roles, and `DATA-*` sample data.
+Written during Step 9 and refreshed on refinement when UI content changes. Markdown companion for QE test-plan ingest. `journeys.json` and `states.json` stay the export schemas; this file projects them into `SCR-*` screens (with built HTML), `J-*` journeys, `TU-*` roles, and `DATA-*` sample data.
 
-Contract and example: [design-spec.md](design-spec.md). Record the path as `design_spec_path` in `metadata.json` and `prototype-summary.yaml`.
+Rules: [design-spec.md](design-spec.md). Template: [templates/design-spec.md](templates/design-spec.md). Record the path as `design_spec_path` in `metadata.json` and `prototype-summary.yaml`.
 
 ## artifacts/{ID}/verification.json
 

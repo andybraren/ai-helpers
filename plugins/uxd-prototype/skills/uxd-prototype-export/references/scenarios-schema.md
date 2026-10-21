@@ -1,20 +1,19 @@
-# scenarios.json schema
+# states.json schema
 
-Written by `uxd-prototype-create` (Step 4). Sibling to `journeys.json`.
+Written by `uxd-prototype-create` (Step 4) as `states.json`. Sibling to `journeys.json`.
 
 Catalog of **data/condition variants** per page (empty, load error, validation
-error, alternate selection, match/availability/recovery branches). Interaction
-states that share a URL (e.g. modal open) stay in `journeys.json` as step
-`actions` — they are not scenarios.
+error, alternate selection, match/availability/recovery branches). Modal and
+drawer open stay in `journeys.json` as step `actions`.
 
-Brainstorm which scenarios to include:
-`uxd-prototype-create/references/scenario-brainstorm.md`.
+Brainstorm which states to include:
+`uxd-prototype-create/references/state-brainstorm.md`.
 
 Consumed by:
 
-- Prototype Bar (Scenario menu) via a slim copy synced into `prototype-bar.json`
-- `export-journey.mjs` for step × scenario static HTML captures
-- Create Step 8 mock wiring (`?scenario=<id>`)
+- Prototype Bar via a slim copy synced into `prototype-bar.json`
+- `export-journey.mjs` for step × state static HTML captures
+- Create Step 8 mock wiring (`?state=<id>`)
 
 ```json
 {
@@ -24,7 +23,7 @@ Consumed by:
     {
       "route": "/api-keys",
       "screen": "ApiKeyList",
-      "scenarios": [
+      "states": [
         {
           "id": "default",
           "name": "Populated list",
@@ -52,27 +51,27 @@ Consumed by:
 | Field | Type | Description |
 |-------|------|-------------|
 | `prototype_id` | string | Artifact ID (usually Jira key) |
-| `extracted_at` | ISO string | When scenarios were written |
+| `extracted_at` | ISO string | When states were written |
 | `pages[].route` | string | Path matching journey `steps[].route` |
 | `pages[].screen` | string | Optional screen/component name (aligns with `metadata.json` screens) |
-| `pages[].scenarios[].id` | string | Filename-safe id (`[a-z0-9-]+`) |
-| `pages[].scenarios[].name` | string | Human label for the bar and export index |
-| `pages[].scenarios[].description` | string | Optional short explanation |
-| `pages[].scenarios[].default` | boolean | Exactly one `true` per page (or imply `id: "default"`) |
+| `pages[].states[].id` | string | Filename-safe id (`[a-z0-9-]+`) |
+| `pages[].states[].name` | string | Human label for the bar and export index |
+| `pages[].states[].description` | string | Optional short explanation |
+| `pages[].states[].default` | boolean | Exactly one `true` per page (or imply `id: "default"`) |
 
 ## Rules
 
 - Every distinct `route` in `journeys.json` gets a page entry with at least `default`.
-- Scenario `id`s must be filename-safe (`[a-z0-9-]+`).
-- Prefer one `default: true` per page; if omitted, the scenario with `id: "default"` is treated as default.
-- Do not model modal/drawer open as scenarios — use journey step `actions`.
+- State `id`s must be filename-safe (`[a-z0-9-]+`).
+- Prefer one `default: true` per page; if omitted, the state with `id: "default"` is treated as default.
+- Do not model modal/drawer open as states — use journey step `actions`.
 
 ## Runtime contract
 
-Active scenario is selected with the URL query param:
+The active state is selected with the URL query param:
 
 ```
-?scenario=<id>
+?state=<id>
 ```
 
 When absent, treat as `default`. Pages read the active id via `window.UxdScenario.get()`

@@ -27,6 +27,6 @@ Schemas: `references/journeys-schema.md`, `references/scenarios-schema.md`, `ref
 
 ## Related
 
-- `uxd-prototype-create` — writes `journeys.json`, `scenarios.json`, `prototype-bar.json`
+- `uxd-prototype-create` — writes `journeys.json`, `states.json`, `prototype-bar.json`
 - `uxd-prototype-evaluate` — reports the bar's Eval tab opens
 - `uxd-prototype-publish` — copies evals into the Pages tree

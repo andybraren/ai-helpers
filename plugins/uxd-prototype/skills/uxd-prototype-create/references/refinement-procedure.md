@@ -90,7 +90,7 @@ Update `metadata.json` with new iteration count and `refinement_history` array e
 
 Update `prototype-summary.yaml` with the new `iteration`, `status: refined`, `updated_at`, updated file counts, and append a `refinements` entry (see output-formats.md for schema).
 
-When screens, journeys, scenarios, or visible copy changed, rewrite `artifacts/{ID}/{ID}-design-spec.md` from the updated prototype and those JSON files. Follow [design-spec.md](design-spec.md). Leave the file unchanged when the refinement did not change UI content.
+When screens, journeys, states, or visible copy changed, rewrite `artifacts/{ID}/{ID}-design-spec.md` from the updated prototype and those JSON files. Fill [templates/design-spec.md](templates/design-spec.md) and follow [design-spec.md](design-spec.md). Leave the file unchanged when the refinement did not change UI content.
 
 ### Step 8: Update Changeset
 
@@ -104,7 +104,7 @@ Append a refinement section to `artifacts/{ID}/changeset.md`:
 - `src/pages/ApiKeys/ApiKeyDetail.tsx` — Fixed drawer close, added keyboard nav
 ```
 
-Re-run the PatternFly structure, reuse, and CSS source checks from [patternfly-compliance.md](patternfly-compliance.md) in both modes. In workspace mode, also run applicable lint/build/type checks after fixes. Do not launch or browse the prototype to test journeys, scenarios, or keyboard behavior during ordinary refinement.
+Re-run the PatternFly structure, reuse, and CSS source checks from [patternfly-compliance.md](patternfly-compliance.md) in both modes. In workspace mode, also run applicable lint/build/type checks after fixes. Do not launch or browse the prototype to test journeys, states, or keyboard behavior during ordinary refinement.
 
 ### Step 9: Report
 
@@ -141,7 +141,7 @@ Progress output:
 
 ## Refinement Edge Cases
 
-| Scenario | Handling |
+| Case | Handling |
 |----------|----------|
 | **No metadata.json** | Reconstruct from available artifacts. Set iteration to 0. |
 | **Missing screens** | Plan and generate them as new files (mini creation pass). |
