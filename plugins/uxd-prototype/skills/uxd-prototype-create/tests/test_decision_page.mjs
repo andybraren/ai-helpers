@@ -13,7 +13,7 @@ function setup({ deniedClipboard = false, acceptedCustom = false, acceptedOption
     { id: 'edit-context', title: 'Where should editing happen?' },
     { id: 'bulk-actions', title: 'Where should actions appear?' },
   ].map(decision => ({ ...decision, options: [{ id: 'A', title: 'Side panel' }, { id: 'B', title: 'Dedicated page' }] }));
-  if (acceptedCustom) decisions[0].custom = 'Inline editor';
+  if (acceptedCustom) decisions[0].custom = { title: 'Inline editor', reasoning: 'Only one short field.' };
   const inputs = decisions.flatMap(decision => ['A', 'B'].map(value => ({
     dataset: { decision: decision.id }, value,
     checked: acceptedOption && decision.id === 'edit-context' && value === 'B',
@@ -72,8 +72,12 @@ assert.match(fallback.elements.get('copy-status').textContent, /Copy the highlig
 
 const custom = setup({ acceptedCustom: true });
 assert.match(custom.response(), /Inline editor/);
+assert.match(custom.response(), /Custom — Inline editor\n   Reasoning — Only one short field\./);
+await custom.elements.get('copy-response').click();
+assert.equal(custom.copied(), custom.response());
 custom.choose('edit-context', 'B');
 assert.doesNotMatch(custom.response(), /Inline editor/);
+assert.doesNotMatch(custom.response(), /Only one short field/);
 assert.match(custom.response(), /Option B — Dedicated page/);
 const accepted = setup({ acceptedOption: true });
 assert.match(accepted.response(), /Option B — Dedicated page/);

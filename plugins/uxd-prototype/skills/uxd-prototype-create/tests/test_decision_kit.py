@@ -4,6 +4,7 @@ from copy import deepcopy
 import importlib.util
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -88,11 +89,44 @@ class DecisionKitTests(unittest.TestCase):
 
     def test_custom_choice_is_recorded_and_renders(self):
         result = kit.apply_choices(fixture(), {'prototypeId': 'PROJ-298', 'choices': {
-            'edit-context': {'option': 'custom', 'title': 'Inline editor', 'reasoning': 'Only one short field.'}}})
+            'edit-context': {'option': 'custom', 'title': '  Inline editor  ', 'reasoning': 'Only one short field.'}}})
         self.assertEqual(result['decisions'][0]['chosenOption'], 'custom')
+        self.assertEqual(result['decisions'][0]['chosenTitle'], 'Inline editor')
+        self.assertEqual(result['decisions'][0]['summary'], 'Inline editor')
         with tempfile.TemporaryDirectory() as folder:
             kit.render(result, Path(folder))
-            self.assertIn('Inline editor', (Path(folder) / 'index.html').read_text())
+            html = (Path(folder) / 'index.html').read_text()
+            payload = json.loads(re.search(r'<script type="application/json" id="decision-data">(.*?)</script>', html).group(1))
+            custom = payload['decisions'][0]['custom']
+            self.assertEqual(custom, {'title': 'Inline editor', 'reasoning': 'Only one short field.'})
+            reapplied = kit.apply_choices(result, {'prototypeId': payload['prototypeId'], 'choices': {
+                'edit-context': {'option': 'custom', **custom}}})
+            self.assertEqual(reapplied, result)
+
+    def test_comparison_rows_render_and_invalid_rows_preserve_existing_report(self):
+        data = fixture()
+        data['decisions'][0]['comparison'] = [
+            {'dimension': 'Context', 'values': {'A': 'Preserved', 'B': 'Separate page'}},
+            {'dimension': 'Space', 'values': {'A': 'Limited', 'B': 'Full page'}}]
+        with tempfile.TemporaryDirectory() as folder:
+            directory = Path(folder)
+            kit.render(data, directory)
+            report = directory / 'index.html'
+            before = report.read_bytes()
+            self.assertIn(b'<td>Preserved</td><td>Separate page</td>', before)
+            self.assertIn(b'Decision 1 of 2', before)
+            for rows, message in [
+                (None, 'comparison must be a list'),
+                ([None], 'comparison row 1 needs a dimension'),
+                ([{'values': {'A': 'Preserved', 'B': 'Separate page'}}], 'needs a dimension'),
+                ([{'dimension': 'Context', 'values': []}], 'needs values for every option'),
+                ([{'dimension': 'Context', 'values': {'A': 'Preserved'}}], 'needs values for every option'),
+            ]:
+                with self.subTest(rows=rows):
+                    data['decisions'][0]['comparison'] = rows
+                    with self.assertRaisesRegex(ValueError, f'edit-context: .*{message}'):
+                        kit.render(data, directory)
+                    self.assertEqual(report.read_bytes(), before)
 
     def test_render_accepts_variable_options_and_preserves_json(self):
         data = fixture()
@@ -120,6 +154,18 @@ class DecisionKitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             self.assertEqual(kit.render(data, Path(folder)), [])
             self.assertEqual(list(Path(folder).iterdir()), [])
+
+    def test_no_tradeoffs_removes_only_generated_report(self):
+        data = fixture()
+        with tempfile.TemporaryDirectory() as folder:
+            directory = Path(folder)
+            kit.render(data, directory)
+            other = directory / 'notes.txt'
+            other.write_text('Keep this file.')
+            data['decisions'] = []
+            self.assertEqual(kit.render(data, directory), [])
+            self.assertFalse((directory / 'index.html').exists())
+            self.assertEqual(other.read_text(), 'Keep this file.')
 
     def test_duplicate_decision_ids_are_rejected(self):
         data = fixture()

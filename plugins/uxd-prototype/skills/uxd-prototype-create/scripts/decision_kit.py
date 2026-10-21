@@ -69,7 +69,8 @@ def apply_choices(data, response):
             reasoning = choice.get('reasoning')
             if not isinstance(title, str) or not title.strip() or not isinstance(reasoning, str) or not reasoning.strip():
                 raise ValueError(f'{key}: custom answer needs title and reasoning')
-            selected, summary = 'custom', title.strip()
+            title = title.strip()
+            selected, summary = 'custom', title
         else:
             if not isinstance(choice, str) or choice not in item['options']:
                 raise ValueError(f'{key}: unknown option')
@@ -146,9 +147,17 @@ def decision_section(item, number, total):
         raise ValueError(f'{item["id"]}: optionDetails must match options and include rendered previews')
     cards = ''.join(option_card(item, option) for option in details)
     head = ''.join(f'<th scope="col">{text(opt["title"])}</th>' for opt in details)
+    comparison_rows = item.get('comparison', [])
+    if not isinstance(comparison_rows, list):
+        raise ValueError(f'{item["id"]}: comparison must be a list')
+    for row_number, row in enumerate(comparison_rows, 1):
+        if not isinstance(row, dict) or not isinstance(row.get('dimension'), str) or not row['dimension'].strip():
+            raise ValueError(f'{item["id"]}: comparison row {row_number} needs a dimension')
+        if not isinstance(row.get('values'), dict) or any(letter not in row['values'] for letter in item['options']):
+            raise ValueError(f'{item["id"]}: comparison row {row_number} needs values for every option')
     rows = ''.join('<tr><th scope="row">' + text(row['dimension']) + '</th>' +
                    ''.join(f'<td>{text(row["values"][letter])}</td>' for letter in item['options']) + '</tr>'
-                   for row in item.get('comparison', []))
+                   for row in comparison_rows)
     comparison = (f'<div class="comparison"><h3 class="comparison-heading">Compare the options</h3>'
                   f'<div class="table-scroll"><table class="pf-v6-c-table pf-m-compact">'
                   f'<caption class="pf-v6-u-screen-reader">Compare options for {text(item["title"])}</caption><thead><tr>'
@@ -182,16 +191,18 @@ RESPONSE = '''<section class="pf-v6-c-card response-panel" aria-labelledby="resp
 def render(data, directory):
     """Render one report. Legacy htmlFile values are ignored, never used as paths."""
     validate(data)
-    template = TEMPLATE.read_text(encoding='utf-8')
     decisions = data['decisions']
     if not decisions:
+        (directory / 'index.html').unlink(missing_ok=True)
         return []
+    template = TEMPLATE.read_text(encoding='utf-8')
     payload = {
         'prototypeId': data['rfeKey'],
         'decisions': [{
             'id': item['id'], 'title': item['title'],
             'options': [{'id': option['id'], 'title': option['title']} for option in item.get('optionDetails', [])],
-            'custom': item['chosenTitle'] if item.get('chosenOption') == 'custom' else None,
+            'custom': {'title': item['chosenTitle'], 'reasoning': item.get('reasoning', '')}
+            if item.get('chosenOption') == 'custom' else None,
         } for item in decisions],
     }
     # Script data must not terminate its HTML container, even with source-derived copy.

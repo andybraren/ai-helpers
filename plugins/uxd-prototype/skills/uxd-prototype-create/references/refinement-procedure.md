@@ -34,10 +34,10 @@ An evaluation is not a prerequisite for applying user feedback. If neither findi
 
 ### Step 3: Check Iteration Count
 
-Read `iteration` from `metadata.json` for history. Apply `--max-cycles` only in an explicitly requested automated evaluation loop; ordinary feedback edits are not gated by old evaluation counts. If the loop reaches its cycle limit:
+Read `iteration` from `metadata.json` for history. For each explicitly requested automated evaluation loop, initialize a separate cycle counter to zero and increment it once per completed refine→evaluate pass. Apply `--max-cycles` to that counter; ordinary feedback edits are not gated by old evaluation counts. If the loop reaches its cycle limit:
 
 ```
-Refinement limit reached (iteration {N} of {max}).
+Refinement limit reached (automated cycle {cycle} of {max}).
 Current: {pass}/{total} PASS, {fail} FAIL, {flagged} FLAGGED.
 To continue, re-run with --max-cycles {max+2}.
 ```
@@ -120,21 +120,22 @@ Only with an explicit `--headless` or pipeline request, run an automated loop (r
 refine → uxd-prototype-evaluate → check FAIL count → refine again → ...
 ```
 
+Initialize the automated cycle counter to zero when starting this loop, independently of the historical `metadata.json` iteration count.
+
 1. Apply refinements (Steps 1–8 above)
 2. Ensure the prototype is serving at `{URL}` (start/restart if needed)
 3. Run `uxd-prototype-evaluate {ID} {URL} [--workspace=…] --no-fix` (or with fix disabled so create owns edits)
-4. Check exit conditions:
+4. Increment the automated cycle counter once, then check exit conditions:
    - **Pass**: zero FAIL in `evaluation-report.csv` → exit success
-   - **Max cycles**: iteration = `--max-cycles` → exit
-   - **Plateau**: FAIL count unchanged for 2 consecutive iterations → exit
+   - **Max cycles**: automated cycle count >= `--max-cycles` → exit
+   - **Plateau**: FAIL count unchanged for 2 consecutive cycles in this loop → exit
 5. If no exit condition met, loop back to step 1
 
 Progress output:
 
 ```
-[Iteration 1] FAIL: 3 → 1 (−2) — 4 refinements applied
-[Iteration 2] FAIL: 1 → 0 (−1) — 2 refinements applied
-[Iteration 3] FAIL: 0 — AC pass, stopping.
+[Cycle 1] FAIL: 3 → 1 (−2) — 4 refinements applied
+[Cycle 2] FAIL: 1 → 0 (−1) — 2 refinements applied; AC pass, stopping.
 ```
 
 ---

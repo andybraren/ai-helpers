@@ -125,7 +125,11 @@
         const choices = data.decisions.flatMap((decision, index) => {
           const selected = inputs.find(input => input.dataset.decision === decision.id && input.checked);
           const option = decision.options.find(option => option.id === selected?.value);
-          const answer = option ? `Option ${option.id} — ${option.title}` : decision.custom;
+          const answer = option
+            ? `Option ${option.id} — ${option.title}`
+            : decision.custom
+              ? `Custom — ${decision.custom.title}\n   Reasoning — ${decision.custom.reasoning}`
+              : null;
           return answer ? [`${index + 1}. ${decision.title}\n   ${answer}`] : [];
         });
         response.value = choices.length
