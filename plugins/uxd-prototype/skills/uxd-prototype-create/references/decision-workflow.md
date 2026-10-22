@@ -81,7 +81,7 @@ Preserve existing fields consumed by evaluate/publish; additional fields supply 
 
 For older decision kits, keep accepted choices and add `context`, `optionDetails`, `comparison`, and `recommendationReason` before using the renderer; do not re-ask resolved questions. Applying responses still accepts the legacy record fields.
 
-Replace abbreviated preview content with real rendered UI. `previewHtml` is assistant-authored markup, never raw ticket text, fetched HTML, or user input. Escape source content before interpolating into it; keep previews inert (no scripts, event handlers, or external embeds).
+Replace abbreviated preview content with real rendered UI. `previewHtml` is assistant-authored markup, never raw ticket text, fetched HTML, or user input. Escape source content before interpolating into it; keep previews inert (no scripts, event handlers, or external embeds). The renderer removes `script`, `iframe`, `object`, and `embed` tags, event-handler attributes, and `javascript:` URLs.
 
 Status values remain `pending`, `auto-resolved`, `user-decided`. `recommended` is the AI's suggestion, not user approval. Use **AI suggestion** in all visible labels and give a short, evidence-based rationale. Keep recorded choices separate from suggestions; checked radio controls show the recorded options. `chosenOption: custom` is supported with the user's description in `chosenTitle`, `summary`, and `reasoning`; discuss feasibility and requirements before accepting it.
 

@@ -5,6 +5,7 @@ import argparse
 from copy import deepcopy
 from datetime import datetime, timezone
 from html import escape
+from html.parser import HTMLParser
 import json
 from pathlib import Path
 import re
@@ -107,6 +108,64 @@ def text(value):
     return escape(str(value), quote=True)
 
 
+_DROPPED_TAGS = {'script', 'iframe', 'object', 'embed'}
+
+
+class _PreviewFilter(HTMLParser):
+    """Keep preview markup and drop tags and attributes that can run code."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.parts = []
+        self._skip = 0
+
+    def handle_starttag(self, tag, attrs):
+        self._start(tag, attrs, False)
+
+    def handle_startendtag(self, tag, attrs):
+        self._start(tag, attrs, True)
+
+    def handle_endtag(self, tag):
+        if tag in _DROPPED_TAGS:
+            if self._skip:
+                self._skip -= 1
+            return
+        if not self._skip:
+            self.parts.append(f'</{tag}>')
+
+    def handle_data(self, data):
+        if not self._skip:
+            self.parts.append(escape(data))
+
+    def _start(self, tag, attrs, empty):
+        if tag in _DROPPED_TAGS:
+            if not empty:
+                self._skip += 1
+            return
+        if self._skip:
+            return
+        kept = []
+        for name, value in attrs:
+            if name.startswith('on'):
+                continue
+            if value is not None and value.strip().lower().startswith('javascript:'):
+                continue
+            if value is None:
+                kept.append(escape(name, quote=True))
+            else:
+                kept.append(f'{escape(name, quote=True)}="{escape(value, quote=True)}"')
+        attributes = f' {" ".join(kept)}' if kept else ''
+        closing = ' /' if empty else ''
+        self.parts.append(f'<{tag}{attributes}{closing}>')
+
+
+def preview(value):
+    parser = _PreviewFilter()
+    parser.feed(str(value))
+    parser.close()
+    return ''.join(parser.parts)
+
+
 def badge(label, color='blue'):
     return (f'<span class="pf-v6-c-label pf-m-{color}"><span class="pf-v6-c-label__content">'
             f'<span class="pf-v6-c-label__text">{text(label)}</span></span></span>')
@@ -133,7 +192,7 @@ def option_card(item, option):
             f'<h3 class="pf-v6-c-card__title-text"><label for="{text(input_id)}">{text(option["title"])}</label></h3>'
             f'</div></div>{suggestion}</div>'
             f'<div class="pf-v6-c-card__body"><p class="option-description">{text(option.get("description", ""))}</p>'
-            f'<div class="visual-preview" inert aria-label="{text(option["title"])} preview">{option["previewHtml"]}</div>'
+            f'<div class="visual-preview" inert aria-label="{text(option["title"])} preview">{preview(option["previewHtml"])}</div>'
             f'{rationale}<div class="tradeoffs">{lists}</div></div>'
             f'<div class="pf-v6-c-card__footer"><p class="when-to-use"><strong>Best for:</strong> '
             f'{text(option.get("whenToUse", ""))}</p></div></article>')

@@ -1,5 +1,5 @@
 // No browser, server, or packages needed: exercise the report's response behavior.
-// Run: node plugins/uxd-prototype/skills/uxd-prototype-create/tests/test_decision_page.mjs
+// Run: node plugins/uxd-prototype/skills/uxd-prototype-create/tests/test-decision-page.mjs
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';

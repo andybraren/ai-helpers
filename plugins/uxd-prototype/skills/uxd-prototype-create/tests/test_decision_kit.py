@@ -181,6 +181,22 @@ class DecisionKitTests(unittest.TestCase):
             kit.render(data, Path(folder))
             self.assertEqual([file.name for file in Path(folder).iterdir()], ['index.html'])
 
+    def test_preview_html_drops_scripts_and_handlers(self):
+        data = fixture()
+        data['decisions'][0]['optionDetails'][0]['previewHtml'] = (
+            '<form><img src="x" onerror="alert(1)"><script>alert(1)</script>'
+            '<iframe src="https://example.invalid"></iframe>'
+            '<a href="javascript:alert(1)">Go</a><button>Save</button></form>'
+        )
+        with tempfile.TemporaryDirectory() as folder:
+            kit.render(data, Path(folder))
+            html = (Path(folder) / 'index.html').read_text()
+        self.assertIn('<form><img src="x"><a>Go</a><button>Save</button></form>', html)
+        self.assertNotIn('onerror', html)
+        self.assertNotIn('javascript:', html)
+        self.assertNotIn('<script>alert', html)
+        self.assertNotIn('<iframe', html)
+
     def test_source_copy_is_escaped(self):
         data = fixture()
         data['projectDescription'] = '<script>alert("source")</script>'
