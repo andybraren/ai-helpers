@@ -12,7 +12,7 @@ Runtime helper (installed with the Prototype Bar): `window.UxdScenario`
 | `UxdScenario.set(id)` | Sets `?state=` and reloads the page |
 | `UxdScenario.subscribe(cb)` | Optional; called with the id after `set` (before reload) |
 
-Field rules: `uxd-prototype-export/references/scenarios-schema.md`.
+Field rules: `uxd-prototype-export/references/states-schema.md`.
 The catalog file is `states.json`; each page's collection key is `states`.
 Brainstorm which states to include: [state-brainstorm.md](state-brainstorm.md).
 

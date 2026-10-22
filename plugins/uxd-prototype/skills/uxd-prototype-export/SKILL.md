@@ -102,7 +102,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/export-current.sh" \
 
 **C. Batch-export journey steps × scenarios**
 
-Requires [journeys-schema.md](references/journeys-schema.md) and optionally [scenarios-schema.md](references/scenarios-schema.md). For each `export: true` step, captures every scenario for that `route` (`?state=<id>`, then step `actions`).
+Requires [journeys-schema.md](references/journeys-schema.md) and optionally [states-schema.md](references/states-schema.md). For each `export: true` step, captures every scenario for that `route` (`?state=<id>`, then step `actions`).
 
 ```bash
 node "${CLAUDE_SKILL_DIR}/scripts/export-journey.mjs" \
@@ -164,5 +164,5 @@ Shared capture: `scripts/serialize-page.js` and `templates/serialize-page.browse
 |-----|-------------|
 | [export-formats.md](references/export-formats.md) | Format details |
 | [journeys-schema.md](references/journeys-schema.md) | `journeys.json` |
-| [scenarios-schema.md](references/scenarios-schema.md) | `states.json` |
+| [states-schema.md](references/states-schema.md) | `states.json` |
 | [prototype-bar-config.md](references/prototype-bar-config.md) | Bar config schema |

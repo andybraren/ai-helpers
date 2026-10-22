@@ -4,7 +4,7 @@ Runtime config for Sources, Prototype ↔ Eval navigation, and Scenario switchin
 
 `.artifacts/{ID}/prototype-bar.json`
 
-Full state catalog lives in sibling `.artifacts/{ID}/states.json` (see `scenarios-schema.md`). Sync flattens it into the slim `scenarios` array below.
+Full state catalog lives in sibling `.artifacts/{ID}/states.json` (see `states-schema.md`). Sync flattens it into the slim `scenarios` array below.
 
 At install/publish time this is copied or inlined so the running page can read:
 

@@ -30,7 +30,7 @@ CSS dependencies required for paint.
 | Ad-hoc / bar | `{out}/current/{slug}-{timestamp}.html` |
 
 Batch export navigates with `?state=<id>` (omitted for `default`), runs any
-journey step `actions`, then captures. See `scenarios-schema.md`.
+journey step `actions`, then captures. See `states-schema.md`.
 
 ---
 

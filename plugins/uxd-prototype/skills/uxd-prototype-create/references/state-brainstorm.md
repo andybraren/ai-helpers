@@ -5,7 +5,7 @@ Do not stop at “happy path + one error.” Walk each page/route through the
 condition axes below and keep every axis that produces a **distinct on-load
 visual**.
 
-Field rules (`id`, `name`, `description`, `default`): `uxd-prototype-export/references/scenarios-schema.md`.
+Field rules (`id`, `name`, `description`, `default`): `uxd-prototype-export/references/states-schema.md`.
 Write the file as `states.json` and name each page's collection `states`.
 Mock wiring (end-state on load): [state-mocks.md](state-mocks.md).
 

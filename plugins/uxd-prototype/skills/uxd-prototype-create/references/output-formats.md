@@ -302,7 +302,7 @@ Written during Step 4 (kept in sync if pages/conditions change). Sibling to `jou
 }
 ```
 
-The active state is `?state=<id>` (`default` when absent). Field rules for each entry (`id`, `name`, `description`, `default`): [scenarios-schema.md](../../uxd-prototype-export/references/scenarios-schema.md). The file name is `states.json` and the page collection key is `states`.
+The active state is `?state=<id>` (`default` when absent). Field rules for each entry (`id`, `name`, `description`, `default`): [states-schema.md](../../uxd-prototype-export/references/states-schema.md). The file name is `states.json` and the page collection key is `states`.
 
 Brainstorm checklist: [state-brainstorm.md](state-brainstorm.md). Mock wiring: [state-mocks.md](state-mocks.md). Every journey route needs at least a `default` state.
 

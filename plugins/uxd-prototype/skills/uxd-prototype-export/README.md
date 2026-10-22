@@ -23,7 +23,7 @@ npm install
 | `scripts/copy-eval-for-pages.sh` | Copy report to `public/evals/{ID}/` for static Pages |
 | `scripts/serialize-page.js` | Shared DOM → HTML serializer |
 
-Schemas: `references/journeys-schema.md`, `references/scenarios-schema.md`, `references/export-formats.md`, `references/prototype-bar-config.md`.
+Schemas: `references/journeys-schema.md`, `references/states-schema.md`, `references/export-formats.md`, `references/prototype-bar-config.md`.
 
 ## Related
 

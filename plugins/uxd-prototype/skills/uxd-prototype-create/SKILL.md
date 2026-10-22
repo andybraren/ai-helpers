@@ -153,7 +153,7 @@ Parse from the RFE: user stories, acceptance criteria, personas/roles, key entit
 Journey and state rules (canonical schemas in `uxd-prototype-export`):
 
 - One journey per primary flow; mark key screens `"export": true`. Interactions that are not distinct URLs keep the same `route` and add `actions`. Schema: [journeys-schema.md](../uxd-prototype-export/references/journeys-schema.md).
-- One `pages[]` entry per distinct journey `route`, with at least a `default` state. Each `description` names the **on-load end-state**. State ids are filename-safe (`[a-z0-9-]+`). The page collection key is `states`. Field rules: [scenarios-schema.md](../uxd-prototype-export/references/scenarios-schema.md). Mock wiring: [references/state-mocks.md](references/state-mocks.md).
+- One `pages[]` entry per distinct journey `route`, with at least a `default` state. Each `description` names the **on-load end-state**. State ids are filename-safe (`[a-z0-9-]+`). The page collection key is `states`. Field rules: [states-schema.md](../uxd-prototype-export/references/states-schema.md). Mock wiring: [references/state-mocks.md](references/state-mocks.md).
 
 ## Step 5: Resolve Workspace
 
@@ -317,7 +317,7 @@ Reads `artifacts/{ID}/eval/evaluation-report.csv` + `refinement-suggestions.json
 | [templates/design-spec.md](references/templates/design-spec.md) | Design spec template to fill |
 | [patternfly-compliance.md](references/patternfly-compliance.md) | Before component selection and during code-level checks |
 | [journeys-schema.md](../uxd-prototype-export/references/journeys-schema.md) | `journeys.json` shape (owned by export) |
-| [scenarios-schema.md](../uxd-prototype-export/references/scenarios-schema.md) | State field rules (`id`, `name`, `description`, `default`) |
+| [states-schema.md](../uxd-prototype-export/references/states-schema.md) | State field rules (`id`, `name`, `description`, `default`) |
 | [state-brainstorm.md](references/state-brainstorm.md) | Planning page states |
 | [state-mocks.md](references/state-mocks.md) | Wiring `?state=` mocks |
 | [workspace-suggestions.md](references/workspace-suggestions.md) | Suggesting an existing prototype from Jira/project context |
