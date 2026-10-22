@@ -76,9 +76,9 @@ A `--target` value that looks like a git URL (`https://`, `git@`, `ssh://`, or `
 
 ## Conversational Onboarding
 
-Start with a brief welcome, using the version in this file's frontmatter metadata:
+Start with a brief welcome. Substitute `{version}` with the `version` value from this file's frontmatter:
 
-> Welcome to Create Prototype, version 1.2.0. This skill turns context from Jira and elsewhere into a visual prototype. I'll help you choose a starting point, work through any meaningful design choices, and build something you can try.
+> Welcome to Create Prototype, version {version}. This skill turns context from Jira and elsewhere into a visual prototype. I'll help you choose a starting point, work through any meaningful design choices, and build something you can try.
 
 Ask only for missing information; honor answers and flags already supplied. Ask one approachable question at a time, without re-running setup when refining an existing prototype. Reading source material and checking possible starting points can happen during onboarding; wait for the agreed plan before generating or cloning.
 

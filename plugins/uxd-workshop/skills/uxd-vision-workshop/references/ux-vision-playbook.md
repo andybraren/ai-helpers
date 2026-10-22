@@ -209,7 +209,7 @@ When extending an existing product, pass its checked-out prototype repository wi
 Recommended settings for vision work:
 - **Workspace:** the target product branch path (use `standalone` only for quick early exploration before integrating into the product repo)
 - **Decisions:** `human` (walk through design decisions with the assistant; choose `skip` or `auto` when that better fits the work)
-- **Depth:** `normal` (explore relevant tradeoffs; no fixed decision quota, and zero decisions is valid)
+- **Depth:** `normal` (4-7 design decisions, when decisions are not skipped)
 
 Before providing implementation context, inspect the current workspace for its route registration, feature-flag mechanism, component imports, and path aliases. Follow the conventions in the selected branch.
 
