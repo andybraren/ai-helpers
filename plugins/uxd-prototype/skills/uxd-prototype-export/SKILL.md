@@ -107,9 +107,9 @@ Requires [journeys-schema.md](references/journeys-schema.md) and optionally [sce
 ```bash
 node "${CLAUDE_SKILL_DIR}/scripts/export-journey.mjs" \
   --base-url "http://localhost:3000" \
-  --journeys ".artifacts/{ID}/journeys.json" \
+  --journeys "artifacts/{ID}/journeys.json" \
   --scenarios "artifacts/{ID}/states.json" \
-  --out ".artifacts/{ID}/exports" \
+  --out "artifacts/{ID}/exports" \
   --formats html,pf-spec
 ```
 
