@@ -91,7 +91,9 @@ With no genuine tradeoffs, write an empty `decisions` array, set `decisions_coun
 
 Open `index.html` using the available browser/file-opening capability and give a clickable absolute path (or local URL if served). Keep chat brief:
 
-> Review the options on [Review design choices](<absolute-path-to-index>), select your choices, then click **Copy response** and send it back to me. You can also describe another approach.
+```text
+Review the options on [Review design choices](<absolute-path-to-index>), select your choices, then click **Copy response** and send it back to me. You can also describe another approach.
+```
 
 The page has keyboard-accessible radio controls, an **AI suggestion** badge and rationale directly in the suggested card, a progress count, a plain-language response preview, and one **Copy response** button. The closing section says “Send your choices back to the agent” and “Copy your response and paste it into your conversation.” Do not add a bulk suggestion button, show JSON to the user, or explain acceptance states and reload behavior in the page copy. If clipboard access is unavailable, highlight the response for manual copying and give a brief instruction.
 
