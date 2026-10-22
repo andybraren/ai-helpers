@@ -4,14 +4,14 @@ version: 0.1.0
 description: >-
   Export a prototype page or journey step as static HTML, a React component
   tree, or a PatternFly implementation spec, and install the Prototype Bar
-  (Sources, Prototype|Eval, Scenario, Export). Use when capturing the current
+  (Sources, Prototype|Eval, State, Export). Use when capturing the current
   view, batch-exporting journey screens and page scenarios, or wiring
   provenance/eval/scenario navigation into a prototype.
 ---
 
 # Export Prototype
 
-Captures prototype screens as portable artifacts — from the running app (Prototype Bar) or in batch from journey + scenario files. Also installs the Prototype Bar (Sources, Prototype|Eval, Scenario, Export).
+Captures prototype screens as portable artifacts — from the running app (Prototype Bar) or in batch from journey + scenario files. Also installs the Prototype Bar (Sources, Prototype|Eval, State, Export).
 
 Family: `uxd-prototype-create` writes `journeys.json` / `states.json` / `prototype-bar.json`; this skill captures them; `uxd-prototype-evaluate` reports can be opened from the bar; `uxd-prototype-publish` copies evals into static Pages.
 
@@ -72,7 +72,7 @@ Parse as: `[--install-bar] [--base-url <url>] [--journeys <path>] [--formats htm
 >
 > - **Current page** — capture whatever is on screen (use the Prototype Bar, or give me a URL)
 > - **Journey steps × states** — batch-export from `artifacts/{ID}/journeys.json` + `states.json`
-> - **Install Prototype Bar** — add the sticky bar (Sources, Eval, Scenario, Export)
+> - **Install Prototype Bar** — add the sticky bar (Sources, Eval, State, Export)
 
 ## Step 1: Choose Path
 
@@ -144,10 +144,10 @@ Report paths to the user. Static HTML is a **visual** snapshot — it does not r
 | Zone | Controls |
 |------|----------|
 | Left | Brand + **Sources** (outcome / RFE / Figma / description) |
-| Center | **Prototype \| Eval** + **Scenario ▾** (enabled when ≥2 scenarios match the route) |
+| Center | **Prototype \| Eval** + **State ▾** (enabled when ≥2 scenarios match the route) |
 | Right | **Export** (Static HTML \| Component tree \| PF spec) + status |
 
-Eval resolution: helper `/evals/{id}/` when healthy → else `views.eval` under `<base href>` then site root → else disabled. Scenario switching sets `?state=<id>` and reloads; pages read `window.UxdScenario.get()`.
+Eval resolution: helper `/evals/{id}/` when healthy → else `views.eval` under `<base href>` then site root → else disabled. State switching sets `?state=<id>` and reloads; pages read `window.UxdScenario.get()`.
 
 Shared capture: `scripts/serialize-page.js` and `templates/serialize-page.browser.js`.
 

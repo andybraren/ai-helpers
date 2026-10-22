@@ -70,8 +70,11 @@ function withScenario(url, scenarioId) {
   const u = new URL(url);
   if (!scenarioId || scenarioId === 'default') {
     u.searchParams.delete('state');
+    u.searchParams.delete('scenario');
   } else {
+    // Older runtimes only read ?scenario=; current ones read ?state=.
     u.searchParams.set('state', scenarioId);
+    u.searchParams.set('scenario', scenarioId);
   }
   return u.toString();
 }

@@ -1,6 +1,6 @@
 # Prototype Bar config
 
-Runtime config for Sources, Prototype ↔ Eval navigation, and Scenario switching. Source of truth on disk:
+Runtime config for Sources, Prototype ↔ Eval navigation, and State switching. Source of truth on disk:
 
 `.artifacts/{ID}/prototype-bar.json`
 
@@ -74,7 +74,7 @@ Active state on the page: `?state=<id>` (default when absent: `default`). Runtim
 | `sources[].url` | string | Optional link (Jira browse, Figma, etc.) |
 | `views.prototype` | string \| null | URL for Prototype view; `null` = session return URL / referrer / `/` |
 | `views.eval` | string \| null | Relative Pages path (`/evals/{ID}/`) or absolute hosted URL; empty until report exists |
-| `scenarios` | array | Slim flatten of `states.json` for the Scenario menu |
+| `scenarios` | array | Slim flatten of `states.json` for the State menu |
 | `scenarios[].route` | string | Page path; menu filters by current pathname |
 | `scenarios[].id` | string | State id (`?state=<id>`) |
 | `scenarios[].name` | string | Display label |
@@ -89,8 +89,8 @@ Active state on the page: `?state=<id>` (default when absent: `default`). Runtim
 | Absolute `views.eval` (http/https) | Eval navigates there when helper is down / missing report |
 | Relative `views.eval` (e.g. `/evals/{id}/`) | Probes **`<base href>`-prefixed** path first (e.g. `/mr-218/evals/{id}/` on GitLab MR Pages), then site-root `/evals/{id}/`. Only enables Eval when the probe finds a real report (not an SPA `historyApiFallback` shell) |
 | No reachable report | Eval disabled; local hint mentions `export-helper` on `:9417`; on hosted Pages the hint shows the expected `{base}evals/{id}/` path |
-| ≤1 scenario for current route | Scenario menu hidden |
-| Scenario ▾ (prototype view) | Always shown; enabled when ≥2 scenarios match the current route (updates on SPA navigation). Disabled with tooltip when none. Selection sets `?state=` |
+| ≤1 scenario for current route | State menu hidden |
+| State ▾ (prototype view) | Always shown; enabled when ≥2 scenarios match the current route (updates on SPA navigation). Disabled with tooltip when none. Selection sets `?state=` |
 
 **Local SPA note:** On webpack/Vite apps, bare `/evals/{id}/` usually returns the app shell. Keep `export-helper.mjs` running so Eval can open the HTML report from `.artifacts/`. On GitLab/GitHub Pages, copy the report with `copy-eval-for-pages.sh` into `public/evals/{id}/` (and commit it) so the build emits real static HTML. The bar resolves relative eval URLs against `<base href>` / `ASSET_PATH` (MR previews live under `/mr-{iid}/`, not the site root).
 
