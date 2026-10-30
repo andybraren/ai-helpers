@@ -93,12 +93,12 @@ Once you're happy with it:
 
 1. Fork and clone this repo
 2. Copy your `SKILL.md` into the right directory:
-   - **UXD skills** → `plugins/uxd-workshop/skills/uxd-your-skill-name/SKILL.md` (incubator — graduates to `uxd-research`, `uxd-design`, or `uxd-prototype`)
+   - **UXD skills** → `plugins/<fitting-uxd-plugin>/skills/uxd-your-skill-name/SKILL.md`, or `plugins/uxd-workshop/skills/uxd-your-skill-name/SKILL.md` to share an experiment
    - **PatternFly skills** → `plugins/patternfly/pf-workshop/skills/pf-your-skill-name/SKILL.md`
 3. Make sure the directory name matches the `name` in your frontmatter
 4. Open a pull request against `main`
 
-Your skill lands in a **workshop plugin** first. After 2+ weeks of real usage and a passing eval, it can graduate to a consumer plugin. See the [skill lifecycle](CONTRIBUTING.md#skill-lifecycle) diagram for the full journey.
+UXD skills can go directly into a fitting plugin. Use a pre-`1.0.0` version while a skill is experimental; `1.0.0` and above signal production-ready use. See the [UXD skill lifecycle](CONTRIBUTING.md#uxd-skill-lifecycle) for the release criteria.
 
 ## Examples for design & research workflows
 

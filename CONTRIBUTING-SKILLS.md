@@ -338,16 +338,17 @@ Skills use a `version` field in frontmatter to signal maturity:
 
 | Version | Meaning |
 |---------|---------|
-| `0.x.0` | Draft — functional but not yet reviewed or validated. |
-| `1.0.0` | Evals passing and team has approved the version bump via PR. |
+| `0.x.y` | Experimental or still being validated. These skills can live in any fitting plugin, including `uxd-workshop`. |
+| `1.0.0` | Production-ready: representative evals pass, the quality checklist is met, and a maintainer has approved the version bump via PR. |
+| `1.x.y` and above | Production-ready. Follow semantic versioning: major for potentially breaking behavior or output contract changes, minor for compatible new behavior, patch for compatible fixes. |
 
-Version signals maturity within whatever plugin the skill lives in — it does not determine who the skill is for. Which plugin a skill belongs to determines that (e.g., workshop plugins are team tools and incubating skills, consumer plugins are for anyone). A skill can reach `1.0.0` in a workshop plugin and stay there, or graduate to a consumer plugin.
+Version signals maturity within whatever plugin the skill lives in. Plugin choice reflects audience and purpose, not maturity. `uxd-workshop` is an easy place to share UXD experiments with lighter review, but it is not required before contributing to a consumer plugin. A workshop skill can reach `1.0.0` without moving. A pre-`1.0.0` skill in a consumer plugin is still experimental.
 
-A `1.0.0` bump requires evals regardless of which plugin the skill lives in. Bump when the skill materially changes, not on every edit.
+A `1.0.0` bump requires real-use validation, representative evals, the quality checklist, and maintainer approval regardless of plugin. For pre-`1.0.0` skills, increment the version when behavior or the output contract materially changes; these versions do not promise stability.
 
 ### Evals
 
-Evals are **expected** for consumer-facing skills. A skill graduating from a workshop to a consumer plugin should have an eval that proves its value.
+Representative evals are required before a skill reaches `1.0.0`, wherever it lives. For pre-`1.0.0` skills, add evals as the behavior stabilizes so contributors can test changes and prepare for production-ready use.
 
 Write test cases that target what the skill **uniquely contributes** — don't test things the base model already knows without the skill loaded. Good eval cases are *discriminating*: they should fail (or produce noticeably worse output) without the skill loaded.
 

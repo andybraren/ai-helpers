@@ -40,7 +40,7 @@ Not sure what to build? Look for issues labeled [`good first issue`](../../label
 
 ### UXD contributions
 
-New UXD skills start in `plugins/uxd-workshop/` and use the `uxd-` prefix. Once validated, they graduate to a consumer plugin (`uxd-research`, `uxd-design`, or `uxd-prototype`).
+UXD skills use the `uxd-` prefix. Contribute a skill directly to the plugin that fits its audience and purpose, or use `plugins/uxd-workshop/` to share an experiment with the team. Workshop is an easy sharing path with lighter review, not a required first stop. Use a pre-`1.0.0` skill version while the skill is still being validated.
 
 UXD PRs are reviewed by UXD maintainers.
 
@@ -48,7 +48,7 @@ UXD PRs are reviewed by UXD maintainers.
 
 1. Fork and clone this repo
 2. Check the skill's README for any setup requirements (API tokens, tool access)
-3. Create your skill: `make scaffold PLUGIN=uxd-workshop SKILL=uxd-my-skill`
+3. Choose a fitting plugin, or choose `uxd-workshop` for an experiment. Create your skill: `make scaffold PLUGIN=<plugin> SKILL=uxd-my-skill`
 4. Test locally and open a PR
 
 ## How this marketplace is organized
@@ -57,7 +57,7 @@ Plugins organize skills by domain. See the [full plugin table](CONTRIBUTING-SKIL
 
 - **PatternFly skills** → `plugins/patternfly/<plugin>/` — use the `pf-` prefix
 - **UXD skills** → `plugins/uxd-research/`, `plugins/uxd-design/`, `plugins/uxd-prototype/` — use the `uxd-` prefix
-- Not sure where your skill belongs? Start in a workshop plugin (`pf-workshop` or `uxd-workshop`). Skills graduate to consumer plugins once validated.
+- Not sure where your skill belongs? Use the matching workshop to share and refine an experiment, or discuss the plugin choice in your PR.
 
 ## Adding a skill
 
@@ -67,8 +67,8 @@ Create a `SKILL.md` file in a directory under the appropriate plugin:
 plugins/<plugin-name>/skills/<your-skill>/SKILL.md
 ```
 
-Not sure where it belongs? Put it in the workshop that matches your domain:
-- **UXD skills** → `uxd-workshop` (use `uxd-` prefix)
+Not sure where it belongs? Use the workshop that matches your domain to share an experiment:
+- **UXD skills** → `uxd-workshop` (use `uxd-` prefix); direct contributions to a fitting UXD plugin are also welcome
 - **PatternFly skills** → `pf-workshop` (use `pf-` prefix)
 
 See [CONTRIBUTING-SKILLS.md](CONTRIBUTING-SKILLS.md) for a full walkthrough of skill structure and naming.
@@ -126,7 +126,7 @@ plugins/<plugin-name>/
    - `.cursor-plugin/marketplace.json`
 
    Meta-plugins using `dependencies` (like `patternfly`) are only listed in the Claude marketplace because Cursor and Codex do not apply that dependency behavior.
-4. Move the relevant skills from the workshop into the new plugin
+4. Add the relevant skills to the new plugin, moving any that were previously shared in a workshop
 5. Open a pull request
 
 ### How to organize plugins
@@ -145,68 +145,15 @@ The test: can someone look at the plugin name and know whether their skill belon
 
 Plugin names must tell a user exactly what the plugin helps them do. A user browsing the marketplace should understand what they're installing without clicking through. See [CONTRIBUTING-SKILLS.md](CONTRIBUTING-SKILLS.md#plugin-naming-standard) for naming examples and guidelines.
 
-### Skill lifecycle
+### UXD skill lifecycle
 
-```mermaid
-flowchart TD
-    A[Idea] --> B[Create skill locally]
-    B --> C[Test on real scenarios]
-    C --> D[Submit PR to workshop]
-    D --> E[Workshop plugin]
-    E --> F{Graduation criteria met?}
-    F -->|Yes| G[Open graduation PR]
-    F -->|No| E
-    G --> H[Maintainer review + merge]
-    H --> I[Consumer plugin]
-    I -.->|Demotion| E
-```
+A UXD skill can enter a fitting plugin directly. Use `uxd-workshop` when you want to share an experiment with the team and iterate with lighter review before deciding on a permanent home. Workshop placement is optional and does not determine whether a skill is production-ready.
 
-Skills start as local prototypes and graduate through a workshop to a consumer plugin. Each stage below covers a step in this lifecycle.
+Set the skill's frontmatter `version` to a pre-`1.0.0` value while it is experimental or still being validated, regardless of plugin. A `1.0.0` or higher version signals production-ready use. Follow semantic versioning after `1.0.0`: increment the major version for potentially breaking changes to the skill's behavior or output contract, the minor version for compatible new behavior, and the patch version for compatible fixes. See [Skill maturity](CONTRIBUTING-SKILLS.md#skill-maturity) for the release criteria.
 
-### Graduation from the workshop
+Before marking a UXD skill `1.0.0`, test it on real use cases, add representative evals, pass the [quality checklist](#quality-checklist), and get maintainer approval of the version bump in a PR. A skill may reach `1.0.0` in any plugin, including `uxd-workshop`.
 
-Skills start in a workshop plugin (`uxd-workshop` or `pf-workshop`). When a skill is validated and ready for a broader audience, it graduates to a consumer plugin.
-
-#### Graduation criteria
-
-A skill graduates when all of the following are true:
-
-- [ ] In the workshop for ≥2 weeks with real usage
-- [ ] Passes eval on representative inputs
-- [ ] Passes the [quality checklist](#quality-checklist)
-- [ ] Graduation PR approved by a maintainer
-
-#### Graduation flow
-
-```mermaid
-graph LR
-    A[Workshop skill] --> B[Usage + feedback]
-    B --> C{Eval passes?}
-    C -->|Yes| D[Open graduation PR]
-    C -->|No| B
-    D --> E[Maintainer review]
-    E --> F[Merge + CI updates PLUGINS.md]
-```
-
-#### What a graduation PR looks like
-
-1. Create the consumer plugin directory and manifests (if it's the first skill in that plugin)
-2. Move the skill directory from `plugins/<workshop>/skills/<skill>/` to `plugins/<consumer-plugin>/skills/<skill>/`
-3. Add the new plugin to both marketplace configs
-4. Update hand-written skill-to-plugin examples if they name the moved skill (for example the naming table in `CONTRIBUTING-SKILLS.md`). Leave generated docs alone — see below.
-5. Describe the plugin by its actual contents. Do not list skills that are still in the workshop.
-6. Keep the prefix examples in this file generic (one PatternFly line, one UXD workshop line). Do not add a new prefix bullet for the consumer plugin.
-7. Open a pull request.
-
-   Do **not**:
-   - Run `scripts/generate-plugins-md.sh` or `make docs`.
-   - Hand-edit `PLUGINS.md`, the README plugin table or badge counts, the CONTRIBUTING-SKILLS plugin table, or per-plugin READMEs.
-
-   CI regenerates those files on merge to `main`.
-
-#### Demotion
-
-Skills can move back to a workshop if quality degrades, scope changes, or the consumer plugin is restructured. Same PR process in reverse.
+If a workshop skill later moves to a consumer plugin, move its skill directory, update the plugin manifests and marketplace configs as needed, and update hand-written references to the old location. Keep generated documentation out of the PR; CI updates it after merge. The move is a placement decision, not an automatic version bump. A skill can also move back to a workshop if its scope or audience changes.
 
 ## Adding Documentation
 
